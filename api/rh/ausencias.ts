@@ -35,7 +35,7 @@ async function checkStoreAccess(userId: string, restaurantId: string): Promise<b
     const { data } = await supabase
         .from('unit_permissions')
         .select('id')
-        .eq('manager_id', userId)
+        .eq('user_id', userId)
         .eq('store_id', restaurantId)
         .single();
     

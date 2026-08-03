@@ -277,42 +277,29 @@
                 @case ('kpi') {
                    @let kpi = $any(widget);
                    <a [routerLink]="!editMode() ? kpi.route : null" 
-                      class="block h-full bg-surface-elevated border border-subtle rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:shadow-md transition-all flex flex-col justify-between min-h-[160px]">
+                      class="block h-full bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm relative overflow-hidden hover:shadow-md transition-shadow flex flex-col justify-center min-h-[100px]">
                       
-                      <div class="flex justify-between items-center mb-3 relative z-10">
-                          <p class="text-muted text-xs font-bold uppercase tracking-wider truncate pr-2">{{ kpi.label }}</p>
-                          <div class="w-9 h-9 bg-surface rounded-xl border border-subtle flex items-center justify-center shrink-0">
-                              <span translate="no" class="notranslate material-symbols-outlined text-xl" [class]="kpi.colorClass">{{ kpi.icon }}</span>
+                      <div class="flex items-center justify-between">
+                          <div class="min-w-0 flex-1 pr-2">
+                              <p class="text-xs font-medium text-muted truncate mb-1">{{ kpi.label }}</p>
+                              <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ kpi.value }}</h2>
+                              @if(kpi.subValue) {
+                                  <p class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
+                                      <span>{{ kpi.subValue }}</span>
+                                  </p>
+                              }
+                          </div>
+                          <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" [class]="kpi.colorClass">
+                              <span translate="no" class="notranslate material-symbols-outlined text-2xl">{{ kpi.icon }}</span>
                           </div>
                       </div>
-                      
-                      <div class="relative z-10 min-w-0 mb-4 flex-1 flex flex-col justify-center">
-                          <h3 class="text-3xl font-black text-title data-mono tracking-tight truncate w-full">{{ kpi.value }}</h3>
-                      </div>
-                      
-                      <div class="relative z-10 mt-auto">
-                          @if(kpi.subValue) {
-                              <div class="flex items-center gap-2">
-                                  <div class="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded text-xs font-semibold">
-                                     <span class="data-mono">{{ kpi.subValue }}</span>
-                                  </div>
-                              </div>
-                          }
-                      </div>
                    </a>
-                }
-
-                <!-- CUSTOM D3 VISUALIZATIONS WIDGET -->
-                @case ('custom_visualizations') {
-                    <div class="h-full w-full flex">
-                        <app-dashboard-visualizations [salesData]="salesCogsData()" [topItemsData]="topSellingItems()" class="w-full"></app-dashboard-visualizations>
-                    </div>
                 }
 
                 <!-- CHART SALES WIDGET -->
                 @case ('chart_sales') {
                     @let chart = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm">
                         <h3 class="text-xs font-extrabold text-muted mb-6 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-brand animate-pulse"></span>
                             {{ chart.title }}
@@ -331,7 +318,7 @@
                 <!-- DRE SUMMARY WIDGET -->
                 @case ('dre_summary') {
                     @let dre = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm relative overflow-hidden">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm relative overflow-hidden">
                         <h3 class="text-xs font-extrabold text-muted mb-6 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                             {{ dre.title }}
@@ -371,7 +358,7 @@
                 <!-- CHART HOURLY WIDGET -->
                 @case ('chart_hourly') {
                     @let chart = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm">
                          <h3 class="text-xs font-extrabold text-muted mb-6 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-purple-500"></span>
                             {{ chart.title }}
@@ -391,7 +378,7 @@
                 @case ('menu_engineering') {
                     @let eng = $any(widget);
                     @let matrix = bcgMatrix();
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm overflow-hidden">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm overflow-hidden">
                         
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                             <div>
@@ -475,7 +462,7 @@
                 <!-- TOP ITEMS LIST -->
                 @case ('list_top_items') {
                     @let list = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm">
                          <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                             {{ list.title }}
@@ -500,7 +487,7 @@
                 <!-- WAITER RANKING LIST -->
                 @case ('list_waiter_ranking') {
                     @let list = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm">
                          <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
                             {{ list.title }}
@@ -528,7 +515,7 @@
                 <!-- RECENT ORDERS LIST -->
                 @case ('list_recent_orders') {
                     @let list = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm">
                          <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-brand"></span>
                             {{ list.title }}
@@ -555,7 +542,7 @@
                 <!-- PAYMENT METHODS LIST -->
                 @case ('list_payment_methods') {
                     @let list = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm">
                           <h3 class="text-xs font-extrabold text-muted mb-4 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                             {{ list.title }}
@@ -585,7 +572,7 @@
                  <!-- LOW STOCK LIST -->
                 @case ('list_low_stock') {
                     @let list = $any(widget);
-                    <div class="h-full bg-surface-elevated border border-subtle rounded-3xl p-6 flex flex-col shadow-sm">
+                    <div class="h-full bg-surface-elevated border border-subtle rounded-2xl p-5 flex flex-col shadow-sm">
                         <h3 class="text-xs font-extrabold text-rose-500 mb-4 flex items-center gap-2 uppercase tracking-wider">
                             <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
                             {{ list.title }}

@@ -23,7 +23,7 @@ async function authenticateUser(request: VercelRequest, restaurantId: string): P
         const { data: perm } = await supabase
             .from('unit_permissions')
             .select('id')
-            .eq('manager_id', user.id)
+            .eq('user_id', user.id)
             .eq('store_id', restaurantId)
             .single();
         

@@ -16,7 +16,6 @@ import { SettingsStateService } from '../../services/settings-state.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { InventoryStateService } from '../../services/inventory-state.service';
 import { Order } from '../../models/db.models';
-import { DashboardVisualizationsComponent } from './dashboard-visualizations.component';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { DemoService } from '../../services/demo.service';
 
@@ -74,11 +73,7 @@ interface MenuEngineeringWidget extends BaseWidget {
   title: string;
 }
 
-interface CustomVisualizationsWidget extends BaseWidget {
-  type: 'custom_visualizations';
-}
-
-type DashboardWidget = KpiWidget | ChartWidget | ListWidget | DreWidget | MenuEngineeringWidget | CustomVisualizationsWidget;
+type DashboardWidget = KpiWidget | ChartWidget | ListWidget | DreWidget | MenuEngineeringWidget;
 type ReportPeriod = 'day' | 'week' | 'month';
 
 @Component({
@@ -88,7 +83,6 @@ type ReportPeriod = 'day' | 'week' | 'month';
     CommonModule, 
     SalesCogsChartComponent, 
     HourlySalesChartComponent,
-    DashboardVisualizationsComponent,
     CdkDropList,
     CdkDrag,
     RouterLink,
@@ -332,9 +326,8 @@ export class DashboardComponent implements OnInit {
 
   // Layout Management
   private defaultWidgetOrder = [
-    'kpi_sales', 'kpi_profit', 'kpi_ticket', 'kpi_orders', 
-    'kpi_occupancy', 'kpi_turnover', 'kpi_kds_time',
-    'dre_summary', 'custom_visualizations',
+    'kpi_turnover', 'kpi_kds_time',
+    'dre_summary',
     'chart_sales_1', 'menu_engineering', 'list_top_items', 
     'chart_hourly_1', 'list_waiter_ranking',
     'list_recent_orders', 'list_payment_methods', 'list_low_stock'
@@ -394,61 +387,27 @@ export class DashboardComponent implements OnInit {
   // --- Widget Definition ---
   dashboardWidgets = computed(() => {
     const order = this.widgetOrder();
-    const periodLabel = { day: 'Hoje', week: 'Esta Semana', month: 'Este Mês' }[this.period()];
     
     // KPI Data
-    const totalSales = this.totalSales();
-    const grossProfit = this.grossProfit();
-    const avgTicket = this.averageTicket();
-    const orderCount = this.totalOrders();
-    const occupancy = this.occupancyRate();
     const turnover = this.averageTurnoverTime();
     const kdsTime = this.averageKdsTime();
 
     const allWidgets: Record<string, DashboardWidget> = {
-      'kpi_sales': { 
-        type: 'kpi', id: 'kpi_sales', cols: 1, label: 'Vendas Totais', 
-        value: totalSales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        subValue: periodLabel, icon: 'monetization_on', colorClass: 'text-green-400', route: '/reports'
-      },
-      'kpi_profit': { 
-        type: 'kpi', id: 'kpi_profit', cols: 1, label: 'Lucro Bruto (Est.)', 
-        value: grossProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        subValue: 'Baseado no CMV', icon: 'trending_up', colorClass: 'text-blue-400', route: '/reports'
-      },
-      'kpi_ticket': { 
-        type: 'kpi', id: 'kpi_ticket', cols: 1, label: 'Ticket Médio', 
-        value: avgTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 
-        subValue: 'Por pedido', icon: 'receipt_long', colorClass: 'text-purple-400', route: '/performance'
-      },
-      'kpi_orders': { 
-        type: 'kpi', id: 'kpi_orders', cols: 1, label: 'Pedidos Realizados', 
-        value: orderCount.toString(), 
-        subValue: `${this.openOrdersCount()} abertos agora`, icon: 'shopping_cart_checkout', colorClass: 'text-yellow-400', route: '/pos'
-      },
-      'kpi_occupancy': { 
-        type: 'kpi', id: 'kpi_occupancy', cols: 1, label: 'Tx de Ocupação', 
-        value: occupancy.toLocaleString('pt-BR', { style: 'percent', maximumFractionDigits: 1 }), 
-        subValue: 'Mesas ocupadas', icon: 'table_restaurant', colorClass: 'text-indigo-400', route: '/pos'
-      },
       'kpi_turnover': { 
         type: 'kpi', id: 'kpi_turnover', cols: 1, label: 'Turnover (Ciclo Médio)', 
         value: `${turnover} min`, 
-        subValue: 'Tempo na mesa', icon: 'timer', colorClass: 'text-rose-400', route: '/pos'
+        subValue: 'Tempo na mesa', icon: 'timer', colorClass: 'text-rose-500 bg-rose-500/10', route: '/pos'
       },
       'kpi_kds_time': { 
         type: 'kpi', id: 'kpi_kds_time', cols: 1, label: 'Tempo de Cozinha', 
         value: `${kdsTime} min`, 
-        subValue: 'Média de preparo', icon: 'skillet', colorClass: kdsTime > 15 ? 'text-danger' : 'text-amber-400', route: '/kds'
+        subValue: 'Média de preparo', icon: 'skillet', colorClass: kdsTime > 15 ? 'text-rose-500 bg-rose-500/10' : 'text-amber-500 bg-amber-500/10', route: '/kds'
       },
       'dre_summary': {
         type: 'dre_summary', id: 'dre_summary', cols: 2, title: 'DRE - Demonstrativo de Resultado'
       },
       'menu_engineering': {
         type: 'menu_engineering', id: 'menu_engineering', cols: 2, title: 'Matriz BCG de Engenharia do Cardápio'
-      },
-      'custom_visualizations': {
-        type: 'custom_visualizations', id: 'custom_visualizations', cols: 2
       },
       'chart_sales_1': {
         type: 'chart_sales', id: 'chart_sales_1', cols: 2,

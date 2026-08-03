@@ -433,6 +433,26 @@ export class OperationalAuthService {
     const employee = this.activeEmployee();
     if (!employee) return '/employee-selection';
 
-    return '/home';
+    // Verify if dashboard is explicitly accessible
+    if (this.hasPermission('/dashboard')) return '/dashboard';
+
+    // Common operational screens
+    if (this.hasPermission('/pos')) return '/pos';
+    if (this.hasPermission('/kds')) return '/kds';
+    if (this.hasPermission('/cashier')) return '/cashier';
+    if (this.hasPermission('/delivery')) return '/delivery';
+
+    // Fallbacks
+    const roleName = (employee.role || '').toLowerCase();
+    const isGerente = roleName.includes('gerente') || roleName.includes('admin');
+    
+    if (isGerente) return '/dashboard';
+
+    const rolePerms = this.hrState.rolePermissions().filter(p => p.role_id === employee.role_id);
+    if (rolePerms.length > 0) {
+        return rolePerms[0].permission_key;
+    }
+
+    return '/tutorials';
   }
 }

@@ -89,13 +89,13 @@ export class SubscriptionStateService {
               } else {
                  const { data: perm } = await supabase
                       .from('unit_permissions')
-                      .select('manager_id')
+                      .select('user_id')
                       .eq('store_id', storeId)
                       .eq('role', 'owner')
                       .maybeSingle();
                   
-                  if (perm?.manager_id) {
-                      ownerId = perm.manager_id;
+                  if (perm?.user_id) {
+                      ownerId = perm.user_id;
                   }
               }
           }
