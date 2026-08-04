@@ -5,6 +5,12 @@
       <h1 class="text-3xl font-black text-title tracking-tight">Gestor de Loja <span class="text-brand">iFood</span></h1>
       <p class="text-[11px] font-bold uppercase tracking-widest text-muted mt-1">Gerencie a disponibilidade e o horário de funcionamento.</p>
     </div>
+    @if (hasMerchantId() && !isAuthorizing()) {
+      <button (click)="disconnectIfood()" [disabled]="isSaving()" class="flex items-center gap-2 bg-surface hover:bg-danger/10 border border-subtle hover:border-danger/30 text-danger font-black text-[11px] uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50">
+        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">link_off</span>
+        Desconectar iFood
+      </button>
+    }
   </div>
 
   @if (!hasMerchantId() || isAuthorizing()) {
@@ -21,14 +27,19 @@
                   <span class="text-2xl font-mono font-black tracking-[0.2em]">{{ userCodeData().userCode }}</span>
               </div>
               <p class="text-sm text-title">3. Após autorizar, insira abaixo o código de autorização gerado:</p>
-              <div class="flex gap-2">
-                  <input type="text" [(ngModel)]="authCode" placeholder="Código de Autorização" class="flex-1 bg-surface border border-strong rounded-xl px-4 py-3 text-sm font-medium text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
-                  <button (click)="submitAuthCode()" [disabled]="!authCode() || isSaving()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50">
-                      @if(isSaving()) {
-                          <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                      } @else {
-                          Autorizar
-                      }
+              <div class="flex flex-col gap-3">
+                  <div class="flex gap-2">
+                      <input type="text" [(ngModel)]="authCode" placeholder="Código de Autorização" class="flex-1 bg-surface border border-strong rounded-xl px-4 py-3 text-sm font-medium text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
+                      <button (click)="submitAuthCode()" [disabled]="!authCode() || isSaving()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50">
+                          @if(isSaving()) {
+                              <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                          } @else {
+                              Autorizar
+                          }
+                      </button>
+                  </div>
+                  <button (click)="cancelAuthorization()" [disabled]="isSaving()" class="w-full bg-surface border border-strong hover:bg-surface-elevated text-title font-black text-[11px] uppercase tracking-widest px-4 py-3 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50 mt-2">
+                      Cancelar Vinculação
                   </button>
               </div>
           </div>

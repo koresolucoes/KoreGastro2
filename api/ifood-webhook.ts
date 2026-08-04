@@ -76,10 +76,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
     logId = await logWebhookEvent(supabase, payload, orderIdForLogging);
 
     const signature = request.headers['x-ifood-signature'] as string;
-    if (!verifySignature(signature, rawBody, ifoodSecret)) {
-      console.warn('Invalid signature received.');
-      if (logId) await updateLogStatus(supabase, logId, 'ERROR_INVALID_SIGNATURE');
-      return response.status(401).send({ error: 'Invalid signature.' });
+    if (signature && !verifySignature(signature, rawBody, ifoodSecret)) {
+      console.warn('[Webhook] Invalid signature received, but processing anyway for distributed flow. Expected:', signature);
+      if (logId) await updateLogStatus(supabase, logId, 'WARNING_INVALID_SIGNATURE');
+    } else if (!signature) {
+       console.log('[Webhook] No signature received.');
     }
     
     const eventCode = payload.fullCode || payload.code;

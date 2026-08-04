@@ -229,6 +229,45 @@ export class IfoodStoreManagerComponent implements OnInit {
       }
   }
 
+  cancelAuthorization() {
+      this.userCodeData.set(null);
+      localStorage.removeItem('ifood_user_code_data');
+      this.isAuthorizing.set(false);
+  }
+
+  async disconnectIfood() {
+      if (!confirm('Tem certeza que deseja desconectar sua loja do iFood? Você precisará autorizar novamente para receber pedidos e gerenciar a loja.')) {
+          return;
+      }
+      
+      this.isSaving.set(true);
+      try {
+          // Remove the merchant_id from the store settings
+          const updateRes = await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: null });
+          if (!updateRes.success) {
+              throw updateRes.error;
+          }
+          const currentProfile = this.settingsState.companyProfile();
+          if (currentProfile) {
+              this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: null as any }); // Hack to accept null if needed
+          }
+          
+          this.userCodeData.set(null);
+          localStorage.removeItem('ifood_user_code_data');
+          this.status.set(null);
+          this.interruptions.set([]);
+          this.isAuthorizing.set(true);
+          
+          this.notificationService.show('Integração com iFood desconectada com sucesso.', 'success');
+          
+          this.startAuthFlow();
+      } catch (err: any) {
+          this.notificationService.show(`Erro ao desconectar: ${err.message}`, 'error');
+      } finally {
+          this.isSaving.set(false);
+      }
+  }
+
   initializeHoursForm(apiHours: IfoodOpeningHours[]) {
     // Group shifts by day
     const hoursByDay = new Map<IfoodOpeningHours['dayOfWeek'], IfoodOpeningHours[]>();
