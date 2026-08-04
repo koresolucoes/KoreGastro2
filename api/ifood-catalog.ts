@@ -18,14 +18,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     try {
-        const { method, endpoint, payload, isImageUpload } = request.body;
+        const { method, endpoint, payload, isImageUpload, merchantId } = request.body;
         
         if (!method || !endpoint) {
             return response.status(400).json({ message: 'Missing "method" or "endpoint" in request body' });
         }
 
         // Use cached/centralized token retrieval
-        const accessToken = await getIFoodAccessToken();
+        const accessToken = await getIFoodAccessToken(merchantId);
         const fullUrl = endpoint.startsWith('http') ? endpoint : `${iFoodApiBaseUrl}${endpoint}`;
         
         let apiResponse;

@@ -34,6 +34,7 @@
     "html5-qrcode": "^2.3.8",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
+    "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
     "mercadopago": "^3.1.0",

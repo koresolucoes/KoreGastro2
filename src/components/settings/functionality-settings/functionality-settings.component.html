@@ -11,14 +11,17 @@
         </div>
         <div>
           <h2 class="text-xl font-black text-title title-display tracking-tight">Integração iFood</h2>
-          <p class="text-xs text-muted mt-2 leading-relaxed font-medium">Receba pedidos do iFood diretamente no seu KDS e sincronize estoques.</p>
+          <p class="text-xs text-muted mt-2 leading-relaxed font-medium">Receba pedidos, gerencie loja e cardápio diretamente no sistema.</p>
         </div>
       </div>
     </div>
-    <div class="mt-8 pt-6 border-t border-subtle flex justify-end">
-      <button (click)="isIFoodModalOpen.set(true)" class="bg-surface hover:bg-brand hover:text-white border border-strong hover:border-brand text-title font-black uppercase tracking-widest text-[10px] py-3.5 px-6 rounded-xl transition-all shadow-sm active:scale-95">
-        Configurar iFood
-      </button>
+    <div class="mt-8 pt-6 border-t border-subtle flex justify-end items-center gap-4">
+      @if (companyProfile()?.ifood_merchant_id) {
+         <span class="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">Conectado</span>
+      }
+      <a routerLink="/ifood-store-manager" class="bg-surface hover:bg-brand hover:text-white border border-strong hover:border-brand text-title font-black uppercase tracking-widest text-[10px] py-3.5 px-6 rounded-xl transition-all shadow-sm active:scale-95 text-center">
+        Acessar Gestor iFood
+      </a>
     </div>
   </div>
 
@@ -182,49 +185,6 @@
       </div>
       <div class="p-8 overflow-y-auto">
          <app-whatsapp-settings></app-whatsapp-settings>
-      </div>
-    </div>
-  </div>
-}
-
-<!-- iFood Modal -->
-@if(isIFoodModalOpen()) {
-  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
-    <div class="chef-surface rounded-[40px] shadow-2xl w-full max-w-lg border border-subtle overflow-hidden">
-      <div class="p-8 border-b border-subtle bg-surface-elevated/80 flex items-center justify-between backdrop-blur-md">
-        <h3 class="text-2xl font-black text-title title-display tracking-tight flex items-center gap-3">
-           <div class="w-10 h-10 bg-brand/10 rounded-xl flex items-center justify-center border border-brand/20">
-             <img src="https://i.imgur.com/NzlCBGX.png" alt="iFood" class="w-6 h-6 object-contain">
-           </div>
-           Configuração iFood
-        </h3>
-        <button (click)="isIFoodModalOpen.set(false)" class="p-2 rounded-xl text-muted hover:text-title hover:bg-surface border border-transparent hover:border-strong transition-all active:scale-95">
-          <span translate="no" class="notranslate material-symbols-outlined text-xl">close</span>
-        </button>
-      </div>
-      <div class="p-10 space-y-8">
-        <div>
-            <label for="ifood-merchant-id" class="block text-[11px] font-black tracking-widest text-muted uppercase mb-3">iFood Merchant ID</label>
-            <input type="text" id="ifood-merchant-id" [value]="companyProfileForm().ifood_merchant_id || ''" (input)="updateCompanyProfileField('ifood_merchant_id', $any($event.target).value)" placeholder="Cole seu ID do iFood aqui" class="w-full bg-surface-elevated border border-strong rounded-2xl px-5 py-4 text-title placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand shadow-inner transition-all font-bold text-lg">
-            <p class="text-[11px] text-muted mt-2 font-medium flex items-center gap-1.5 opacity-80 uppercase tracking-wider">
-               <span translate="no" class="notranslate material-symbols-outlined text-sm">info</span>
-               ID necessário para sincronização do cardápio e estoque.
-            </p>
-        </div>
-        <div>
-            <label for="ifood-webhook-url" class="block text-[11px] font-black tracking-widest text-muted uppercase mb-3">URL de Webhook (Callback)</label>
-            <div class="flex gap-3">
-                <input id="ifood-webhook-url" type="text" readonly [value]="webhookUrl" class="w-full bg-surface border border-subtle rounded-2xl px-5 py-4 text-muted/80 font-mono text-xs truncate cursor-default">
-                <button (click)="copyToClipboard(webhookUrl)" class="p-4 bg-surface hover:bg-surface-elevated border border-strong rounded-2xl text-brand transition-all active:scale-95 shadow-sm hover:shadow-brand/5" title="Copiar URL">
-                    <span translate="no" class="notranslate material-symbols-outlined text-xl">content_copy</span>
-                </button>
-            </div>
-            <p class="text-[11px] text-muted mt-2 font-medium italic">Configure esta URL no Portal do Parceiro iFood para receber pedidos em tempo real.</p>
-        </div>
-      </div>
-      <div class="p-8 bg-surface-elevated/80 backdrop-blur-md flex justify-end gap-3 border-t border-subtle">
-         <button (click)="isIFoodModalOpen.set(false)" class="px-8 py-3.5 font-bold text-sm rounded-2xl text-title bg-surface hover:bg-surface-elevated border border-strong transition-all shadow-sm active:scale-95">Cancelar</button>
-         <button (click)="saveIFoodSettings()" class="px-10 py-3.5 bg-brand hover:bg-brand-hover text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 border border-brand">Salvar Configuração</button>
       </div>
     </div>
   </div>

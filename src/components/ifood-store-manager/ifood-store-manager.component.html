@@ -7,16 +7,37 @@
     </div>
   </div>
 
-  @if (!hasMerchantId()) {
-    <div class="flex flex-col items-center justify-center min-h-[400px] bg-surface-elevated border border-brand/20 rounded-2xl shadow-sm p-8 text-center">
-      <span translate="no" class="notranslate material-symbols-outlined text-brand text-6xl mb-4">settings_plug</span>
-      <h2 class="text-xl font-black text-title mb-2">iFood Não Configurado</h2>
-      <p class="text-muted text-sm max-w-md mb-6">Para gerenciar sua loja e cardápio, você precisa vincular o seu ID de Loja do iFood nas Configurações.</p>
-      
-      <a routerLink="/settings" [queryParams]="{tab: 'funcionalidades'}" class="bg-brand hover:bg-brand-hover text-white font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl transition-all active:scale-95 shadow-sm inline-flex items-center gap-2">
-        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">settings</span>
-        Ir para Configurações
-      </a>
+  @if (!hasMerchantId() || isAuthorizing()) {
+    <div class="flex flex-col items-center justify-center min-h-[400px] bg-surface-elevated border border-warning/20 rounded-2xl shadow-sm p-8 text-center">
+      <span translate="no" class="notranslate material-symbols-outlined text-warning text-6xl mb-4">key</span>
+      <h2 class="text-xl font-black text-title mb-2">Autorização Necessária</h2>
+      <p class="text-muted text-sm max-w-md mb-6">Você precisa autorizar o ChefOS no portal do iFood para acessar sua loja.</p>
+
+      @if (userCodeData()) {
+          <div class="w-full max-w-md bg-surface border border-subtle rounded-xl p-6 text-left space-y-4">
+              <p class="text-sm text-title">1. Acesse o <a [href]="userCodeData().verificationUrl" target="_blank" class="text-brand underline font-bold">Portal do Parceiro iFood</a></p>
+              <p class="text-sm text-title">2. Insira o seguinte código de vinculação:</p>
+              <div class="bg-surface-elevated border border-strong rounded-lg p-3 text-center">
+                  <span class="text-2xl font-mono font-black tracking-[0.2em]">{{ userCodeData().userCode }}</span>
+              </div>
+              <p class="text-sm text-title">3. Após autorizar, insira abaixo o código de autorização gerado:</p>
+              <div class="flex gap-2">
+                  <input type="text" [(ngModel)]="authCode" placeholder="Código de Autorização" class="flex-1 bg-surface border border-strong rounded-xl px-4 py-3 text-sm font-medium text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
+                  <button (click)="submitAuthCode()" [disabled]="!authCode() || isSaving()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50">
+                      @if(isSaving()) {
+                          <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      } @else {
+                          Autorizar
+                      }
+                  </button>
+              </div>
+          </div>
+      } @else {
+          <div class="flex flex-col items-center">
+              <span translate="no" class="notranslate material-symbols-outlined text-muted animate-spin text-4xl mb-4">progress_activity</span>
+              <p class="text-[11px] font-black uppercase tracking-widest text-muted">Gerando código de vinculação...</p>
+          </div>
+      }
     </div>
   } @else if (isLoading()) {
     <div class="flex flex-col items-center justify-center min-h-[400px] bg-surface-elevated border border-subtle rounded-2xl shadow-sm">

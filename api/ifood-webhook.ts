@@ -136,7 +136,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
               if (!orderIdToFetch || typeof orderIdToFetch !== 'string') throw new Error("PLACED event is missing a valid 'orderId'.");
               
               try {
-                  fullOrderPayload = await getIFoodOrderDetails(orderIdToFetch);
+                  fullOrderPayload = await getIFoodOrderDetails(orderIdToFetch, merchantId);
                   if (logId) await updateLogStatus(supabase, logId, 'FETCHED_DETAILS', undefined, fullOrderPayload);
               } catch (fetchError: any) {
                   if (logId) await updateLogStatus(supabase, logId, 'ERROR_FETCH_DETAILS', fetchError.message);

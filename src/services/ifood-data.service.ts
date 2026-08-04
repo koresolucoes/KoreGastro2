@@ -1,10 +1,16 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { IfoodOrderStatus } from '../models/db.models';
+import { SettingsStateService } from './settings-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class IfoodDataService {
+  private settingsState = inject(SettingsStateService);
+
+  private get merchantId(): string | undefined {
+    return this.settingsState.companyProfile()?.ifood_merchant_id || undefined;
+  }
 
   /**
    * Sends a status update to our backend proxy, which then securely communicates with the iFood API.
@@ -57,7 +63,8 @@ export class IfoodDataService {
         body: JSON.stringify({
           action,
           orderId: ifoodOrderId,
-          details: bodyDetails
+          details: bodyDetails,
+          merchantId: this.merchantId
         })
       });
 
@@ -86,7 +93,8 @@ export class IfoodDataService {
           action,
           orderId: ifoodOrderId,
           isLogistics: true, // Flag to differentiate from order status actions
-          details: details
+          details: details,
+          merchantId: this.merchantId
         })
       });
 
@@ -113,7 +121,8 @@ export class IfoodDataService {
           action,
           disputeId,
           isDispute: true,
-          details
+          details,
+          merchantId: this.merchantId
         })
       });
 
@@ -143,7 +152,8 @@ export class IfoodDataService {
           details: {
             alternativeId,
             body
-          }
+          },
+          merchantId: this.merchantId
         })
       });
       
@@ -165,7 +175,8 @@ export class IfoodDataService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             action: 'getEvidenceImage',
-            imageUrl: imageUrl
+            imageUrl: imageUrl,
+            merchantId: this.merchantId
         })
     });
 

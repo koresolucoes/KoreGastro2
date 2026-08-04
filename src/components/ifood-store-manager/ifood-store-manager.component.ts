@@ -77,13 +77,24 @@ export class IfoodStoreManagerComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.loadAllData();
+    if (!this.hasMerchantId()) {
+      this.isAuthorizing.set(true);
+      this.startAuthFlow();
+    } else {
+      this.loadAllData();
+    }
   }
+
+  isAuthorizing = signal(false);
+  authCode = signal('');
+  userCodeData = signal<any>(null);
 
   async loadAllData() {
     this.isLoadingStatus.set(true);
     this.isLoadingInterruptions.set(true);
     this.isLoadingHours.set(true);
+    this.isAuthorizing.set(false);
+    
     try {
       const [status, interruptions, hours] = await Promise.all([
         this.ifoodMenuService.getMerchantStatus(),
@@ -96,12 +107,73 @@ export class IfoodStoreManagerComponent implements OnInit {
       this.initializeHoursForm(hours);
 
     } catch (error: any) {
-      this.notificationService.show(`Erro ao carregar dados da loja iFood: ${error.message}`, 'error');
+      if (error.message.includes('No valid token') || error.message.includes('401') || error.message.includes('authorize the app')) {
+         this.isAuthorizing.set(true);
+         this.notificationService.show('É necessário autorizar o aplicativo no portal do iFood.', 'warning');
+         this.startAuthFlow();
+      } else {
+         this.notificationService.show(`Erro ao carregar dados da loja iFood: ${error.message}`, 'error');
+      }
     } finally {
       this.isLoadingStatus.set(false);
       this.isLoadingInterruptions.set(false);
       this.isLoadingHours.set(false);
     }
+  }
+
+  async startAuthFlow() {
+      try {
+          const res = await fetch('https://app.chefos.online/api/ifood-oauth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'userCode' })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Erro ao iniciar autorização');
+          
+          this.userCodeData.set(data);
+      } catch (err: any) {
+          this.notificationService.show(`Falha ao iniciar autorização: ${err.message}`, 'error');
+      }
+  }
+
+  async submitAuthCode() {
+      const code = this.authCode();
+      const userCodeInfo = this.userCodeData();
+      const currentTenantId = this.settingsState.companyProfile()?.ifood_merchant_id;
+
+      if (!code || !userCodeInfo) return;
+
+      this.isSaving.set(true);
+      try {
+          const res = await fetch('https://app.chefos.online/api/ifood-oauth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  action: 'token',
+                  authorizationCode: code,
+                  authorizationCodeVerifier: userCodeInfo.authorizationCodeVerifier,
+                  tenantId: currentTenantId // It can be null, the API will extract it
+              })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Erro ao obter token');
+
+          const tenantId = data.tenantId;
+
+          if (tenantId && tenantId !== currentTenantId) {
+              await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: tenantId });
+          }
+
+          this.notificationService.show('Integração autorizada com sucesso!', 'success');
+          this.isAuthorizing.set(false);
+          this.userCodeData.set(null);
+          this.loadAllData();
+      } catch (err: any) {
+          this.notificationService.show(`Erro ao autorizar: ${err.message}`, 'error');
+      } finally {
+          this.isSaving.set(false);
+      }
   }
 
   initializeHoursForm(apiHours: IfoodOpeningHours[]) {

@@ -844,8 +844,8 @@ export class SupabaseStateService {
               if (order.status !== 'OPEN') return;
               
               order.order_items.forEach(item => {
-                  if (item.status === 'PENDENTE' || item.status === 'PREPARANDO') {
-                       const itemCreated = new Date(item.status_timestamps?.['PENDENTE'] || item.created_at || order.timestamp).getTime();
+                  if (item.status === 'AGUARDANDO' || item.status === 'EM_PREPARO') {
+                       const itemCreated = new Date(item.status_timestamps?.['AGUARDANDO'] || item.created_at || order.timestamp).getTime();
                        const diffMins = (now - itemCreated) / 60000;
                        
                        if (diffMins > 30) {

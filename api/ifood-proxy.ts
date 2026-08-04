@@ -20,7 +20,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
   console.log('[Proxy] Received iFood action request from frontend.');
 
   try {
-    const { action, orderId, details, isLogistics, isDispute, disputeId, imageUrl } = request.body;
+    const { action, orderId, details, isLogistics, isDispute, disputeId, imageUrl, merchantId } = request.body;
 
     // --- Image Request Logic ---
     if (action === 'getEvidenceImage') {
@@ -28,7 +28,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         
         try {
             console.log(`[Proxy] Forwarding IMAGE request for URL: ${imageUrl}`);
-            const { imageBuffer, contentType } = await getIFoodImage(imageUrl);
+            const { imageBuffer, contentType } = await getIFoodImage(imageUrl, merchantId);
             console.log(`[Proxy] Successfully fetched image. Converting to base64.`);
             
             const base64Image = Buffer.from(imageBuffer).toString('base64');
@@ -55,12 +55,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
             switch(action) {
                 case 'acceptDispute':
                     console.log(`[Proxy] Forwarding DISPUTE action 'accept' for dispute '${disputeId}'.`);
-                    apiResponse = await sendIFoodDisputeAction(disputeId, 'accept', details); // details can be null or { reason: '...' }
+                    apiResponse = await sendIFoodDisputeAction(disputeId, 'accept', details, merchantId); // details can be null or { reason: '...' }
                     break;
                 case 'rejectDispute':
                     console.log(`[Proxy] Forwarding DISPUTE action 'reject' for dispute '${disputeId}'.`);
                     const rejectBody = { reason: details?.reason || 'Rejeitado pelo restaurante.' };
-                    apiResponse = await sendIFoodDisputeAction(disputeId, 'reject', rejectBody);
+                    apiResponse = await sendIFoodDisputeAction(disputeId, 'reject', rejectBody, merchantId);
                     break;
                 case 'proposeAlternative':
                     const { alternativeId, body } = details;
@@ -68,7 +68,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                         return response.status(400).json({ message: 'Missing "alternativeId" or "body" for proposing an alternative.' });
                     }
                     console.log(`[Proxy] Forwarding DISPUTE action 'proposeAlternative' for dispute '${disputeId}'.`);
-                    apiResponse = await sendIFoodDisputeAlternativeAction(disputeId, alternativeId, body);
+                    apiResponse = await sendIFoodDisputeAlternativeAction(disputeId, alternativeId, body, merchantId);
                     break;
                 default:
                     return response.status(400).json({ message: `Invalid dispute action provided: ${action}` });
@@ -85,7 +85,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if (isLogistics) {
       if (!orderId) return response.status(400).json({ message: 'Missing "orderId" for logistics action' });
       console.log(`[Proxy] Forwarding LOGISTICS action '${action}' for order '${orderId}' to iFood API.`);
-      const apiResponse = await sendIFoodLogisticsAction(orderId, action, details);
+      const apiResponse = await sendIFoodLogisticsAction(orderId, action, details, merchantId);
       console.log(`[Proxy] Logistics action for order '${orderId}' processed successfully.`);
       return response.status(200).json(apiResponse || { message: 'Logistics action processed successfully by iFood.' });
     }
@@ -124,7 +124,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     console.log(`[Proxy] Forwarding action '${apiAction}' for order '${orderId}' to iFood API.`);
-    await sendIFoodOrderAction(orderId, apiAction, body);
+    await sendIFoodOrderAction(orderId, apiAction, body, merchantId);
     
     // Most iFood order actions return 202 Accepted with no body.
     console.log(`[Proxy] Action for order '${orderId}' processed successfully.`);

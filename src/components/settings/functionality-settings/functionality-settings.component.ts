@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ReservationSettings, CompanyProfile, LoyaltySettings, LoyaltyReward, Recipe, LoyaltyRewardType, OperatingHours, Webhook, WebhookEvent } from '../../../models/db.models';
 import { SettingsDataService } from '../../../services/settings-data.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -16,7 +17,7 @@ import { WhatsappSettingsComponent } from '../whatsapp-settings.component';
 @Component({
   selector: 'app-functionality-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, WhatsappSettingsComponent],
+  imports: [CommonModule, FormsModule, RouterModule, WhatsappSettingsComponent],
   templateUrl: './functionality-settings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -41,10 +42,8 @@ export class FunctionalitySettingsComponent {
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-  webhookUrl = 'https://app.chefos.online/api/ifood-webhook';
 
   // Modal State Signals
-  isIFoodModalOpen = signal(false);
   isApiModalOpen = signal(false);
   isLoyaltyModalOpen = signal(false);
   isReservationModalOpen = signal(false);
@@ -147,21 +146,6 @@ export class FunctionalitySettingsComponent {
             this.loyaltySettingsForm.set({ is_enabled: false, points_per_real: 1 });
         }
     });
-  }
-
-  updateCompanyProfileField(field: 'ifood_merchant_id', value: string) {
-      this.companyProfileForm.update(form => ({ ...form, [field]: value }));
-  }
-
-  async saveIFoodSettings() {
-    const { success, error } = await this.settingsDataService.updateCompanyProfile({ 
-        ifood_merchant_id: this.companyProfileForm().ifood_merchant_id 
-    });
-    if (success) {
-      await this.notificationService.alert('Configurações do iFood salvas!', 'Sucesso');
-    } else {
-      await this.notificationService.alert(`Falha ao salvar: ${error?.message}`);
-    }
   }
 
   async copyToClipboard(text: string | null | undefined) {
