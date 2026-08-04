@@ -51,7 +51,11 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
     effect(() => {
         const hallId = this.hall().id;
         const allTables = this.tables();
-        this.localTables.set(allTables.filter(t => t.hall_id === hallId));
+        this.localTables.set(allTables.filter(t => t.hall_id === hallId).map(t => ({
+           ...t,
+           width: Math.max(130, t.width || 130),
+           height: Math.max(130, t.height || 130)
+        })));
     });
 
     effect(() => {
@@ -140,8 +144,8 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
         }
 
         const columnCount = 8;
-        const tableWidth = 100;
-        const tableHeight = 100;
+        const tableWidth = 130;
+        const tableHeight = 130;
         const gap = 40;
 
         const col = currentTablesInHall.length % columnCount;
@@ -194,69 +198,16 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
     ));
   }
 
-  toggleTableSeats(tableId: string, event: MouseEvent) {
+  changeTableSeats(tableId: string, delta: number, event: MouseEvent) {
     event.stopPropagation();
     this.localTables.update(tables => tables.map(t => {
       if (t.id === tableId) {
         let seats = t.seats || 4;
-        seats = seats === 2 ? 4 : seats === 4 ? 6 : seats === 6 ? 8 : 2;
+        seats = Math.max(1, seats + delta);
         return { ...t, seats };
       }
       return t;
     }));
-  }
-
-  getChairs(table: Table) {
-    const count = table.seats || 4;
-    return Array(count).fill(0).map((_, i) => i);
-  }
-
-  getChairStyle(table: Table, index: number, total: number) {
-    // Generate styles to position chairs around the table
-    // The table is relative, we position chairs absolutely, half-inside, half-outside
-    const isCircle = table.shape === 'circle';
-    let top = '50%';
-    let left = '50%';
-    let transform = '';
-    
-    if (isCircle) {
-      // Position evenly around the circle
-      const angle = (index / total) * 360;
-      const offset = (table.width / 2); 
-      return {
-        top: '50%',
-        left: '50%',
-        transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${offset}px)`
-      };
-    } else {
-      // Square positioning - position on the edge (0 or 100%) and translate(-50%, -50%)
-      if (total === 2) {
-        if (index === 0) { top = '0'; left = '50%'; transform = 'translate(-50%, -50%)'; }
-        if (index === 1) { top = '100%'; left = '50%'; transform = 'translate(-50%, -50%)'; }
-      } else if (total === 4) {
-        if (index === 0) { top = '0'; left = '50%'; transform = 'translate(-50%, -50%)'; }
-        if (index === 1) { top = '50%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
-        if (index === 2) { top = '100%'; left = '50%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
-        if (index === 3) { top = '50%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
-      } else if (total === 6) {
-        if (index === 0) { top = '0'; left = '30%'; transform = 'translate(-50%, -50%)'; }
-        if (index === 1) { top = '0'; left = '70%'; transform = 'translate(-50%, -50%)'; }
-        if (index === 2) { top = '50%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
-        if (index === 3) { top = '100%'; left = '70%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
-        if (index === 4) { top = '100%'; left = '30%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
-        if (index === 5) { top = '50%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
-      } else if (total === 8) {
-        if (index === 0) { top = '0'; left = '30%'; transform = 'translate(-50%, -50%)'; }
-        if (index === 1) { top = '0'; left = '70%'; transform = 'translate(-50%, -50%)'; }
-        if (index === 2) { top = '30%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
-        if (index === 3) { top = '70%'; left = '100%'; transform = 'translate(-50%, -50%) rotate(90deg)'; }
-        if (index === 4) { top = '100%'; left = '70%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
-        if (index === 5) { top = '100%'; left = '30%'; transform = 'translate(-50%, -50%) rotate(180deg)'; }
-        if (index === 6) { top = '70%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
-        if (index === 7) { top = '30%'; left = '0'; transform = 'translate(-50%, -50%) rotate(270deg)'; }
-      }
-      return { top, left, transform };
-    }
   }
 
   autoArrange() {
@@ -358,8 +309,8 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
 
       this.localTables.update(tables => tables.map(t => {
           if (t.id === resizingId) {
-              const newWidth = Math.max(50, tableW + dx);
-              const newHeight = Math.max(50, tableH + dy);
+              const newWidth = Math.max(130, tableW + dx);
+              const newHeight = Math.max(130, tableH + dy);
               return { ...t, width: newWidth, height: newHeight };
           }
           return t;

@@ -64,13 +64,6 @@
            [style.height.px]="table.height"
            [class.z-20]="selectedTable()?.id === table.id">
            
-        <!-- Chairs -->
-        @for (chair of getChairs(table); track chair; let i = $index; let count = $count) {
-          <div class="absolute w-4 h-4 bg-surface-elevated border-2 border-subtle rounded-md shadow-sm transition-all duration-300"
-               [ngStyle]="getChairStyle(table, i, count)">
-          </div>
-        }
-
         <!-- Table Shape -->
         <div
           (click)="tableClicked.emit(table)"
@@ -92,9 +85,13 @@
 
           <div class="flex-1 flex flex-col items-center justify-center min-w-0 z-10 text-center">
             <span class="text-3xl font-black drop-shadow-sm leading-none">{{ table.number }}</span>
+            <div class="mt-1 text-[10px] font-bold uppercase tracking-widest bg-black/10 px-2 py-0.5 rounded-full border border-black/5 opacity-80 flex items-center justify-center gap-1">
+              <span translate="no" class="notranslate material-symbols-outlined text-[12px]">person</span>
+              <span>{{ table.seats || 4 }}</span>
+            </div>
             
             @if (table.status === 'LIVRE') {
-              <div class="mt-2 text-[10px] font-bold uppercase tracking-widest bg-black/5 px-2 py-0.5 rounded-full border border-black/5 opacity-80">
+              <div class="mt-1 text-[10px] font-bold uppercase tracking-widest bg-black/5 px-2 py-0.5 rounded-full border border-black/5 opacity-80">
                 LIVRE
               </div>
             } @else {
@@ -243,13 +240,6 @@
            [style.height.px]="table.height"
            [class.z-30]="draggingTableId() === table.id">
            
-        <!-- Chairs -->
-        @for (chair of getChairs(table); track chair; let i = $index; let count = $count) {
-          <div class="absolute w-4 h-4 bg-surface-elevated border-2 border-subtle rounded-md shadow-sm transition-all duration-300"
-               [ngStyle]="getChairStyle(table, i, count)">
-          </div>
-        }
-
         <!-- Table Shape -->
         <div
           (mousedown)="onDragStart($event, table)"
@@ -263,8 +253,9 @@
         >
           <div class="flex-1 flex flex-col items-center justify-center min-w-0 pointer-events-none text-center">
             <span class="text-3xl font-black drop-shadow-sm leading-none">{{ table.number }}</span>
-            <div class="mt-2 text-[9px] font-bold uppercase tracking-widest bg-black/10 px-2 py-0.5 rounded-full border border-black/5 opacity-80">
-              {{ table.seats || 4 }} LUGARES
+            <div class="mt-2 text-[10px] font-bold uppercase tracking-widest bg-black/10 px-2 py-0.5 rounded-full border border-black/5 opacity-80 flex items-center justify-center gap-1">
+              <span translate="no" class="notranslate material-symbols-outlined text-[12px]">person</span>
+              <span>{{ table.seats || 4 }}</span>
             </div>
           </div>
 
@@ -285,15 +276,11 @@
             </span>
           </button>
           
-          <button
-            (click)="toggleTableSeats(table.id, $event)"
-            class="absolute -bottom-3 -left-3 w-8 h-8 bg-surface-elevated border border-muted text-muted rounded-full flex items-center justify-center hover:bg-warning hover:border-warning hover:text-white z-10 shadow-md transition-all opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100"
-            title="Mudar Assentos"
-          >
-            <span translate="no" class="notranslate material-symbols-outlined text-sm">
-              chair
-            </span>
-          </button>
+          <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-surface-elevated border border-muted rounded-full p-1 z-10 shadow-md transition-all opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100">
+             <button (click)="changeTableSeats(table.id, -1, $event)" class="w-6 h-6 rounded-full flex items-center justify-center text-muted hover:bg-surface hover:text-title" title="Menos Lugares"><span translate="no" class="notranslate material-symbols-outlined text-sm">remove</span></button>
+             <span class="text-xs font-bold w-4 text-center">{{ table.seats || 4 }}</span>
+             <button (click)="changeTableSeats(table.id, 1, $event)" class="w-6 h-6 rounded-full flex items-center justify-center text-muted hover:bg-surface hover:text-title" title="Mais Lugares"><span translate="no" class="notranslate material-symbols-outlined text-sm">add</span></button>
+          </div>
 
           <button
             (click)="deleteTable(table.id, $event)"
