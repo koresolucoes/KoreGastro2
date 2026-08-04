@@ -66,7 +66,7 @@ export const APP_ROUTES: Routes = [
   },
   { 
     path: 'ifood-kds', 
-    loadComponent: () => import('./components/ifood-kds/ifood-kds.component').then(m => m.IfoodKdsComponent), 
+    loadComponent: () => import('./components/kds/kds.component').then(m => m.KdsComponent), 
     canActivate: [roleGuard] 
   },
   { 

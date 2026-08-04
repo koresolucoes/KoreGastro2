@@ -151,7 +151,8 @@ export class SupabaseStateService {
         // Active Operations
         customers, orders, deliveryDrivers,
         // Loyalty & Reservations & Payment Terminals
-        loyaltySettings, loyaltyRewards, reservationSettings, paymentTerminals
+        loyaltySettings, loyaltyRewards, reservationSettings, paymentTerminals,
+        ifoodWebhookLogs
     ] = await Promise.all([
         supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         supabase.from('tables').select('*').eq('user_id', userId),
@@ -184,7 +185,10 @@ export class SupabaseStateService {
         supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
         supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('points_cost', { ascending: true }),
         supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('payment_terminals').select('*').eq('user_id', userId).eq('is_active', true)
+        supabase.from('payment_terminals').select('*').eq('user_id', userId).eq('is_active', true),
+        
+        // Webhook logs for realtime ifood status
+        supabase.from('ifood_webhook_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
     ]);
 
     // Populate State
@@ -214,6 +218,11 @@ export class SupabaseStateService {
     this.settingsState.loyaltyRewards.set(loyaltyRewards.data || []);
     this.settingsState.reservationSettings.set(reservationSettings.data || null);
     this.settingsState.paymentTerminals.set(paymentTerminals.data || []);
+    
+    // Add logs
+    if (ifoodWebhookLogs && ifoodWebhookLogs.data) {
+        this.ifoodState.ifoodWebhookLogs.set(ifoodWebhookLogs.data);
+    }
   }
 
   public async refetchRecipesData() {
@@ -329,6 +338,9 @@ export class SupabaseStateService {
     }
 
     switch (payload.table) {
+        case 'ifood_webhook_logs':
+            this.handleSimpleUpdate(this.ifoodState.ifoodWebhookLogs, payload);
+            break;
         case 'orders':
             this.handleOrderChange(payload);
             break;
@@ -534,10 +546,13 @@ export class SupabaseStateService {
         
         // Trigger notification for new orders
         if (!exists && payload.eventType === 'INSERT') {
+            const orderTotal = (processedOrder.ifood_payments as any)?.total?.orderAmount ?? 
+                               processedOrder.order_items?.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0) ?? 0;
+            
             if (processedOrder.order_type.startsWith('iFood')) {
                  this.notificationService.addSystemNotification({
-                    title: `Novo Pedido iFood #${processedOrder.id.slice(0,4).toUpperCase()}`,
-                    message: `Pedido recebido no valor de R$ ${processedOrder.total.toFixed(2)}.`,
+                    title: `Novo Pedido iFood #${processedOrder.ifood_display_id || processedOrder.id.slice(0,4).toUpperCase()}`,
+                    message: `Pedido recebido no valor de R$ ${orderTotal.toFixed(2)}.`,
                     type: 'ifood',
                     severity: 'info',
                     actionUrl: '/ifood-kds',
