@@ -51,6 +51,7 @@ export class SupabaseStateService {
   private currentUser = this.authService.currentUser;
   private realtimeChannel: any | null = null;
   private retryTimeout: any;
+  private kdsPollerInterval: any = null;
 
   // Flag to indicate Core data (permissions, profile) is ready
   isDataLoaded = signal(false);
@@ -291,11 +292,14 @@ export class SupabaseStateService {
         clearTimeout(this.retryTimeout);
         this.retryTimeout = null;
     }
+    this.stopKdsPoller();
   }
 
   private subscribeToChanges(userId: string) {
     this.unsubscribeFromChanges();
     
+    this.startKdsPoller();
+
     this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
       .on(
         'postgres_changes', 
@@ -365,6 +369,14 @@ export class SupabaseStateService {
              this.handleLeaveRequestChange(payload);
              break;
 
+        case 'whatsapp_messages':
+             this.handleWhatsAppMessage(payload);
+             break;
+             
+        case 'temperature_logs':
+             this.handleTemperatureLogChange(payload);
+             break;
+        
         // Loyalty Updates
         case 'loyalty_settings':
              if (payload.new) {
@@ -435,6 +447,19 @@ export class SupabaseStateService {
           });
       }
       this.handleSimpleUpdate(this.hrState.leaveRequests, payload, '*, employees(name, role)');
+  }
+
+  private async handleWhatsAppMessage(payload: any) {
+      if (payload.eventType === 'INSERT' && payload.new.sender_type === 'customer') {
+           this.notificationService.addSystemNotification({
+              title: `Nova Mensagem no WhatsApp`,
+              message: payload.new.content ? (payload.new.content.substring(0, 50) + (payload.new.content.length > 50 ? '...' : '')) : 'Nova mensagem recebida.',
+              type: 'whatsapp',
+              severity: 'info',
+              actionUrl: '/whatsapp-chats',
+              actionLabel: 'Ver Chat'
+           });
+      }
   }
 
   private async handleTableChange(payload: any) {
@@ -592,6 +617,18 @@ export class SupabaseStateService {
           if (payload.new.date.startsWith(today)) {
               this.cashierState.transactions.update(txs => [...txs, payload.new]);
               this.dashboardState.dashboardTransactions.update(txs => [...txs, payload.new]);
+          }
+          
+          if (payload.new.type === 'Estorno' || (payload.new.description && payload.new.description.toLowerCase().includes('estorno'))) {
+              this.notificationService.addSystemNotification({
+                 title: `Estorno Registrado`,
+                 message: `Um estorno de R$ ${Math.abs(payload.new.amount).toFixed(2)} foi lançado no caixa.`,
+                 type: 'payment',
+                 severity: 'warning',
+                 actionUrl: '/cashier',
+                 actionLabel: 'Ver Caixa',
+                 showToast: true
+              });
           }
       }
   }
@@ -795,5 +832,67 @@ export class SupabaseStateService {
     this.dashboardState.performanceTransactions.set(transactionsRes.data || []);
     this.dashboardState.performanceCompletedOrders.set(this.processCompletedOrdersWithPrices(completedOrdersRes.data || []));
     return { success: true, error: null };
+  }
+
+  private startKdsPoller() {
+      this.stopKdsPoller();
+      this.kdsPollerInterval = setInterval(() => {
+          const orders = this.posState.orders();
+          const now = Date.now();
+          
+          orders.forEach(order => {
+              if (order.status !== 'OPEN') return;
+              
+              order.order_items.forEach(item => {
+                  if (item.status === 'PENDENTE' || item.status === 'PREPARANDO') {
+                       const itemCreated = new Date(item.status_timestamps?.['PENDENTE'] || item.created_at || order.timestamp).getTime();
+                       const diffMins = (now - itemCreated) / 60000;
+                       
+                       if (diffMins > 30) {
+                           const hasActiveNotif = this.notificationService.systemNotifications().find(n => n.type === 'kds' && n.message.includes(`Pedido #${order.id.slice(0, 4).toUpperCase()}`));
+                           if (!hasActiveNotif) {
+                               this.notificationService.addSystemNotification({
+                                  title: `Atraso na Cozinha`,
+                                  message: `O item ${item.name} do Pedido #${order.id.slice(0, 4).toUpperCase()} está há mais de 30 min aguardando preparo.`,
+                                  type: 'kds',
+                                  severity: 'error',
+                                  actionUrl: '/kds',
+                                  actionLabel: 'Abrir KDS',
+                                  showToast: true
+                               });
+                           }
+                       }
+                  }
+              });
+          });
+      }, 60000); // Check every 60 seconds
+  }
+  
+  private stopKdsPoller() {
+      if (this.kdsPollerInterval) {
+          clearInterval(this.kdsPollerInterval);
+          this.kdsPollerInterval = null;
+      }
+  }
+
+  private async handleTemperatureLogChange(payload: any) {
+      if (payload.eventType === 'INSERT') {
+          const log = payload.new;
+          const { data: equipment } = await supabase.from('equipment').select('*').eq('id', log.equipment_id).single();
+          if (equipment && (equipment.min_temp !== null || equipment.max_temp !== null)) {
+               if ((equipment.min_temp !== null && log.temperature < equipment.min_temp) || 
+                   (equipment.max_temp !== null && log.temperature > equipment.max_temp)) {
+                   this.notificationService.addSystemNotification({
+                      title: `Alerta de Temperatura: ${equipment.name}`,
+                      message: `A temperatura registrada (${log.temperature}°C) está fora do padrão (Min: ${equipment.min_temp ?? '-'}, Max: ${equipment.max_temp ?? '-'}).`,
+                      type: 'inventory',
+                      severity: 'error',
+                      actionUrl: '/temperatures',
+                      actionLabel: 'Ver Registros',
+                      showToast: true
+                   });
+               }
+          }
+      }
   }
 }

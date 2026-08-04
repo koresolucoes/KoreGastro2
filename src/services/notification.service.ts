@@ -17,7 +17,7 @@ export interface NotificationState {
 
 export type NotificationType = 'ifood' | 'kds' | 'inventory' | 'waiter' | 'payment' | 'rh' | 'whatsapp' | 'system';
 export type NotificationSeverity = 'info' | 'warning' | 'error' | 'success';
-export type NotificationFilter = 'all' | 'unread' | 'waiter' | 'ifood' | 'inventory' | 'rh' | 'whatsapp';
+export type NotificationFilter = 'all' | 'unread' | 'waiter' | 'ifood' | 'inventory' | 'rh' | 'whatsapp' | 'kds' | 'payment';
 
 export interface SystemNotification {
   id: string;

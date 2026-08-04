@@ -145,6 +145,14 @@
             >
               iFood
             </button>
+            
+            <button 
+              (click)="setNotificationFilter('kds', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0"
+              [class]="activeFilter() === 'kds' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              KDS
+            </button>
 
             <button 
               (click)="setNotificationFilter('inventory', $event)" 
@@ -152,6 +160,22 @@
               [class]="activeFilter() === 'inventory' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
             >
               Estoque
+            </button>
+
+            <button 
+              (click)="setNotificationFilter('payment', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0"
+              [class]="activeFilter() === 'payment' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              Pagamentos
+            </button>
+
+            <button 
+              (click)="setNotificationFilter('whatsapp', $event)" 
+              class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0"
+              [class]="activeFilter() === 'whatsapp' ? 'bg-brand text-white shadow-sm' : 'bg-surface border border-subtle text-muted hover:text-title'"
+            >
+              WhatsApp
             </button>
           </div>
 
