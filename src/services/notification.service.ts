@@ -1,6 +1,8 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { ToastService } from './toast.service';
 import { SoundNotificationService } from './sound-notification.service';
+import { UnitContextService } from './unit-context.service';
+import { supabase } from './supabase-client';
 
 export interface NotificationState {
   isOpen: boolean;
@@ -36,6 +38,7 @@ export interface SystemNotification {
 export class NotificationService {
   private toastService = inject(ToastService);
   private soundService = inject(SoundNotificationService);
+  private unitContext = inject(UnitContextService);
 
   notificationState = signal<NotificationState>({
     isOpen: false,
@@ -47,79 +50,9 @@ export class NotificationService {
   });
 
   promptInputValue = signal('');
-
   private resolvePromise!: (value: any) => void;
 
-  // System Notifications Central State
-  systemNotifications = signal<SystemNotification[]>([
-    {
-      id: 'notif-1',
-      title: 'Chamar Garçom - Mesa 04',
-      message: 'Cliente da Mesa 04 (Salão Principal) solicitou atendimento presencial.',
-      timestamp: new Date(Date.now() - 3 * 60 * 1000),
-      read: false,
-      type: 'waiter',
-      severity: 'warning',
-      actionUrl: '/pos',
-      actionLabel: 'Atender Mesa'
-    },
-    {
-      id: 'notif-2',
-      title: 'Novo Pedido iFood #4829',
-      message: 'Pedido iFood recebido: 2x Burger Artesanal + 2x Batata Rústica + 2x Bebidas.',
-      timestamp: new Date(Date.now() - 15 * 60 * 1000),
-      read: false,
-      type: 'ifood',
-      severity: 'info',
-      actionUrl: '/ifood-kds',
-      actionLabel: 'Ver no KDS iFood'
-    },
-    {
-      id: 'notif-3',
-      title: 'Estoque Crítico: Filé Mignon',
-      message: 'Insumo Filé Mignon Alcatra atingiu 1,2 kg (Estoque Mínimo: 3,0 kg).',
-      timestamp: new Date(Date.now() - 42 * 60 * 1000),
-      read: false,
-      type: 'inventory',
-      severity: 'warning',
-      actionUrl: '/inventory',
-      actionLabel: 'Ver Estoque'
-    },
-    {
-      id: 'notif-4',
-      title: 'Alerta de Atraso na Cozinha',
-      message: 'Pedido Delivery #1042 está há 28min na praça Grelha sem ser finalizado.',
-      timestamp: new Date(Date.now() - 65 * 60 * 1000),
-      read: true,
-      type: 'kds',
-      severity: 'error',
-      actionUrl: '/kds',
-      actionLabel: 'Abrir KDS'
-    },
-    {
-      id: 'notif-5',
-      title: 'Solicitação de Ausência RH',
-      message: 'O colaborador João Silva solicitou abono de falta para o dia 15/08.',
-      timestamp: new Date(Date.now() - 120 * 60 * 1000),
-      read: true,
-      type: 'rh',
-      severity: 'info',
-      actionUrl: '/leave-management',
-      actionLabel: 'Analisar RH'
-    },
-    {
-      id: 'notif-6',
-      title: 'Mensagem de Cliente no WhatsApp',
-      message: 'Cliente Maria Santos: "Boa tarde, gostaria de agendar uma mesa para 6 pessoas hoje."',
-      timestamp: new Date(Date.now() - 180 * 60 * 1000),
-      read: true,
-      type: 'whatsapp',
-      severity: 'info',
-      actionUrl: '/whatsapp-chats',
-      actionLabel: 'Responder Chat'
-    }
-  ]);
-
+  systemNotifications = signal<SystemNotification[]>([]);
   activeFilter = signal<NotificationFilter>('all');
   soundEnabled = signal<boolean>(true);
 
@@ -138,68 +71,199 @@ export class NotificationService {
     return list.filter(n => n.type === filter);
   });
 
-  /**
-   * Adds a new system notification and triggers sound / toast feedback.
-   */
-  addSystemNotification(
-    data: Omit<SystemNotification, 'id' | 'timestamp' | 'read'> & { showToast?: boolean }
-  ): SystemNotification {
-    const newNotif: SystemNotification = {
-      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      title: data.title,
-      message: data.message,
-      timestamp: new Date(),
-      read: false,
-      type: data.type,
-      severity: data.severity,
-      actionUrl: data.actionUrl,
-      actionLabel: data.actionLabel,
-      metadata: data.metadata,
+  constructor() {
+    effect(() => {
+      const storeId = this.unitContext.activeUnitId();
+      if (storeId) {
+        this.loadNotifications(storeId);
+        this.subscribeToNotifications(storeId);
+      }
+    });
+  }
+
+  private async loadNotifications(storeId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        return;
+      }
+
+      if (data) {
+        this.systemNotifications.set(data.map(this.mapDbToModel));
+      }
+    } catch (e) {
+      console.error('Failed to load notifications', e);
+    }
+  }
+
+  private subscribeToNotifications(storeId: string) {
+    supabase.channel(`notifications:store_id=eq.${storeId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `store_id=eq.${storeId}`
+        },
+        (payload) => {
+          const newNotif = this.mapDbToModel(payload.new);
+          this.systemNotifications.update(current => [newNotif, ...current]);
+          
+          if (this.soundEnabled()) {
+             this.playSound(newNotif.type, newNotif.severity);
+          }
+          
+          this.show(`${newNotif.title}: ${newNotif.message}`, newNotif.severity === 'error' ? 'error' : newNotif.severity === 'warning' ? 'warning' : 'info', 4500);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `store_id=eq.${storeId}`
+        },
+        (payload) => {
+          const updated = this.mapDbToModel(payload.new);
+          this.systemNotifications.update(list => list.map(n => n.id === updated.id ? updated : n));
+        }
+      )
+      .on(
+         'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `store_id=eq.${storeId}`
+        },
+        (payload) => {
+           this.systemNotifications.update(list => list.filter(n => n.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+  }
+
+  private mapDbToModel(dbRecord: any): SystemNotification {
+    return {
+      id: dbRecord.id,
+      title: dbRecord.title,
+      message: dbRecord.message,
+      timestamp: new Date(dbRecord.created_at),
+      read: dbRecord.is_read,
+      type: dbRecord.type as NotificationType,
+      severity: dbRecord.severity as NotificationSeverity,
+      actionUrl: dbRecord.action_url,
+      actionLabel: dbRecord.action_label,
+      metadata: dbRecord.metadata,
     };
-
-    this.systemNotifications.update(current => [newNotif, ...current]);
-
-    // Play Sound Notification according to type and severity
-    if (this.soundEnabled()) {
-      if (data.type === 'waiter' || data.type === 'ifood') {
+  }
+  
+  private playSound(type: string, severity: string) {
+      if (type === 'waiter' || type === 'ifood') {
         this.soundService.playNewOrderSound();
-      } else if (data.severity === 'error' || data.type === 'kds') {
+      } else if (severity === 'error' || type === 'kds') {
         this.soundService.playDelayedOrderSound();
-      } else if (data.severity === 'warning') {
+      } else if (severity === 'warning') {
         this.soundService.playAllergyAlertSound();
       } else {
         this.soundService.playConfirmationSound();
       }
-    }
-
-    // Show a short non-blocking toast
-    if (data.showToast !== false) {
-      this.show(`${data.title}: ${data.message}`, data.severity === 'error' ? 'error' : data.severity === 'warning' ? 'warning' : 'info', 4500);
-    }
-
-    return newNotif;
   }
 
-  markAsRead(id: string): void {
+  async addSystemNotification(
+    data: Omit<SystemNotification, 'id' | 'timestamp' | 'read'> & { showToast?: boolean }
+  ): Promise<SystemNotification | null> {
+    const storeId = this.unitContext.activeUnitId();
+    if (!storeId) return null;
+
+    const { data: inserted, error } = await supabase
+      .from('notifications')
+      .insert({
+        store_id: storeId,
+        title: data.title,
+        message: data.message,
+        type: data.type,
+        severity: data.severity,
+        action_url: data.actionUrl,
+        action_label: data.actionLabel,
+        metadata: data.metadata,
+        is_read: false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Fallback to local memory for notification due to DB error (table might not exist yet):', error);
+      const fallbackNotif: SystemNotification = {
+        id: `local-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        title: data.title,
+        message: data.message,
+        timestamp: new Date(),
+        read: false,
+        type: data.type,
+        severity: data.severity,
+        actionUrl: data.actionUrl,
+        actionLabel: data.actionLabel,
+        metadata: data.metadata,
+      };
+      
+      this.systemNotifications.update(current => [fallbackNotif, ...current]);
+      
+      if (this.soundEnabled()) {
+         this.playSound(fallbackNotif.type, fallbackNotif.severity);
+      }
+      if (data.showToast !== false) {
+         this.show(`${fallbackNotif.title}: ${fallbackNotif.message}`, fallbackNotif.severity === 'error' ? 'error' : fallbackNotif.severity === 'warning' ? 'warning' : 'info', 4500);
+      }
+
+      return fallbackNotif;
+    }
+    
+    return this.mapDbToModel(inserted);
+  }
+
+  async markAsRead(id: string): Promise<void> {
+    // Optimistic update
     this.systemNotifications.update(list =>
       list.map(n => (n.id === id ? { ...n, read: true } : n))
     );
+    
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
   }
 
-  markAllAsRead(): void {
+  async markAllAsRead(): Promise<void> {
+    const storeId = this.unitContext.activeUnitId();
+    if (!storeId) return;
+
     this.systemNotifications.update(list =>
       list.map(n => ({ ...n, read: true }))
     );
     this.show('Todas as notificações foram marcadas como lidas.', 'success', 2500);
+    
+    await supabase.from('notifications').update({ is_read: true }).eq('store_id', storeId).eq('is_read', false);
   }
 
-  removeNotification(id: string): void {
+  async removeNotification(id: string): Promise<void> {
     this.systemNotifications.update(list => list.filter(n => n.id !== id));
+    await supabase.from('notifications').delete().eq('id', id);
   }
 
-  clearAll(): void {
+  async clearAll(): Promise<void> {
+    const storeId = this.unitContext.activeUnitId();
+    if (!storeId) return;
+
     this.systemNotifications.set([]);
     this.show('Central de Notificações limpa com sucesso.', 'info', 2500);
+    await supabase.from('notifications').delete().eq('store_id', storeId);
   }
 
   setFilter(filter: NotificationFilter): void {
@@ -213,9 +277,6 @@ export class NotificationService {
     return this.soundEnabled();
   }
 
-  /**
-   * Helper simulation triggers for instant demo/testing
-   */
   simulateNotification(category?: NotificationType): void {
     const types: NotificationType[] = category ? [category] : ['waiter', 'ifood', 'inventory', 'kds', 'rh', 'whatsapp', 'payment'];
     const chosenType = types[Math.floor(Math.random() * types.length)];
@@ -297,9 +358,6 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Helper to format human-readable relative time
-   */
   getTimeAgo(date: Date): string {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - new Date(date).getTime()) / 1000);
@@ -316,23 +374,10 @@ export class NotificationService {
     return `${day}/${month} às ${hours}:${minutes}`;
   }
 
-  /**
-   * Shows a short, non-blocking notification message.
-   * @param message The message to display.
-   * @param type The type of toast ('success', 'error', 'info', 'warning').
-   * @param duration The duration in milliseconds.
-   */
   show(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration = 4000) {
     this.toastService.show(message, type, duration);
   }
 
-  /**
-   * Shows a modal dialog that requires user interaction. Use for critical information.
-   * For simple success/error messages, prefer `show()`.
-   * @param message The message to display.
-   * @param title The title of the modal.
-   * @deprecated Use `show()` for non-blocking feedback or `confirm()` for user decisions. This is for critical, blocking alerts.
-   */
   alert(message: string, title: string = 'Aviso'): Promise<void> {
     this.notificationState.set({
       isOpen: true,

@@ -19,6 +19,7 @@ import { IfoodStateService } from './ifood-state.service';
 import { SubscriptionStateService } from './subscription-state.service';
 import { DashboardStateService } from './dashboard-state.service';
 import { DemoService } from './demo.service';
+import { NotificationService } from './notification.service';
 import * as mockData from '../data/mock-data';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { DeliveryStateService } from './delivery-state.service';
@@ -45,6 +46,7 @@ export class SupabaseStateService {
   private dashboardState = inject(DashboardStateService);
   private demoService = inject(DemoService);
   private deliveryState = inject(DeliveryStateService);
+  private notificationService = inject(NotificationService);
 
   private currentUser = this.authService.currentUser;
   private realtimeChannel: any | null = null;
@@ -330,7 +332,7 @@ export class SupabaseStateService {
             this.handleOrderItemChange(payload);
             break;
         case 'tables': 
-            this.handleSimpleUpdate(this.posState.tables, payload); 
+            this.handleTableChange(payload); 
             break;
         case 'delivery_drivers':
             this.handleSimpleUpdate(this.deliveryState.deliveryDrivers, payload);
@@ -346,7 +348,9 @@ export class SupabaseStateService {
             this.refetchRecipesData();
             break;
         case 'employees': this.handleSimpleUpdate(this.hrState.employees, payload); break;
-        case 'ingredients': this.handleSimpleUpdate(this.inventoryState.ingredients, payload, '*, ingredient_categories(name), suppliers(name)'); break;
+        case 'ingredients': 
+             this.handleIngredientChange(payload);
+             break;
         case 'station_stocks': this.handleSimpleUpdate(this.inventoryState.stationStocks, payload, '*, stations(name), ingredients(name, unit)'); break;
         case 'requisitions': this.handleSimpleUpdate(this.inventoryState.requisitions, payload, '*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name)'); break;
         
@@ -356,6 +360,9 @@ export class SupabaseStateService {
              break;
         case 'shifts':
              this.handleShiftChange(payload);
+             break;
+        case 'leave_requests':
+             this.handleLeaveRequestChange(payload);
              break;
 
         // Loyalty Updates
@@ -394,6 +401,59 @@ export class SupabaseStateService {
              this.handleProductionTaskChange(payload);
              break;
     }
+  }
+
+  private async handleIngredientChange(payload: any) {
+      if (payload.eventType === 'UPDATE') {
+          const oldStock = payload.old.stock;
+          const newStock = payload.new.stock;
+          const minStock = payload.new.min_stock;
+          
+          if (oldStock > minStock && newStock <= minStock) {
+               this.notificationService.addSystemNotification({
+                  title: `Estoque Crítico: ${payload.new.name}`,
+                  message: `Estoque atingiu ${newStock} ${payload.new.unit} (Mínimo: ${minStock}).`,
+                  type: 'inventory',
+                  severity: 'warning',
+                  actionUrl: '/inventory',
+                  actionLabel: 'Ver Estoque'
+               });
+          }
+      }
+      this.handleSimpleUpdate(this.inventoryState.ingredients, payload, '*, ingredient_categories(name), suppliers(name)');
+  }
+
+  private async handleLeaveRequestChange(payload: any) {
+      if (payload.eventType === 'INSERT') {
+          this.notificationService.addSystemNotification({
+              title: `Nova Solicitação de Ausência RH`,
+              message: `Um colaborador solicitou ausência para análise.`,
+              type: 'rh',
+              severity: 'info',
+              actionUrl: '/leave-management',
+              actionLabel: 'Analisar RH'
+          });
+      }
+      this.handleSimpleUpdate(this.hrState.leaveRequests, payload, '*, employees(name, role)');
+  }
+
+  private async handleTableChange(payload: any) {
+      if (payload.eventType === 'UPDATE') {
+          const oldStatus = payload.old.status;
+          const newStatus = payload.new.status;
+          
+          if (oldStatus !== 'CHAMANDO_GARCOM' && newStatus === 'CHAMANDO_GARCOM') {
+               this.notificationService.addSystemNotification({
+                  title: `Chamar Garçom - Mesa ${payload.new.number}`,
+                  message: `A Mesa ${payload.new.number} solicitou atendimento.`,
+                  type: 'waiter',
+                  severity: 'warning',
+                  actionUrl: '/pos',
+                  actionLabel: 'Atender Mesa'
+               });
+          }
+      }
+      this.handleSimpleUpdate(this.posState.tables, payload);
   }
 
   // Generic Helper for simple flat lists
@@ -446,6 +506,30 @@ export class SupabaseStateService {
 
     this.posState.orders.update(orders => {
         const exists = orders.find(o => o.id === processedOrder.id);
+        
+        // Trigger notification for new orders
+        if (!exists && payload.eventType === 'INSERT') {
+            if (processedOrder.order_type.startsWith('iFood')) {
+                 this.notificationService.addSystemNotification({
+                    title: `Novo Pedido iFood #${processedOrder.id.slice(0,4).toUpperCase()}`,
+                    message: `Pedido recebido no valor de R$ ${processedOrder.total.toFixed(2)}.`,
+                    type: 'ifood',
+                    severity: 'info',
+                    actionUrl: '/ifood-kds',
+                    actionLabel: 'Ver no KDS'
+                 });
+            } else if (processedOrder.order_type === 'Delivery') {
+                 this.notificationService.addSystemNotification({
+                    title: `Novo Pedido Delivery #${processedOrder.id.slice(0,4).toUpperCase()}`,
+                    message: `Pedido recebido.`,
+                    type: 'waiter',
+                    severity: 'info',
+                    actionUrl: '/delivery',
+                    actionLabel: 'Ver Entregas'
+                 });
+            }
+        }
+
         if (isRelevantForPos) {
             return exists ? orders.map(o => o.id === processedOrder.id ? processedOrder : o) : [...orders, processedOrder];
         } else {

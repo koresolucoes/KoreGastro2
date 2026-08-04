@@ -219,15 +219,15 @@ export class OrderPanelComponent implements OnInit {
     const validItems = order.order_items.filter(i => i.status !== 'CANCELADO' && i.status !== 'PENDENTE');
     if (validItems.length === 0) return 0;
     
-    const readyItems = validItems.filter(i => i.status === 'PRONTO' || i.status === 'ENTREGUE');
+    const readyItems = validItems.filter(i => i.status === 'SERVIDO' || i.status === ('PRONTO' as any));
     return Math.round((readyItems.length / validItems.length) * 100);
   });
 
   // Order Duration
   orderOpenedTime = computed(() => {
     const order = this.currentOrder();
-    if (!order?.created_at) return null;
-    const created = new Date(order.created_at);
+    if (!order?.timestamp) return null;
+    const created = new Date(order.timestamp);
     const now = new Date();
     const diffMs = now.getTime() - created.getTime();
     const diffMins = Math.floor(diffMs / 60000);
