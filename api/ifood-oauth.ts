@@ -29,6 +29,73 @@ export default async function handler(request: VercelRequest, response: VercelRe
     try {
         const { action } = request.body || request.query;
 
+        if (action === 'clientCredentials') {
+            const params = new URLSearchParams();
+            params.append('grantType', 'client_credentials');
+            params.append('clientId', clientId);
+            params.append('clientSecret', clientSecret);
+
+            const iFoodRes = await fetch(`${iFoodApiBaseUrl}/authentication/v1.0/oauth/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            });
+
+            if (!iFoodRes.ok) {
+                const err = await iFoodRes.text();
+                return response.status(iFoodRes.status).json({ message: `Failed to get token via client_credentials: ${err}` });
+            }
+
+            const tokenData = await iFoodRes.json();
+            
+            let tenantId = request.body.tenantId;
+
+            if (tokenData.accessToken) {
+                try {
+                    const tokenParts = tokenData.accessToken.split('.');
+                    if (tokenParts.length === 3) {
+                        const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString('utf8'));
+                        if (payload.tenantId) {
+                            tenantId = payload.tenantId;
+                        }
+                    }
+                } catch (e) {
+                    console.error('[iFood OAuth] Error parsing JWT', e);
+                }
+            }
+            
+            // If we don't have a specific tenantId from token or request body, fetch merchants
+            if (!tenantId) {
+                try {
+                    const merchantRes = await fetch(`${iFoodApiBaseUrl}/merchant/v1.0/merchants`, {
+                        headers: { 'Authorization': `Bearer ${tokenData.accessToken}` }
+                    });
+                    if (merchantRes.ok) {
+                        const merchants = await merchantRes.json();
+                        if (merchants && merchants.length > 0) {
+                            tenantId = merchants[0].id;
+                        }
+                    }
+                } catch(e) {
+                    console.error('[iFood OAuth] Could not fetch merchants', e);
+                }
+            }
+            
+            tenantId = tenantId || 'default_tenant';
+
+            const now = new Date();
+            const expiresAt = new Date(now.getTime() + ((tokenData.expiresIn || 3600) * 1000));
+            
+            await supabase.from('system_cache').upsert({
+                key: `ifood_access_token_${tenantId}`,
+                value: tokenData.accessToken,
+                expires_at: expiresAt.toISOString(),
+                updated_at: new Date().toISOString()
+            });
+
+            return response.status(200).json({ success: true, tenantId, message: 'Autenticado via Client Credentials' });
+        }
+
         if (action === 'userCode') {
             // Step 1: Request userCode
             const params = new URLSearchParams();
@@ -94,9 +161,23 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 }
             }
 
-            if (!tenantId) {
-                return response.status(400).json({ message: 'Could not extract tenantId from token and none was provided.' });
+            if (!tenantId && tokenData.accessToken) {
+                try {
+                    const merchantRes = await fetch(`${iFoodApiBaseUrl}/merchant/v1.0/merchants`, {
+                        headers: { 'Authorization': `Bearer ${tokenData.accessToken}` }
+                    });
+                    if (merchantRes.ok) {
+                        const merchants = await merchantRes.json();
+                        if (merchants && merchants.length > 0) {
+                            tenantId = merchants[0].id;
+                        }
+                    }
+                } catch(e) {
+                    console.error('[iFood OAuth] Could not fetch merchants', e);
+                }
             }
+
+            tenantId = tenantId || 'default_tenant';
             
             // Save tokens to system_cache mapped to tenantId
             const now = new Date();

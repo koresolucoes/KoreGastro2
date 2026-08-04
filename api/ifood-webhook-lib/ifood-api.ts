@@ -92,11 +92,38 @@ export async function getIFoodAccessToken(tenantId?: string): Promise<string> {
                 return accessToken;
             } else {
                 console.error(`[iFood API] Failed to refresh token for tenant ${tenantId}.`);
-                // Fallthrough to error or maybe legacy flow if not fully migrated? 
-                throw new Error('Failed to refresh iFood token. User must re-authenticate.');
             }
         }
         
+        // 3. Fallback for Centralized Apps (no refresh token or refresh failed)
+        console.log(`[iFood API] Attempting client_credentials fallback for tenant ${tenantId}...`);
+        const tokenParams = new URLSearchParams({
+            grantType: 'client_credentials',
+            clientId: clientId,
+            clientSecret: clientSecret,
+        });
+
+        const tokenResponse = await fetch(`${iFoodApiBaseUrl}/authentication/v1.0/oauth/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: tokenParams,
+        });
+
+        if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            const accessToken = tokenData.accessToken;
+            const expiresAt = new Date(now.getTime() + (tokenData.expiresIn * 1000));
+            
+            await supabase.from('system_cache').upsert({
+                key: accessCacheKey,
+                value: accessToken,
+                expires_at: expiresAt.toISOString(),
+                updated_at: new Date().toISOString()
+            });
+
+            return accessToken;
+        }
+
         throw new Error('No valid token or refresh token found for this merchant. Please authorize the app in iFood.');
     }
 

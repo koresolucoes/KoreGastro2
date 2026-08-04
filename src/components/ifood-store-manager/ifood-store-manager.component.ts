@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { IfoodMenuService, IfoodMerchantStatus, IfoodInterruption, IfoodOpeningHours } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
 import { SettingsStateService } from '../../services/settings-state.service';
+import { SettingsDataService } from '../../services/settings-data.service';
 
 interface ShiftForm {
   id: string; // A temporary ID for Angular's trackBy
@@ -31,6 +32,7 @@ export class IfoodStoreManagerComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   private settingsState = inject(SettingsStateService);
+  private settingsDataService = inject(SettingsDataService);
   hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.ifood_merchant_id);
   isLoadingStatus = signal(true);
   isLoadingInterruptions = signal(true);
@@ -77,6 +79,18 @@ export class IfoodStoreManagerComponent implements OnInit {
   });
 
   ngOnInit() {
+    const savedUserCode = localStorage.getItem('ifood_user_code_data');
+    if (savedUserCode) {
+        try {
+            const parsed = JSON.parse(savedUserCode);
+            if (Date.now() - parsed.timestamp < 15 * 60 * 1000) {
+                this.userCodeData.set(parsed.data);
+            } else {
+                localStorage.removeItem('ifood_user_code_data');
+            }
+        } catch(e) {}
+    }
+
     if (!this.hasMerchantId()) {
       this.isAuthorizing.set(true);
       this.startAuthFlow();
@@ -122,16 +136,46 @@ export class IfoodStoreManagerComponent implements OnInit {
   }
 
   async startAuthFlow() {
+      if (this.userCodeData()) {
+          return;
+      }
       try {
-          const res = await fetch('https://app.chefos.online/api/ifood-oauth', {
+          const currentTenantId = this.settingsState.companyProfile()?.ifood_merchant_id;
+          const res = await fetch('/api/ifood-oauth', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'userCode' })
           });
           const data = await res.json();
-          if (!res.ok) throw new Error(data.message || 'Erro ao iniciar autorização');
+          if (!res.ok) {
+              if (data.message && data.message.includes('Grant type not authorized')) {
+                  // Fallback to client credentials (Centralized App)
+                  this.notificationService.show('Tentando autorização direta (Centralizada)...', 'info');
+                  const resCreds = await fetch('/api/ifood-oauth', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'clientCredentials', tenantId: currentTenantId })
+                  });
+                  const dataCreds = await resCreds.json();
+                  if (!resCreds.ok) throw new Error(dataCreds.message || 'Erro na autorização direta');
+                  
+                  const tenantId = dataCreds.tenantId;
+                  if (tenantId && tenantId !== 'default_tenant' && tenantId !== currentTenantId) {
+                      await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: tenantId });
+                  }
+                  
+                  this.notificationService.show('Integração autorizada com sucesso!', 'success');
+                  this.isAuthorizing.set(false);
+                  this.userCodeData.set(null);
+                  localStorage.removeItem('ifood_user_code_data');
+                  this.loadAllData();
+                  return;
+              }
+              throw new Error(data.message || 'Erro ao iniciar autorização');
+          }
           
           this.userCodeData.set(data);
+          localStorage.setItem('ifood_user_code_data', JSON.stringify({ data, timestamp: Date.now() }));
       } catch (err: any) {
           this.notificationService.show(`Falha ao iniciar autorização: ${err.message}`, 'error');
       }
@@ -146,7 +190,7 @@ export class IfoodStoreManagerComponent implements OnInit {
 
       this.isSaving.set(true);
       try {
-          const res = await fetch('https://app.chefos.online/api/ifood-oauth', {
+          const res = await fetch('/api/ifood-oauth', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -168,6 +212,7 @@ export class IfoodStoreManagerComponent implements OnInit {
           this.notificationService.show('Integração autorizada com sucesso!', 'success');
           this.isAuthorizing.set(false);
           this.userCodeData.set(null);
+          localStorage.removeItem('ifood_user_code_data');
           this.loadAllData();
       } catch (err: any) {
           this.notificationService.show(`Erro ao autorizar: ${err.message}`, 'error');
