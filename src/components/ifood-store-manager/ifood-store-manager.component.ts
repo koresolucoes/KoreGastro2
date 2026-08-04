@@ -161,8 +161,8 @@ export class IfoodStoreManagerComponent implements OnInit {
                   
                   const tenantId = dataCreds.tenantId;
                   if (tenantId && tenantId !== 'default_tenant' && tenantId !== currentTenantId) {
-                      await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: tenantId });
                       const currentProfile = this.settingsState.companyProfile();
+                      await this.settingsDataService.updateCompanyProfile({ ...(currentProfile || {}), ifood_merchant_id: tenantId });
                       if (currentProfile) {
                           this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: tenantId });
                       }
@@ -210,8 +210,8 @@ export class IfoodStoreManagerComponent implements OnInit {
           const tenantId = data.tenantId;
 
           if (tenantId && tenantId !== currentTenantId) {
-              await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: tenantId });
               const currentProfile = this.settingsState.companyProfile();
+              await this.settingsDataService.updateCompanyProfile({ ...(currentProfile || {}), ifood_merchant_id: tenantId });
               if (currentProfile) {
                   this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: tenantId });
               }
@@ -242,14 +242,13 @@ export class IfoodStoreManagerComponent implements OnInit {
       
       this.isSaving.set(true);
       try {
-          // Remove the merchant_id from the store settings
-          const updateRes = await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: null });
+          const currentProfile = this.settingsState.companyProfile() || {};
+          const updateRes = await this.settingsDataService.updateCompanyProfile({ ...currentProfile, ifood_merchant_id: null });
           if (!updateRes.success) {
               throw updateRes.error;
           }
-          const currentProfile = this.settingsState.companyProfile();
           if (currentProfile) {
-              this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: null as any }); // Hack to accept null if needed
+              this.settingsState.companyProfile.set({ ...(currentProfile as any), ifood_merchant_id: null as any }); // Hack to accept null if needed
           }
           
           this.userCodeData.set(null);
