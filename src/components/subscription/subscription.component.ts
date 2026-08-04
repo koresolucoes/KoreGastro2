@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, inject, OnInit } from '@ang
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { supabase } from '../../services/supabase-client';
+import { AuthService } from '../../services/auth.service';
 
 interface PlanFeature {
   name: string;
@@ -28,6 +29,7 @@ interface Plan {
 })
 export class SubscriptionComponent implements OnInit {
   private router = inject(Router);
+  private authService = inject(AuthService);
 
   plans = signal<Plan[]>([]);
   isProcessing = signal(false);
@@ -196,5 +198,10 @@ export class SubscriptionComponent implements OnInit {
       alert('Houve um erro ao processar a assinatura.');
       this.isProcessing.set(false);
     }
+  }
+
+  async logout() {
+    await this.authService.signOut();
+    this.router.navigate(['/login']);
   }
 }

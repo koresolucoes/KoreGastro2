@@ -1,5 +1,13 @@
 <div class="fixed inset-0 z-50 bg-app flex flex-col overflow-y-auto">
-  <div class="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 min-h-full">
+  <!-- Top header for logout -->
+  <div class="w-full flex justify-end p-4 md:p-6 absolute top-0 left-0 z-10">
+    <button (click)="logout()" class="flex items-center gap-2 text-muted hover:text-title transition-colors px-4 py-2 rounded-lg bg-surface hover:bg-subtle border border-subtle text-sm font-medium">
+      <span translate="no" class="notranslate material-symbols-outlined text-[20px]">logout</span>
+      Sair da conta
+    </button>
+  </div>
+
+  <div class="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 min-h-full pt-20">
     
     <div class="max-w-5xl w-full mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
       
