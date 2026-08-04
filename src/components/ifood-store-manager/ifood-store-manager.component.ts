@@ -162,6 +162,10 @@ export class IfoodStoreManagerComponent implements OnInit {
                   const tenantId = dataCreds.tenantId;
                   if (tenantId && tenantId !== 'default_tenant' && tenantId !== currentTenantId) {
                       await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: tenantId });
+                      const currentProfile = this.settingsState.companyProfile();
+                      if (currentProfile) {
+                          this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: tenantId });
+                      }
                   }
                   
                   this.notificationService.show('Integração autorizada com sucesso!', 'success');
@@ -207,6 +211,10 @@ export class IfoodStoreManagerComponent implements OnInit {
 
           if (tenantId && tenantId !== currentTenantId) {
               await this.settingsDataService.updateCompanyProfile({ ifood_merchant_id: tenantId });
+              const currentProfile = this.settingsState.companyProfile();
+              if (currentProfile) {
+                  this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: tenantId });
+              }
           }
 
           this.notificationService.show('Integração autorizada com sucesso!', 'success');
