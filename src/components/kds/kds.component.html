@@ -761,6 +761,37 @@
                         <strong class="text-title font-bold shrink-0">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
                       </div>
 
+                      
+                      <!-- ITEMS PREVIEW SUMMARY -->
+                      <div class="mt-2 space-y-1.5 border-t border-dashed border-strong/40 pt-2 shrink-0 max-h-[150px] overflow-y-auto custom-scrollbar">
+                          @if(order.source === 'iFood') {
+                             @for(item of getIfoodRawItems(order); track item.id || $index) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.options && item.options.length > 0) {
+                                      <div class="pl-4 mt-0.5 space-y-0.5">
+                                         @for(opt of item.options; track opt.id || $index) {
+                                             <p class="text-[10px] text-muted leading-tight text-opacity-80">+ {{ opt.quantity > 1 ? opt.quantity + 'x ' : '' }}{{ opt.name }}</p>
+                                         }
+                                      </div>
+                                   }
+                                   @if(item.observations) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.observations }}</p>
+                                   }
+                                </div>
+                             }
+                          } @else {
+                             @for(item of order.order_items; track item.id) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.notes) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.notes }}</p>
+                                   }
+                                </div>
+                             }
+                          }
+                      </div>
+
                       <!-- Actions inside Column 1 -->
                       <div class="mt-1 flex flex-col gap-2 shrink-0">
                         @if(order.source === 'iFood') {
@@ -825,6 +856,37 @@
                       <div class="flex items-center justify-between text-xs text-muted border-t border-dashed border-strong/40 pt-2.5">
                         <span class="bg-black/10 px-2 py-1 rounded-md shrink-0 font-medium">{{ order.order_items?.length }} Itens</span>
                         <strong class="text-title font-bold shrink-0">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                      </div>
+
+                      
+                      <!-- ITEMS PREVIEW SUMMARY -->
+                      <div class="mt-2 space-y-1.5 border-t border-dashed border-strong/40 pt-2 shrink-0 max-h-[150px] overflow-y-auto custom-scrollbar">
+                          @if(order.source === 'iFood') {
+                             @for(item of getIfoodRawItems(order); track item.id || $index) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.options && item.options.length > 0) {
+                                      <div class="pl-4 mt-0.5 space-y-0.5">
+                                         @for(opt of item.options; track opt.id || $index) {
+                                             <p class="text-[10px] text-muted leading-tight text-opacity-80">+ {{ opt.quantity > 1 ? opt.quantity + 'x ' : '' }}{{ opt.name }}</p>
+                                         }
+                                      </div>
+                                   }
+                                   @if(item.observations) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.observations }}</p>
+                                   }
+                                </div>
+                             }
+                          } @else {
+                             @for(item of order.order_items; track item.id) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.notes) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.notes }}</p>
+                                   }
+                                </div>
+                             }
+                          }
                       </div>
 
                       <!-- Actions inside Column 2 -->
@@ -894,6 +956,37 @@
                       <div class="flex items-center justify-between text-xs text-muted border-t border-dashed border-strong/40 pt-2.5 shrink-0">
                         <span class="bg-black/10 px-2 py-1 rounded-md shrink-0 font-medium">Entregador: {{ order.driverName }}</span>
                         <strong class="text-title font-bold shrink-0">{{ order.totalAmount | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                      </div>
+
+                      
+                      <!-- ITEMS PREVIEW SUMMARY -->
+                      <div class="mt-2 space-y-1.5 border-t border-dashed border-strong/40 pt-2 shrink-0 max-h-[150px] overflow-y-auto custom-scrollbar">
+                          @if(order.source === 'iFood') {
+                             @for(item of getIfoodRawItems(order); track item.id || $index) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.options && item.options.length > 0) {
+                                      <div class="pl-4 mt-0.5 space-y-0.5">
+                                         @for(opt of item.options; track opt.id || $index) {
+                                             <p class="text-[10px] text-muted leading-tight text-opacity-80">+ {{ opt.quantity > 1 ? opt.quantity + 'x ' : '' }}{{ opt.name }}</p>
+                                         }
+                                      </div>
+                                   }
+                                   @if(item.observations) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.observations }}</p>
+                                   }
+                                </div>
+                             }
+                          } @else {
+                             @for(item of order.order_items; track item.id) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.notes) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.notes }}</p>
+                                   }
+                                </div>
+                             }
+                          }
                       </div>
 
                       <!-- Actions inside Column 3 -->
@@ -972,6 +1065,37 @@
                             <span class="w-1.5 h-1.5 bg-brand rounded-full animate-ping"></span> Status iFood: {{ formatLogisticsStatus(order.logisticsStatus) }}
                           </p>
                         }
+                      </div>
+
+                      
+                      <!-- ITEMS PREVIEW SUMMARY -->
+                      <div class="mt-2 space-y-1.5 border-t border-dashed border-strong/40 pt-2 shrink-0 max-h-[150px] overflow-y-auto custom-scrollbar">
+                          @if(order.source === 'iFood') {
+                             @for(item of getIfoodRawItems(order); track item.id || $index) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.options && item.options.length > 0) {
+                                      <div class="pl-4 mt-0.5 space-y-0.5">
+                                         @for(opt of item.options; track opt.id || $index) {
+                                             <p class="text-[10px] text-muted leading-tight text-opacity-80">+ {{ opt.quantity > 1 ? opt.quantity + 'x ' : '' }}{{ opt.name }}</p>
+                                         }
+                                      </div>
+                                   }
+                                   @if(item.observations) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.observations }}</p>
+                                   }
+                                </div>
+                             }
+                          } @else {
+                             @for(item of order.order_items; track item.id) {
+                                <div class="text-xs">
+                                   <p class="text-muted leading-tight"><span class="font-bold text-title">{{ item.quantity }}x</span> {{ item.name }}</p>
+                                   @if(item.notes) {
+                                      <p class="text-[10px] font-semibold text-warning bg-warning/10 px-1 py-0.5 mt-0.5 rounded border border-warning/20">Nota: {{ item.notes }}</p>
+                                   }
+                                </div>
+                             }
+                          }
                       </div>
 
                       <!-- Actions inside Column 4 -->
@@ -1451,16 +1575,56 @@
          <div class="space-y-3">
              <h4 class="text-xs font-black text-muted uppercase tracking-widest pl-1 leading-none select-none">Produtos do Pedido</h4>
              <div class="space-y-2 font-sans select-none">
-                @for(item of order.order_items; track item.id) {
-                   <div class="flex items-center justify-between p-4 bg-surface rounded-2xl border border-strong">
-                      <div class="flex items-center gap-3">
-                         <div class="w-8 h-8 bg-surface-elevated rounded-xl border border-strong flex items-center justify-center font-black text-sm text-title shadow-inner">{{ item.quantity }}</div>
-                         <p class="font-bold text-title text-sm">{{ item.name }}</p>
+                @if (order.source === 'iFood') {
+                   @for(item of getIfoodRawItems(order); track item.id || $index) {
+                      <div class="flex flex-col p-4 bg-surface rounded-2xl border border-strong gap-2">
+                         <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                               <div class="w-8 h-8 bg-surface-elevated rounded-xl border border-strong flex items-center justify-center font-black text-sm text-title shadow-inner">{{ item.quantity }}</div>
+                               <p class="font-bold text-title text-sm">{{ item.name }}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                               <span class="text-title font-bold text-sm">{{ item.unitPrice | currency:'BRL':'symbol':'1.2-2' }}</span>
+                            </div>
+                         </div>
+                         @if(item.options && item.options.length > 0) {
+                            <div class="pl-11 pr-2 space-y-1">
+                               @for(opt of item.options; track opt.id || $index) {
+                                  <div class="flex justify-between items-center text-xs text-muted border-l-2 border-brand/20 pl-2 py-0.5">
+                                     <span class="font-semibold">{{ opt.quantity > 1 ? opt.quantity + 'x ' : '' }}{{ opt.name }}</span>
+                                     @if(opt.unitPrice) {
+                                        <span class="font-bold">+{{ opt.unitPrice | currency:'BRL':'symbol':'1.2-2' }}</span>
+                                     }
+                                  </div>
+                               }
+                            </div>
+                         }
+                         @if(item.observations) {
+                            <div class="pl-11 pr-2">
+                               <p class="text-xs font-semibold text-warning bg-warning/10 px-2 py-1.5 rounded-lg border border-warning/20">Nota: {{ item.observations }}</p>
+                            </div>
+                         }
                       </div>
-                      <div class="flex items-center gap-2">
-                         <span class="text-title font-bold text-sm">{{ item.price | currency:'BRL':'symbol':'1.2-2' }}</span>
+                   }
+                } @else {
+                   @for(item of order.order_items; track item.id) {
+                      <div class="flex flex-col p-4 bg-surface rounded-2xl border border-strong gap-2">
+                         <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                               <div class="w-8 h-8 bg-surface-elevated rounded-xl border border-strong flex items-center justify-center font-black text-sm text-title shadow-inner">{{ item.quantity }}</div>
+                               <p class="font-bold text-title text-sm">{{ item.name }}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                               <span class="text-title font-bold text-sm">{{ item.price | currency:'BRL':'symbol':'1.2-2' }}</span>
+                            </div>
+                         </div>
+                         @if(item.notes) {
+                            <div class="pl-11 pr-2">
+                               <p class="text-xs font-semibold text-warning bg-warning/10 px-2 py-1.5 rounded-lg border border-warning/20">Nota: {{ item.notes }}</p>
+                            </div>
+                         }
                       </div>
-                   </div>
+                   }
                 }
              </div>
          </div>

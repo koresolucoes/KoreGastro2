@@ -517,6 +517,12 @@ export class KdsComponent implements OnInit, OnDestroy {
         return finalItems;
     });
     
+    getIfoodRawItems(order: any) {
+    if (order.source !== 'iFood' || !order.ifood_order_id) return [];
+    const log = this.webhookLogs().find(l => l.ifood_order_id === order.ifood_order_id && l.raw_payload && l.raw_payload.items);
+    return log?.raw_payload?.items || [];
+  }
+
     groupedKdsTickets = computed<StationTicket[]>(() => {
         const station = this.selectedStation();
         if (!station) return [];
