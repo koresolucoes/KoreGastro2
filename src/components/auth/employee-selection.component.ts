@@ -194,6 +194,11 @@ export class EmployeeSelectionComponent implements OnDestroy {
     this.loginError.set(false);
   }
 
+  cancelAll() {
+    this.cancelPinLogin();
+    this.cancelClockInConfirmation();
+  }
+
   handlePinInput(digit: string) {
     if (this.pinInput().length < 4) {
       this.pinInput.update(pin => pin + digit);
