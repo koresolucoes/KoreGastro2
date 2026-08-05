@@ -168,7 +168,7 @@ import autoTable from 'jspdf-autotable';
                 }
                 
                 @for (log of recentLogs(); track log.id) {
-                    <div class="relative pl-8 group">
+                    <div class="relative pl-8 group cursor-pointer" (click)="selectedLog.set(log)">
                          <!-- Timeline dot -->
                          <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-4 border-app transition-colors"
                             [class.bg-success]="log.status === 'completed'"
@@ -176,7 +176,12 @@ import autoTable from 'jspdf-autotable';
                          </div>
                          
                          <div class="p-4 chef-surface rounded-2xl border border-subtle shadow-sm group-hover:shadow-md transition-shadow">
-                             <div class="text-[10px] font-black uppercase tracking-widest text-muted mb-2">{{ log.completed_at | date:'dd/MM HH:mm' }}</div>
+                             <div class="flex items-center justify-between mb-2">
+                                 <div class="text-[10px] font-black uppercase tracking-widest text-muted">{{ log.completed_at | date:'dd/MM HH:mm' }}</div>
+                                 @if(log.image_url) {
+                                     <span translate="no" class="notranslate material-symbols-outlined text-brand text-[14px]">image</span>
+                                 }
+                             </div>
                              <p class="text-sm font-bold text-title leading-snug">{{ log.checklist_templates?.task_description }}</p>
                              
                              @if(log.status === 'issue') {
@@ -286,11 +291,23 @@ import autoTable from 'jspdf-autotable';
                 </div>
                 
                 <div class="p-8 space-y-6">
-                    <!-- Fake Camera Viewport -->
-                     <button class="w-full aspect-[21/9] bg-surface-elevated border-2 border-dashed border-strong rounded-2xl flex flex-col items-center justify-center text-muted hover:text-danger hover:bg-danger/5 hover:border-danger/30 transition-all group active:scale-[0.98]">
-                         <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform">photo_camera</span>
-                         <span class="font-bold uppercase tracking-widest text-[11px]">Capturar Foto (Obrigatório)</span>
-                     </button>
+                    <!-- Photo Upload inside modal -->
+                    <div class="w-full">
+                        @if(logImageUrlPreview()) {
+                            <div class="relative inline-block w-full">
+                                <img [src]="logImageUrlPreview()" class="w-full h-40 object-cover rounded-2xl border-2 border-dashed border-strong" />
+                                <button (click)="removeImage()" class="absolute -top-2 -right-2 bg-danger text-white rounded-full p-1 shadow-sm hover:scale-110 active:scale-95 transition-transform">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-[16px]">close</span>
+                                </button>
+                            </div>
+                        } @else {
+                            <label class="w-full aspect-[21/9] bg-surface-elevated border-2 border-dashed border-strong rounded-2xl flex flex-col items-center justify-center text-muted hover:text-brand hover:bg-brand/5 hover:border-brand/30 transition-all group active:scale-[0.98] cursor-pointer">
+                                <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform">photo_camera</span>
+                                <span class="font-bold uppercase tracking-widest text-[11px]">Anexar Foto (Opcional)</span>
+                                <input type="file" accept="image/*" capture="environment" class="hidden" (change)="onFileSelected($event)" />
+                            </label>
+                        }
+                    </div>
                      
                      <div>
                          <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Descreva o ocorrido</label>
@@ -389,6 +406,81 @@ import autoTable from 'jspdf-autotable';
         </div>
       </div>
     }
+    
+    <!-- Log Details Modal -->
+    @if (selectedLog()) {
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="selectedLog.set(null)">
+        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border border-subtle rounded-3xl relative" (click)="$event.stopPropagation()">
+            <!-- Header -->
+            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-start">
+                <div>
+                   <h3 class="text-xl font-black title-display tracking-tight text-title flex items-center gap-2 mb-1">
+                       <span translate="no" class="notranslate material-symbols-outlined text-brand">history</span> Detalhes do Registro
+                   </h3>
+                   <div class="text-[10px] font-black uppercase tracking-widest text-muted">{{ selectedLog()!.completed_at | date:'dd/MM HH:mm' }}</div>
+                </div>
+                <button (click)="selectedLog.set(null)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
+                    <span translate="no" class="notranslate material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                 <!-- Task Info -->
+                 <div>
+                     <p class="text-sm font-bold text-title leading-snug">{{ selectedLog()!.checklist_templates?.task_description }}</p>
+                     
+                     <div class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-[10px] uppercase font-black tracking-widest"
+                          [class.bg-success/10]="selectedLog()!.status === 'completed'"
+                          [class.text-success]="selectedLog()!.status === 'completed'"
+                          [class.border-success/20]="selectedLog()!.status === 'completed'"
+                          [class.bg-danger/10]="selectedLog()!.status === 'issue'"
+                          [class.text-danger]="selectedLog()!.status === 'issue'"
+                          [class.border-danger/20]="selectedLog()!.status === 'issue'">
+                          <span translate="no" class="notranslate material-symbols-outlined text-[14px]">
+                              {{ selectedLog()!.status === 'completed' ? 'check_circle' : 'warning' }}
+                          </span>
+                          {{ selectedLog()!.status === 'completed' ? 'Concluído' : 'Problema Reportado' }}
+                     </div>
+                 </div>
+                 
+                 <!-- Notes -->
+                 @if(selectedLog()!.notes) {
+                     <div>
+                         <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Observações / Problema</label>
+                         <div class="p-4 bg-surface-elevated border border-strong rounded-xl text-sm font-medium text-title">
+                             {{ selectedLog()!.notes }}
+                         </div>
+                     </div>
+                 }
+                 
+                 <!-- Employee -->
+                 <div>
+                     <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Executado por</label>
+                     <div class="flex items-center gap-2 font-bold text-sm text-title">
+                         <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                             <span translate="no" class="notranslate material-symbols-outlined text-sm">person</span>
+                         </div>
+                         {{ selectedLog()!.employees?.name || 'Sistema' }}
+                     </div>
+                 </div>
+                 
+                 <!-- Image Proof -->
+                 @if(selectedLog()!.image_url) {
+                     <div>
+                         <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Foto / Comprovante</label>
+                         <img [src]="selectedLog()!.image_url" class="w-full h-auto rounded-xl border border-subtle shadow-sm max-h-64 object-contain bg-black/5" />
+                     </div>
+                 }
+            </div>
+            
+            <div class="bg-surface-elevated/50 px-6 py-4 border-t border-subtle flex justify-end">
+                <button (click)="selectedLog.set(null)" class="px-6 py-2.5 bg-surface hover-surface-elevated text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95 shadow-sm">
+                    Fechar
+                </button>
+            </div>
+        </div>
+      </div>
+    }
   </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -417,6 +509,11 @@ export class ChecklistsComponent implements OnInit {
   // Issue modal state
   templateToIssue = signal<ChecklistTemplate | null>(null);
   issueNote = signal('');
+  logImageFile = signal<File | null>(null);
+  logImageUrlPreview = signal<string | null>(null);
+
+  // Selected log state
+  selectedLog = signal<ChecklistLog | null>(null);
 
   // Sidebar state
   sidebarPeriod = signal<'today' | 'yesterday' | 'last7'>('today');
@@ -604,20 +701,47 @@ export class ChecklistsComponent implements OnInit {
       event.stopPropagation();
       this.templateToIssue.set(template);
       this.issueNote.set('');
+      this.logImageFile.set(null);
+      this.logImageUrlPreview.set(null);
   }
 
   closeIssueModal() {
       this.templateToIssue.set(null);
+      this.logImageFile.set(null);
+      this.logImageUrlPreview.set(null);
+  }
+
+  onFileSelected(event: any) {
+      const file = event.target.files[0];
+      if (file) {
+          this.logImageFile.set(file);
+          const reader = new FileReader();
+          reader.onload = (e) => this.logImageUrlPreview.set(e.target?.result as string);
+          reader.readAsDataURL(file);
+      }
+  }
+
+  removeImage() {
+      this.logImageFile.set(null);
+      this.logImageUrlPreview.set(null);
   }
 
   async submitIssue() {
       const template = this.templateToIssue();
       if(!template) return;
-      await this.logTask(template, 'issue', this.issueNote());
+      
+      this.isSubmitting.set(true);
+      let imageUrl: string | null = null;
+      if (this.logImageFile()) {
+          imageUrl = await this.operationalService.uploadOperationalImage(this.logImageFile()!, 'checklists');
+      }
+      
+      await this.logTask(template, 'issue', this.issueNote(), imageUrl);
       this.closeIssueModal();
+      this.isSubmitting.set(false);
   }
 
-  async logTask(template: ChecklistTemplate, status: 'completed' | 'issue', providedNotes: string | null = null) {
+  async logTask(template: ChecklistTemplate, status: 'completed' | 'issue', providedNotes: string | null = null, image_url: string | null = null) {
     const employee = this.authService.activeEmployee();
     if (!employee) {
       this.notificationService.show('Você precisa estar logado como um funcionário para executar checklists.', 'error');
@@ -630,7 +754,8 @@ export class ChecklistsComponent implements OnInit {
         template_id: template.id,
         employee_id: employee.id,
         status: status,
-        notes: providedNotes
+        notes: providedNotes,
+        image_url: image_url
       });
 
       if (log) {

@@ -175,16 +175,21 @@ import autoTable from 'jspdf-autotable';
                 }
                 
                 @for (log of recentLogs(); track log.id) {
-                    <div class="relative pl-8 group">
+                    <div class="relative pl-8 group cursor-pointer" (click)="selectedLog.set(log)">
                          <!-- Timeline dot -->
                          <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-4 border-app transition-colors"
                               [ngClass]="getTemperatureDotClass(log.temperature, log.equipment?.min_temp, log.equipment?.max_temp)">
                          </div>
                          
-                         <div class="p-4 chef-surface rounded-2xl border border-subtle shadow-sm">
+                         <div class="p-4 chef-surface rounded-2xl border border-subtle shadow-sm group-hover:shadow-md transition-shadow">
                              <div class="flex justify-between items-start mb-2">
                                  <div>
-                                    <div class="text-[10px] font-black uppercase tracking-widest text-muted">{{ log.recorded_at | date:'dd/MM HH:mm' }}</div>
+                                    <div class="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1">
+                                        {{ log.recorded_at | date:'dd/MM HH:mm' }}
+                                        @if(log.image_url) {
+                                            <span translate="no" class="notranslate material-symbols-outlined text-brand text-[12px]">image</span>
+                                        }
+                                    </div>
                                     <p class="text-sm font-bold text-title leading-snug">{{ log.equipment?.name }}</p>
                                  </div>
                                  <div class="text-lg font-black data-mono" [ngClass]="getTemperatureStatusColor(log.temperature, log.equipment?.min_temp, log.equipment?.max_temp)">
@@ -461,6 +466,76 @@ import autoTable from 'jspdf-autotable';
         </div>
       </div>
     }
+    
+    <!-- Log Details Modal -->
+    @if (selectedLog()) {
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="selectedLog.set(null)">
+        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border border-subtle rounded-3xl relative" (click)="$event.stopPropagation()">
+            <!-- Header -->
+            <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-start">
+                <div>
+                   <h3 class="text-xl font-black title-display tracking-tight text-title flex items-center gap-2 mb-1">
+                       <span translate="no" class="notranslate material-symbols-outlined text-brand">history</span> Detalhes da Aferição
+                   </h3>
+                   <div class="text-[10px] font-black uppercase tracking-widest text-muted">{{ selectedLog()!.recorded_at | date:'dd/MM HH:mm' }}</div>
+                </div>
+                <button (click)="selectedLog.set(null)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
+                    <span translate="no" class="notranslate material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                 <!-- Equipment Info -->
+                 <div class="flex justify-between items-center bg-surface-elevated p-4 rounded-2xl border border-strong">
+                     <div>
+                         <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-1">Equipamento</label>
+                         <p class="text-sm font-bold text-title">{{ selectedLog()!.equipment?.name }}</p>
+                     </div>
+                     <div class="text-right">
+                         <div class="text-2xl font-black data-mono tracking-tighter" [ngClass]="getTemperatureStatusColor(selectedLog()!.temperature, selectedLog()!.equipment?.min_temp, selectedLog()!.equipment?.max_temp)">
+                             {{ selectedLog()!.temperature }}<span class="text-lg opacity-50">°C</span>
+                         </div>
+                     </div>
+                 </div>
+                 
+                 <!-- Notes -->
+                 @if(selectedLog()!.notes) {
+                     <div>
+                         <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Ação Corretiva / Observações</label>
+                         <div class="p-4 bg-danger/5 border border-danger/20 text-danger rounded-xl text-sm font-medium">
+                             {{ selectedLog()!.notes }}
+                         </div>
+                     </div>
+                 }
+                 
+                 <!-- Employee -->
+                 <div>
+                     <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Aferido por</label>
+                     <div class="flex items-center gap-2 font-bold text-sm text-title">
+                         <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                             <span translate="no" class="notranslate material-symbols-outlined text-sm">person</span>
+                         </div>
+                         {{ selectedLog()!.employees?.name || 'Sistema' }}
+                     </div>
+                 </div>
+                 
+                 <!-- Image Proof -->
+                 @if(selectedLog()!.image_url) {
+                     <div>
+                         <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Foto / Comprovante</label>
+                         <img [src]="selectedLog()!.image_url" class="w-full h-auto rounded-xl border border-subtle shadow-sm max-h-64 object-contain bg-black/5" />
+                     </div>
+                 }
+            </div>
+            
+            <div class="bg-surface-elevated/50 px-6 py-4 border-t border-subtle flex justify-end">
+                <button (click)="selectedLog.set(null)" class="px-6 py-2.5 bg-surface hover-surface-elevated text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95 shadow-sm">
+                    Fechar
+                </button>
+            </div>
+        </div>
+      </div>
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -478,6 +553,8 @@ export class TemperaturesComponent implements OnInit {
 
   // Custom Numpad & Action State
   activeNumpadEq = signal<Equipment | null>(null);
+  
+  selectedLog = signal<TemperatureLog | null>(null);
 
   // Sidebar state
   sidebarPeriod = signal<'today' | 'yesterday' | 'last7'>('today');
