@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { OperationalService } from '../../services/operational.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { NotificationService } from '../../services/notification.service';
@@ -11,7 +11,7 @@ import autoTable from 'jspdf-autotable';
 @Component({
   selector: 'app-temperatures',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
     <div class="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       <!-- Page Header -->
@@ -383,6 +383,83 @@ import autoTable from 'jspdf-autotable';
               </div>
           </div>
        </div>
+    }
+
+    <!-- Report Config Modal -->
+    @if (showReportModal()) {
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="showReportModal.set(false)">
+        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong rounded-3xl" (click)="$event.stopPropagation()">
+          <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-center">
+            <h3 class="text-xl font-black text-title title-display tracking-tight flex items-center gap-2">
+               <span translate="no" class="notranslate material-symbols-outlined text-brand">picture_as_pdf</span>
+               Configurar Relatório
+            </h3>
+            <button (click)="showReportModal.set(false)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
+              <span translate="no" class="notranslate material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <form [formGroup]="reportForm" (ngSubmit)="generatePDF()">
+            <div class="p-8 space-y-6">
+              <div>
+                <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Período</label>
+                <select formControlName="period" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all">
+                  <option value="today">Hoje</option>
+                  <option value="yesterday">Ontem</option>
+                  <option value="last7">Últimos 7 dias</option>
+                  <option value="last30">Últimos 30 dias</option>
+                  <option value="thisMonth">Mês Atual</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+              </div>
+
+              @if (reportForm.get('period')?.value === 'custom') {
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Data Inicial</label>
+                    <input type="date" formControlName="startDate" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-brand">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Data Final</label>
+                    <input type="date" formControlName="endDate" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-brand">
+                  </div>
+                </div>
+              }
+
+              <div>
+                <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Equipamento</label>
+                <select formControlName="equipmentId" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-brand">
+                  <option value="all">Todos os Equipamentos</option>
+                  @for (eq of equipmentList(); track eq.id) {
+                    <option [value]="eq.id">{{ eq.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Situação</label>
+                <select formControlName="status" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-brand">
+                  <option value="all">Todas as aferições</option>
+                  <option value="out_of_standard">Apenas Fora do Padrão / Alertas</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="bg-surface-elevated/50 px-8 py-5 border-t border-subtle flex justify-end gap-3">
+              <button type="button" (click)="showReportModal.set(false)" class="px-6 py-2.5 bg-surface hover-surface-elevated text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95 shadow-sm">
+                Cancelar
+              </button>
+              <button type="submit" [disabled]="isSubmitting()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover text-white rounded-xl text-sm font-black shadow-lg shadow-brand/20 transition-all active:scale-95 border border-brand uppercase tracking-widest flex items-center gap-2">
+                @if(isSubmitting()) {
+                   <span translate="no" class="notranslate material-symbols-outlined text-sm animate-spin">refresh</span>
+                } @else {
+                   <span translate="no" class="notranslate material-symbols-outlined text-sm">download</span>
+                }
+                Baixar PDF
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
