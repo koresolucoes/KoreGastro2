@@ -257,114 +257,114 @@ import autoTable from 'jspdf-autotable';
 
     <!-- Custom Numpad Modal -->
     @if(activeNumpadEq()) {
-       <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex flex-col pt-10 px-4 pb-4 animate-in fade-in duration-200" (click)="closeNumpad()">
-          <!-- Top area: Equip name & Current temp input -->
-          <div class="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full mb-8 relative z-10" (click)="$event.stopPropagation()">
-              <h2 class="text-2xl title-display font-black text-white/90 mb-6 flex items-center gap-2">
-                 <span translate="no" class="notranslate material-symbols-outlined text-brand text-3xl">kitchen</span>
-                 {{ activeNumpadEq()?.name }}
-              </h2>
+       <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 animate-in fade-in duration-200" (click)="closeNumpad()">
+          <div class="bg-surface w-full max-w-sm rounded-3xl shadow-2xl border border-subtle flex flex-col relative z-10 max-h-[95vh]" (click)="$event.stopPropagation()">
+              <!-- Header -->
+              <div class="shrink-0 p-5 border-b border-subtle bg-surface-elevated flex justify-between items-center rounded-t-3xl">
+                  <h2 class="text-xl title-display font-black text-title flex items-center gap-2">
+                     <span translate="no" class="notranslate material-symbols-outlined text-brand">kitchen</span>
+                     {{ activeNumpadEq()?.name }}
+                  </h2>
+                  <button (click)="closeNumpad()" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
+                      <span translate="no" class="notranslate material-symbols-outlined">close</span>
+                  </button>
+              </div>
               
-              <!-- Large Display -->
-              <div class="w-full bg-surface/10 border-2 border-surface/30 backdrop-blur-xl rounded-3xl p-8 flex flex-col items-center justify-center transition-all duration-300 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
-                   [ngClass]="getNumpadDisplayClass()">
-                 <div class="text-7xl font-black data-mono tracking-tighter" [ngClass]="getNumpadDisplayColor()">
-                     {{ numpadValue() || '0' }}<span class="text-4xl opacity-50">°C</span>
+              <!-- Display -->
+              <div class="shrink-0 p-6 bg-app flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden" [ngClass]="getNumpadDisplayClass()">
+                 <div class="text-5xl font-black data-mono tracking-tighter" [ngClass]="getNumpadDisplayColor()">
+                     {{ numpadValue() || '0' }}<span class="text-3xl opacity-50">°C</span>
                  </div>
-                 <div class="mt-4 text-sm font-bold uppercase tracking-widest px-4 py-2 rounded-xl backdrop-blur-md" 
+                 <div class="mt-3 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg backdrop-blur-md" 
                       [ngClass]="getNumpadMsgClass()">
                      {{ getNumpadStatusMessage() }}
                  </div>
               </div>
               
-              <!-- Action Required Dropdown (if Danger Zone) -->
-              @if(isDangerZone()) {
-                 <div class="w-full mt-6 bg-surface/90 border-2 border-danger/50 rounded-3xl p-5 shadow-lg shadow-danger/20 animate-in slide-in-from-top-4 duration-300">
-                     <p class="text-danger font-black uppercase tracking-widest text-xs mb-4 flex items-center gap-2">
-                        <span translate="no" class="notranslate material-symbols-outlined">warning</span> Ação Corretiva Exigida
-                     </p>
-                     
-                     <div class="flex flex-col gap-2">
-                         @for(action of correctiveActions; track action.id) {
-                            <button (click)="selectedCorrectiveAction.set(action.id)" class="px-4 py-3 rounded-xl border-2 flex items-center gap-3 transition-colors text-left"
-                               [class.bg-danger]="selectedCorrectiveAction() === action.id" [class.border-danger]="selectedCorrectiveAction() === action.id" [class.text-white]="selectedCorrectiveAction() === action.id"
-                               [class.bg-surface-elevated]="selectedCorrectiveAction() !== action.id" [class.border-strong]="selectedCorrectiveAction() !== action.id" [class.text-title]="selectedCorrectiveAction() !== action.id">
-                               <span translate="no" class="notranslate material-symbols-outlined">{{ action.icon }}</span>
-                               <span class="font-bold text-sm">{{ action.label }}</span>
-                            </button>
+              <!-- Numpad & Actions -->
+              <div class="p-5 overflow-y-auto">
+                  @if(getEquipmentType(activeNumpadEq()!) === 'cold') {
+                     <div class="w-full flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
+                         <button (click)="setQuickTemp('-18')" class="shrink-0 px-3 py-1.5 rounded-lg bg-info/10 text-info font-bold text-xs border border-info/20 shadow-sm active:scale-95 transition-all">-18°C</button>
+                         <button (click)="setQuickTemp('-12')" class="shrink-0 px-3 py-1.5 rounded-lg bg-info/10 text-info font-bold text-xs border border-info/20 shadow-sm active:scale-95 transition-all">-12°C</button>
+                         <button (click)="setQuickTemp('0')" class="shrink-0 px-3 py-1.5 rounded-lg bg-info/10 text-info font-bold text-xs border border-info/20 shadow-sm active:scale-95 transition-all">0°C</button>
+                         <button (click)="setQuickTemp('2')" class="shrink-0 px-3 py-1.5 rounded-lg bg-info/10 text-info font-bold text-xs border border-info/20 shadow-sm active:scale-95 transition-all">2°C</button>
+                         <button (click)="setQuickTemp('4')" class="shrink-0 px-3 py-1.5 rounded-lg bg-info/10 text-info font-bold text-xs border border-info/20 shadow-sm active:scale-95 transition-all">4°C</button>
+                         <button (click)="setQuickTemp('8')" class="shrink-0 px-3 py-1.5 rounded-lg bg-info/10 text-info font-bold text-xs border border-info/20 shadow-sm active:scale-95 transition-all">8°C</button>
+                     </div>
+                  } @else if(getEquipmentType(activeNumpadEq()!) === 'hot') {
+                     <div class="w-full flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
+                         <button (click)="setQuickTemp('60')" class="shrink-0 px-3 py-1.5 rounded-lg bg-warning/10 text-warning font-bold text-xs border border-warning/20 shadow-sm active:scale-95 transition-all">60°C</button>
+                         <button (click)="setQuickTemp('65')" class="shrink-0 px-3 py-1.5 rounded-lg bg-danger/10 text-danger font-bold text-xs border border-danger/20 shadow-sm active:scale-95 transition-all">65°C</button>
+                         <button (click)="setQuickTemp('70')" class="shrink-0 px-3 py-1.5 rounded-lg bg-danger/10 text-danger font-bold text-xs border border-danger/20 shadow-sm active:scale-95 transition-all">70°C</button>
+                         <button (click)="setQuickTemp('74')" class="shrink-0 px-3 py-1.5 rounded-lg bg-danger/10 text-danger font-bold text-xs border border-danger/20 shadow-sm active:scale-95 transition-all">74°C</button>
+                         <button (click)="setQuickTemp('80')" class="shrink-0 px-3 py-1.5 rounded-lg bg-danger/10 text-danger font-bold text-xs border border-danger/20 shadow-sm active:scale-95 transition-all">80°C</button>
+                         <button (click)="setQuickTemp('90')" class="shrink-0 px-3 py-1.5 rounded-lg bg-danger/10 text-danger font-bold text-xs border border-danger/20 shadow-sm active:scale-95 transition-all">90°C</button>
+                     </div>
+                  }
+                  
+                  <div class="grid grid-cols-3 gap-2 mb-4">
+                      @for(n of ['1','2','3','4','5','6','7','8','9','-','0','.']; track n) {
+                          <button (click)="numpadPress(n)" class="bg-surface hover:bg-surface-elevated active:bg-surface-elevated text-title h-12 rounded-xl flex items-center justify-center text-xl font-black data-mono shadow-sm border border-strong active:scale-95 transition-all font-sans">
+                             {{ n === '-' ? '+/-' : n }}
+                          </button>
+                      }
+                  </div>
+
+                  @if(isDangerZone()) {
+                     <div class="w-full mb-4 bg-danger/5 border border-danger/20 rounded-xl p-4 shadow-sm animate-in fade-in duration-300">
+                         <p class="text-danger font-black uppercase tracking-widest text-[10px] mb-3 flex items-center gap-1.5">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[14px]">warning</span> Ação Corretiva Exigida
+                         </p>
+                         <div class="flex flex-col gap-1.5">
+                             @for(action of correctiveActions; track action.id) {
+                                <button (click)="selectedCorrectiveAction.set(action.id)" class="px-3 py-2.5 rounded-lg border flex items-center gap-2 transition-colors text-left"
+                                   [class.bg-danger]="selectedCorrectiveAction() === action.id" [class.border-danger]="selectedCorrectiveAction() === action.id" [class.text-white]="selectedCorrectiveAction() === action.id"
+                                   [class.bg-surface]="selectedCorrectiveAction() !== action.id" [class.border-strong]="selectedCorrectiveAction() !== action.id" [class.text-title]="selectedCorrectiveAction() !== action.id">
+                                   <span translate="no" class="notranslate material-symbols-outlined text-sm">{{ action.icon }}</span>
+                                   <span class="font-bold text-xs">{{ action.label }}</span>
+                                </button>
+                             }
+                         </div>
+                         @if(selectedCorrectiveAction() === 'other') {
+                             <input type="text" [ngModel]="customCorrectionNote()" (ngModelChange)="customCorrectionNote.set($event)" placeholder="Descreva a ação tomada..." class="mt-2 w-full bg-surface border border-strong rounded-lg px-3 py-2 text-title text-sm focus:outline-none focus:border-danger font-medium shadow-inner">
                          }
                      </div>
-                     
-                     @if(selectedCorrectiveAction() === 'other') {
-                         <input type="text" [ngModel]="customCorrectionNote()" (ngModelChange)="customCorrectionNote.set($event)" placeholder="Descreva a ação tomada..." class="mt-3 w-full bg-surface border-2 border-strong rounded-xl px-4 py-3 text-title focus:outline-none focus:border-danger font-medium">
-                     }
-                 </div>
-              }
-          </div>
-          
-          <!-- Bottom area: Numpad Grid -->
-          <div class="w-full max-w-md mx-auto relative z-10 shrink-0" (click)="$event.stopPropagation()">
-              <!-- Option to Add Quick Actions here -->
-              @if(getEquipmentType(activeNumpadEq()!) === 'cold') {
-                 <div class="w-full flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
-                     <button (click)="setQuickTemp('-18')" class="shrink-0 px-4 py-2 rounded-xl bg-info/10 text-info font-bold text-sm border border-info/20 shadow-sm active:scale-95 transition-all">-18°C</button>
-                     <button (click)="setQuickTemp('-12')" class="shrink-0 px-4 py-2 rounded-xl bg-info/10 text-info font-bold text-sm border border-info/20 shadow-sm active:scale-95 transition-all">-12°C</button>
-                     <button (click)="setQuickTemp('0')" class="shrink-0 px-4 py-2 rounded-xl bg-info/10 text-info font-bold text-sm border border-info/20 shadow-sm active:scale-95 transition-all">0°C</button>
-                     <button (click)="setQuickTemp('2')" class="shrink-0 px-4 py-2 rounded-xl bg-info/10 text-info font-bold text-sm border border-info/20 shadow-sm active:scale-95 transition-all">2°C</button>
-                     <button (click)="setQuickTemp('4')" class="shrink-0 px-4 py-2 rounded-xl bg-info/10 text-info font-bold text-sm border border-info/20 shadow-sm active:scale-95 transition-all">4°C</button>
-                     <button (click)="setQuickTemp('8')" class="shrink-0 px-4 py-2 rounded-xl bg-info/10 text-info font-bold text-sm border border-info/20 shadow-sm active:scale-95 transition-all">8°C</button>
-                 </div>
-              } @else if(getEquipmentType(activeNumpadEq()!) === 'hot') {
-                 <div class="w-full flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
-                     <button (click)="setQuickTemp('60')" class="shrink-0 px-4 py-2 rounded-xl bg-warning/10 text-warning font-bold text-sm border border-warning/20 shadow-sm active:scale-95 transition-all">60°C</button>
-                     <button (click)="setQuickTemp('65')" class="shrink-0 px-4 py-2 rounded-xl bg-danger/10 text-danger font-bold text-sm border border-danger/20 shadow-sm active:scale-95 transition-all">65°C</button>
-                     <button (click)="setQuickTemp('70')" class="shrink-0 px-4 py-2 rounded-xl bg-danger/10 text-danger font-bold text-sm border border-danger/20 shadow-sm active:scale-95 transition-all">70°C</button>
-                     <button (click)="setQuickTemp('74')" class="shrink-0 px-4 py-2 rounded-xl bg-danger/10 text-danger font-bold text-sm border border-danger/20 shadow-sm active:scale-95 transition-all">74°C</button>
-                     <button (click)="setQuickTemp('80')" class="shrink-0 px-4 py-2 rounded-xl bg-danger/10 text-danger font-bold text-sm border border-danger/20 shadow-sm active:scale-95 transition-all">80°C</button>
-                     <button (click)="setQuickTemp('90')" class="shrink-0 px-4 py-2 rounded-xl bg-danger/10 text-danger font-bold text-sm border border-danger/20 shadow-sm active:scale-95 transition-all">90°C</button>
-                 </div>
-              }
-              
-              <!-- Bottom area: Numpad Grid -->
-              <div class="grid grid-cols-3 gap-3 mb-4">
-                  @for(n of ['1','2','3','4','5','6','7','8','9','-','0','.']; track n) {
-                      <button (click)="numpadPress(n)" class="bg-surface hover:bg-surface-elevated active:bg-surface-elevated text-title aspect-[5/4] rounded-2xl flex items-center justify-center text-3xl font-black data-mono shadow-sm border border-strong active:scale-90 transition-all font-sans">
-                         {{ n === '-' ? '+/-' : n }}
-                      </button>
                   }
-              </div>
-              <div class="grid grid-cols-2 gap-3 mb-6">
-                 <button (click)="numpadBackspace()" class="chef-surface bg-danger/20 hover:bg-danger/30 text-danger border border-danger/30 py-4 rounded-2xl flex flex-col items-center justify-center font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all">
-                     <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-1">backspace</span>
-                     Corrigir
-                 </button>
-                 <button (click)="submitNumpad()" [disabled]="!canSubmitNumpad()" class="btn-primary hover:bg-brand-hover text-white py-4 rounded-2xl flex flex-col items-center justify-center font-bold text-xs uppercase tracking-widest shadow-xl shadow-brand/20 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale">
-                     @if (isSubmitting()) {
-                        <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-1 animate-spin">refresh</span>
-                        Salvando...
-                     } @else {
-                        <span translate="no" class="notranslate material-symbols-outlined text-2xl mb-1">check_circle</span>
-                        Salvar
-                     }
-                 </button>
-              </div>
 
-              <!-- Photo Upload -->
-              <div class="w-full flex justify-center mb-6">
-                  @if(logImageUrlPreview()) {
-                      <div class="relative inline-block">
-                          <img [src]="logImageUrlPreview()" class="w-24 h-24 object-cover rounded-2xl border-2 border-brand shadow-md" />
-                          <button (click)="removeImage()" class="absolute -top-2 -right-2 bg-danger text-white rounded-full p-1 shadow-md hover:scale-110 active:scale-95 transition-transform">
-                              <span translate="no" class="notranslate material-symbols-outlined text-sm">close</span>
-                          </button>
-                      </div>
-                  } @else {
-                      <label class="w-full max-w-[200px] flex items-center justify-center gap-2 chef-surface border border-dashed border-brand/50 text-brand py-3 rounded-2xl cursor-pointer hover:bg-brand/10 active:scale-95 transition-all">
-                         <span translate="no" class="notranslate material-symbols-outlined text-xl">photo_camera</span>
-                         <span class="font-bold text-xs uppercase tracking-widest">Anexar Foto</span>
-                         <input type="file" accept="image/*" capture="environment" class="hidden" (change)="onFileSelected($event)" />
-                      </label>
-                  }
+                  <div class="grid grid-cols-2 gap-2 mb-4">
+                     <button (click)="numpadBackspace()" class="bg-surface-elevated text-danger border border-strong hover:bg-danger/10 hover:border-danger py-3 rounded-xl flex items-center justify-center font-bold text-xs uppercase tracking-widest active:scale-95 transition-all gap-1.5">
+                         <span translate="no" class="notranslate material-symbols-outlined text-[18px]">backspace</span>
+                         Corrigir
+                     </button>
+                     <button (click)="submitNumpad()" [disabled]="!canSubmitNumpad()" class="btn-primary hover:bg-brand-hover text-white py-3 rounded-xl flex items-center justify-center font-bold text-xs uppercase tracking-widest shadow-sm active:scale-95 transition-all disabled:opacity-50 disabled:grayscale gap-1.5">
+                         @if (isSubmitting()) {
+                            <span translate="no" class="notranslate material-symbols-outlined text-[18px] animate-spin">refresh</span>
+                            Salvar
+                         } @else {
+                            <span translate="no" class="notranslate material-symbols-outlined text-[18px]">check_circle</span>
+                            Salvar
+                         }
+                     </button>
+                  </div>
+
+                  <!-- Photo Upload inside modal -->
+                  <div class="w-full flex justify-center pt-2 border-t border-subtle">
+                      @if(logImageUrlPreview()) {
+                          <div class="relative inline-block mt-2">
+                              <img [src]="logImageUrlPreview()" class="w-16 h-16 object-cover rounded-xl border border-brand shadow-sm" />
+                              <button (click)="removeImage()" class="absolute -top-2 -right-2 bg-danger text-white rounded-full p-0.5 shadow-sm hover:scale-110 active:scale-95 transition-transform">
+                                  <span translate="no" class="notranslate material-symbols-outlined text-[14px]">close</span>
+                              </button>
+                          </div>
+                      } @else {
+                          <label class="w-full flex items-center justify-center gap-2 text-muted hover:text-brand py-2 rounded-xl cursor-pointer hover:bg-brand/5 active:scale-95 transition-all border border-transparent hover:border-brand/20">
+                             <span translate="no" class="notranslate material-symbols-outlined text-lg">photo_camera</span>
+                             <span class="font-bold text-xs uppercase tracking-widest">Anexar Foto (Opcional)</span>
+                             <input type="file" accept="image/*" capture="environment" class="hidden" (change)="onFileSelected($event)" />
+                          </label>
+                      }
+                  </div>
               </div>
           </div>
        </div>

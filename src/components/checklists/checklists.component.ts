@@ -66,31 +66,31 @@ import autoTable from 'jspdf-autotable';
             } @else {
                @for (group of groupedTemplates(); track group.section) {
                    <!-- Section Card (Clipboard) -->
-                   <div class="chef-surface rounded-2xl overflow-hidden shadow-sm border border-subtle relative">
+                   <div class="bg-surface rounded-3xl overflow-hidden shadow-sm border border-subtle relative">
                        <!-- Top clipboard clip -->
-                       <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-3 bg-surface-elevated rounded-b-xl border border-t-0 border-subtle shadow-inner z-10 hidden sm:block"></div>
+                       <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-strong rounded-b-lg opacity-50 hidden sm:block"></div>
                        
-                       <div class="bg-surface-elevated/30 p-6 border-b border-subtle">
+                       <div class="bg-surface-elevated/20 p-6 sm:p-8 border-b border-subtle">
                            <div class="flex justify-between items-end">
                                <div>
-                                    <span class="inline-block px-3 py-1 bg-surface rounded text-xs font-black uppercase tracking-widest text-muted border border-strong shadow-inner mb-3">
+                                    <span class="inline-block px-3 py-1 bg-surface rounded-lg text-[10px] font-black uppercase tracking-widest text-muted border border-strong mb-3">
                                         Praça / Setor
                                     </span>
-                                    <h3 class="text-3xl font-black text-title title-display tracking-tight">{{ group.section }}</h3>
+                                    <h3 class="text-2xl sm:text-3xl font-black text-title title-display tracking-tight">{{ group.section }}</h3>
                                </div>
                                <div class="text-right">
-                                   <div class="text-4xl font-black text-brand data-mono tracking-tighter">{{ getSectionProgress(group.section) }}%</div>
-                                   <div class="text-[10px] font-bold uppercase tracking-widest text-muted">Concluído hoje</div>
+                                   <div class="text-3xl sm:text-4xl font-black text-brand data-mono tracking-tighter">{{ getSectionProgress(group.section) }}%</div>
+                                   <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-muted">Concluído hoje</div>
                                </div>
                            </div>
                            
                            <!-- Progress Bar -->
-                           <div class="h-2 w-full bg-surface-elevated rounded-full mt-5 overflow-hidden border border-strong inset-shadow-sm">
+                           <div class="h-1.5 w-full bg-surface-elevated rounded-full mt-6 overflow-hidden">
                                 <div class="h-full bg-brand transition-all duration-1000 ease-in-out" [style.width.%]="getSectionProgress(group.section)"></div>
                            </div>
                        </div>
 
-                       <div class="divide-y divide-subtle bg-app/50">
+                       <div class="divide-y divide-subtle bg-surface">
                            @for (template of group.templates; track template.id) {
                                <div class="p-4 sm:p-6 transition-all border-l-4 cursor-pointer select-none group/card" 
                                     [class.opacity-60]="isTaskDone(template.id)"
@@ -191,27 +191,27 @@ import autoTable from 'jspdf-autotable';
         </div>
       </div>      <!-- Add Template Modal -->
     @if (showAddTemplateModal()) {
-       <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="showAddTemplateModal.set(false)">
-        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong" (click)="$event.stopPropagation()">
-          <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-center">
-            <h3 class="text-xl font-black text-title title-display tracking-tight flex items-center gap-2">
-               <span translate="no" class="notranslate material-symbols-outlined text-brand">add_task</span>
+       <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="showAddTemplateModal.set(false)">
+        <div class="bg-surface w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-subtle relative" (click)="$event.stopPropagation()">
+          <div class="px-6 py-5 border-b border-subtle bg-surface flex justify-between items-center">
+            <h3 class="text-lg font-black text-title title-display tracking-tight flex items-center gap-2">
+               <span translate="no" class="notranslate material-symbols-outlined text-brand text-[20px]">add_task</span>
                Nova Tarefa
             </h3>
-            <button (click)="showAddTemplateModal.set(false)" class="p-2 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
-              <span translate="no" class="notranslate material-symbols-outlined">close</span>
+            <button (click)="showAddTemplateModal.set(false)" class="p-1.5 rounded-xl text-muted hover:bg-danger/10 hover:text-danger active:scale-95 transition-all">
+              <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
           <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()">
-            <div class="p-8 space-y-6">
+            <div class="p-6 space-y-5 bg-app">
               <div>
-                <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Descrição da Tarefa</label>
-                <textarea formControlName="task_description" rows="3" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner resize-none" placeholder="O que deve ser feito?"></textarea>
+                <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Descrição da Tarefa</label>
+                <textarea formControlName="task_description" rows="3" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title text-sm font-medium focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/50 transition-all shadow-inner resize-none" placeholder="O que deve ser feito?"></textarea>
               </div>
-              <div class="grid grid-cols-2 gap-6">
+              <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Seção</label>
-                  <select formControlName="section" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-2.5 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
+                  <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Seção</label>
+                  <select formControlName="section" class="w-full bg-surface border border-strong rounded-xl px-3 py-2.5 text-title text-sm font-medium focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/50 transition-all shadow-inner appearance-none">
                     <option value="Cozinha">Cozinha</option>
                     <option value="Salão">Salão</option>
                     <option value="Bar">Bar</option>
@@ -220,8 +220,8 @@ import autoTable from 'jspdf-autotable';
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Tipo</label>
-                  <select formControlName="checklist_type" class="w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-2.5 text-title font-bold focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 transition-all shadow-inner appearance-none">
+                  <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Tipo</label>
+                  <select formControlName="checklist_type" class="w-full bg-surface border border-strong rounded-xl px-3 py-2.5 text-title text-sm font-medium focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/50 transition-all shadow-inner appearance-none">
                     <option value="opening">Abertura</option>
                     <option value="closing">Fechamento</option>
                     <option value="custom">Outros</option>
@@ -229,11 +229,11 @@ import autoTable from 'jspdf-autotable';
                 </div>
               </div>
             </div>
-            <div class="bg-surface-elevated/50 px-8 py-5 border-t border-subtle flex justify-end gap-3">
-              <button type="button" (click)="showAddTemplateModal.set(false)" class="px-6 py-2.5 bg-surface hover-surface-elevated text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95 shadow-sm">
+            <div class="bg-surface px-6 py-4 border-t border-subtle flex justify-end gap-3">
+              <button type="button" (click)="showAddTemplateModal.set(false)" class="px-5 py-2 bg-surface-elevated hover:bg-strong text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95">
                 Cancelar
               </button>
-              <button type="submit" [disabled]="templateForm.invalid || isSubmitting()" class="px-8 py-2.5 bg-brand hover:bg-brand-hover disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle text-white rounded-xl text-sm font-black shadow-lg shadow-brand/20 transition-all active:scale-95 border border-brand uppercase tracking-widest">
+              <button type="submit" [disabled]="templateForm.invalid || isSubmitting()" class="px-6 py-2 btn-primary disabled:bg-surface-elevated disabled:text-muted disabled:border-subtle text-white rounded-xl text-sm font-black shadow-sm transition-all active:scale-95 disabled:opacity-50">
                 Salvar
               </button>
             </div>
@@ -244,35 +244,38 @@ import autoTable from 'jspdf-autotable';
 
     <!-- Setup Issue/Photo Modal -->
     @if(templateToIssue()) {
-        <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex flex-col pt-10 px-4 pb-4 animate-in fade-in zoom-in-95 duration-200" (click)="closeIssueModal()">
-            <div class="max-w-md mx-auto w-full flex flex-col bg-surface rounded-3xl overflow-hidden shadow-2xl relative" (click)="$event.stopPropagation()">
-                <div class="p-6 bg-danger border-b border-danger-hover text-white flex justify-between items-start">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200" (click)="closeIssueModal()">
+            <div class="max-w-md w-full bg-surface rounded-3xl overflow-hidden shadow-2xl relative border border-subtle" (click)="$event.stopPropagation()">
+                <div class="p-5 bg-danger/10 border-b border-danger/20 flex justify-between items-start">
                     <div>
-                        <h3 class="text-xl font-black title-display tracking-tight flex items-center gap-2 mb-1">
-                            <span translate="no" class="notranslate material-symbols-outlined">report</span> Reportar Problema
+                        <h3 class="text-lg font-black title-display tracking-tight flex items-center gap-2 mb-1 text-danger">
+                            <span translate="no" class="notranslate material-symbols-outlined text-[20px]">report</span> Reportar Problema
                         </h3>
-                        <p class="text-sm font-bold text-white/80 line-clamp-2 leading-tight">{{ templateToIssue()!.task_description }}</p>
+                        <p class="text-xs font-bold text-danger/80 line-clamp-2 leading-tight">{{ templateToIssue()!.task_description }}</p>
                     </div>
+                    <button (click)="closeIssueModal()" class="p-1.5 rounded-xl text-danger/70 hover:bg-danger/20 hover:text-danger active:scale-95 transition-all">
+                        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">close</span>
+                    </button>
                 </div>
                 
-                <div class="p-6 space-y-6">
+                <div class="p-6 space-y-5">
                     <!-- Fake Camera Viewport -->
-                     <button class="w-full aspect-[4/3] bg-app border-2 border-dashed border-strong rounded-2xl flex flex-col items-center justify-center text-muted hover:text-brand hover:bg-brand/5 hover:border-brand/30 transition-all group active:scale-[0.98]">
-                         <span translate="no" class="notranslate material-symbols-outlined text-5xl mb-2 group-hover:scale-110 transition-transform">photo_camera</span>
-                         <span class="font-bold uppercase tracking-widest text-xs">Capturar Foto (Obrigatório)</span>
+                     <button class="w-full aspect-[21/9] bg-surface-elevated border-2 border-dashed border-strong rounded-2xl flex flex-col items-center justify-center text-muted hover:text-brand hover:bg-brand/5 hover:border-brand/30 transition-all group active:scale-[0.98]">
+                         <span translate="no" class="notranslate material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform">photo_camera</span>
+                         <span class="font-bold uppercase tracking-widest text-[10px]">Capturar Foto (Obrigatório)</span>
                      </button>
                      
                      <div>
-                         <label class="block text-[11px] font-black uppercase tracking-widest text-muted mb-2">Descreva o ocorrido</label>
-                         <textarea [ngModel]="issueNote()" (ngModelChange)="issueNote.set($event)" rows="3" class="w-full bg-surface-elevated border border-strong rounded-xl px-4 py-3 text-title font-medium focus:outline-none focus:border-danger focus:ring-1 focus:ring-danger transition-all resize-none" placeholder="O que quebrou? Faltou algo?"></textarea>
+                         <label class="block text-[10px] font-black uppercase tracking-widest text-muted mb-2">Descreva o ocorrido</label>
+                         <textarea [ngModel]="issueNote()" (ngModelChange)="issueNote.set($event)" rows="3" class="w-full bg-surface border border-strong rounded-xl px-4 py-3 text-title text-sm font-medium focus:outline-none focus:border-danger focus:ring-1 focus:ring-danger transition-all resize-none shadow-inner" placeholder="O que quebrou? Faltou algo?"></textarea>
                      </div>
                 </div>
                 
-                <div class="p-6 pt-0 flex gap-3">
-                    <button (click)="closeIssueModal()" class="flex-1 px-6 py-4 bg-surface hover-surface-elevated text-title rounded-2xl text-sm font-bold border border-strong transition-all active:scale-95 text-center">
+                <div class="p-5 pt-0 flex gap-3 border-t border-subtle mt-2">
+                    <button (click)="closeIssueModal()" class="flex-1 px-4 py-2.5 bg-surface-elevated hover:bg-strong text-title rounded-xl text-sm font-bold border border-strong transition-all active:scale-95 text-center">
                         Cancelar
                     </button>
-                    <button (click)="submitIssue()" [disabled]="!issueNote().trim() || isSubmitting()" class="flex-1 px-6 py-4 bg-danger hover:bg-danger-hover text-white rounded-2xl text-sm font-black shadow-lg shadow-danger/20 transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50">
+                    <button (click)="submitIssue()" [disabled]="!issueNote().trim() || isSubmitting()" class="flex-1 px-4 py-2.5 bg-danger hover:bg-danger-hover text-white rounded-xl text-sm font-black shadow-sm shadow-danger/20 transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50">
                         <span translate="no" class="notranslate material-symbols-outlined text-lg">check_circle</span>
                         Reportar
                     </button>
