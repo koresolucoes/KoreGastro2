@@ -53,7 +53,7 @@ export class UnitContextService {
     const { data: permissions, error: permError } = await supabase
       .from('unit_permissions')
       .select('store_id, role, stores(name)')
-      .eq('user_id', userId);
+      .eq('manager_id', userId);
 
     if (permError) console.error('Error fetching unit permissions:', permError);
 

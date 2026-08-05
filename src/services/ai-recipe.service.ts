@@ -1,72 +1,48 @@
 
-import { Injectable } from '@angular/core';
-import { GoogleGenAI, Type } from '@google/genai';
-import { environment } from '../config/environment';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AiRecipeService {
-  private ai: GoogleGenAI;
-
-  constructor() {
-    if (!environment.geminiApiKey) {
-      document.body.innerHTML = `<div style="color: white; background-color: #111827; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 2rem;">
-          <h1 style="color: #ef4444; font-size: 1.5rem;">Erro de Configuração</h1>
-          <p style="margin-top: 0.5rem;">A chave da API Gemini não foi configurada.</p>
-          <p style="margin-top: 1rem; font-size: 0.875rem; color: #9ca3af;">Por favor, edite o arquivo <code>src/config/environment.ts</code> e insira sua chave da API Gemini.</p>
-      </div>`;
-      throw new Error('Gemini API key not configured.');
-    }
-    this.ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
-  }
+  private http = inject(HttpClient);
 
   async callGeminiForPrediction(prompt: string): Promise<{ ingredientId: string; predictedUsage: number; }[]> {
     try {
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                ingredientId: {
-                  type: Type.STRING,
-                },
-                predictedUsage: {
-                  type: Type.NUMBER,
-                },
-              },
-              required: ['ingredientId', 'predictedUsage'],
-            },
-          },
-        },
-      });
-
-      const jsonText = response.text;
-      if (!jsonText) {
-        throw new Error('No text returned from Gemini API');
+      const response = await firstValueFrom(
+        this.http.post<{ result: { ingredientId: string; predictedUsage: number; }[] }>('/api/ai/gemini-proxy', {
+          prompt,
+          type: 'prediction'
+        })
+      );
+      
+      if (!response || !response.result) {
+        throw new Error('Invalid response from AI proxy');
       }
-      const parsed = JSON.parse(jsonText);
-      return parsed;
+      return response.result;
     } catch (error) {
-      console.error('Error calling Gemini API for prediction:', error);
+      console.error('Error calling Gemini API proxy for prediction:', error);
       throw new Error('Failed to get prediction from AI service.');
     }
   }
   
   private async callGeminiForText(prompt: string): Promise<string> {
     try {
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
-        contents: prompt,
-      });
+      const response = await firstValueFrom(
+        this.http.post<{ text: string }>('/api/ai/gemini-proxy', {
+          prompt,
+          type: 'text'
+        })
+      );
+      
+      if (!response || !response.text) {
+        throw new Error('Invalid response from AI proxy');
+      }
       return response.text;
     } catch (error) {
-      console.error('Error calling Gemini API for text:', error);
+      console.error('Error calling Gemini API proxy for text:', error);
       throw new Error('Failed to get text from AI service.');
     }
   }

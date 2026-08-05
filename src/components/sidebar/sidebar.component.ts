@@ -56,7 +56,7 @@ export class SidebarComponent {
       name: 'Atendimento & Vendas',
       id: 'vendas',
       children: [
-        { name: 'PDV (Caixa)', path: '/pos', icon: 'point_of_sale' },
+        { name: 'PDV', path: '/pos', icon: 'point_of_sale' },
         { name: 'Salão & Mesas', path: '/reservations', icon: 'event_seat' },
         { name: 'Delivery', path: '/delivery', icon: 'local_shipping' },
         { name: 'WhatsApp', path: '/whatsapp-chats', icon: 'chat' },

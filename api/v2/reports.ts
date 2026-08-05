@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
+export const maxDuration = 300;
+
 export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     if (request.method === 'GET') {
         await handleGet(request, response, restaurantId);

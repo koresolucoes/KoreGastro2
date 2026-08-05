@@ -20,9 +20,4 @@ export const environment = {
    * The anonymous public key for your Supabase project.
    */
   supabaseAnonKey: (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '') || (import.meta.env['VITE_SUPABASE_ANON_KEY'] as string) || '',
-
-  /**
-   * Your API key for the Gemini API from Google AI Studio.
-   */
-  geminiApiKey: (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '') || (import.meta.env['VITE_GEMINI_API_KEY'] as string) || '',
 };

@@ -155,15 +155,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await supabaseAdmin
       .from('unit_permissions')
       .upsert({
-        user_id: userId,
-        role: 'manager',
-        can_manage_pos: true,
-        can_manage_kds: true,
-        can_manage_stock: true,
-        can_manage_reports: true,
-        can_manage_settings: true,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+        manager_id: userId,
+        store_id: storeId,
+        role: 'owner',
+      }, { onConflict: 'manager_id, store_id' });
 
     console.log(`[Provisioning Complete] Tenant successfully provisioned: ${storeId}`);
 
