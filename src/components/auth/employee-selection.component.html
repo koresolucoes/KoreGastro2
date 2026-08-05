@@ -18,7 +18,7 @@
   </div>
 
   <!-- Main Container -->
-  <div class="relative w-full max-w-5xl min-h-[650px] bg-surface-elevated/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden flex flex-col lg:flex-row z-10">
+  <div class="relative w-full max-w-5xl min-h-[750px] bg-surface-elevated/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden flex flex-col lg:flex-row z-10">
 
     <!-- Mobile Header (Time & Date - Hidden on Desktop) -->
     <div class="lg:hidden w-full text-center p-8 pb-0 animate-in fade-in slide-in-from-top-4">
@@ -114,20 +114,20 @@
 
         @if (selectedEmployee() && !confirmationEmployee()) {
           <!-- PIN Entry -->
-          <div class="flex flex-col items-center mt-6 mb-8 animate-in slide-in-from-right-4 duration-300">
+          <div class="flex flex-col items-center mt-2 mb-4 animate-in slide-in-from-right-4 duration-300">
             @if (selectedEmployee()!.photo_url) {
-              <img [src]="selectedEmployee()!.photo_url" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover shadow-lg border-4 border-surface mb-4">
+              <img [src]="selectedEmployee()!.photo_url" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shadow-lg border-4 border-surface mb-2">
             } @else {
-              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-surface flex items-center justify-center shadow-inner border border-strong mb-4">
+              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-surface flex items-center justify-center shadow-inner border border-strong mb-2">
                 <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted">person</span>
               </div>
             }
-            <h2 class="text-2xl sm:text-3xl font-black text-title title-display text-center leading-tight truncate w-full px-4">{{ selectedEmployee()!.name }}</h2>
-            <p class="text-[10px] font-black text-brand uppercase tracking-widest mt-1.5">{{ selectedEmployee()!.role }}</p>
+            <h2 class="text-xl sm:text-2xl font-black text-title title-display text-center leading-tight truncate w-full px-4">{{ selectedEmployee()!.name }}</h2>
+            <p class="text-[10px] font-black text-brand uppercase tracking-widest mt-1">{{ selectedEmployee()!.role }}</p>
           </div>
 
-          <div class="text-center mb-8 animate-in slide-in-from-right-4 duration-300 delay-75">
-            <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-4">Digite seu PIN</p>
+          <div class="text-center mb-6 animate-in slide-in-from-right-4 duration-300 delay-75">
+            <p class="text-[10px] font-black text-muted uppercase tracking-widest mb-3">Digite seu PIN</p>
             <div class="flex justify-center gap-3 mb-2 h-14 items-center">
               @for (i of [0, 1, 2, 3]; track i) {
                 <div class="w-12 h-14 rounded-xl border-2 flex items-center justify-center text-2xl font-black shadow-inner transition-all duration-200"
@@ -147,7 +147,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-3 max-w-[280px] mx-auto animate-in slide-in-from-right-4 duration-300 delay-150">
+          <div class="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto animate-in slide-in-from-right-4 duration-300 delay-150">
             @for (digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '']; track digit) {
               @if (digit === 'C') {
                 <button (click)="clearPin()" class="aspect-square rounded-2xl bg-surface text-muted font-black text-xl hover:bg-danger/10 hover:text-danger hover:border-danger/30 active:scale-95 transition-all flex items-center justify-center border border-strong shadow-sm">
