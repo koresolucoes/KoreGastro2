@@ -1101,13 +1101,28 @@ export class PosDataService {
     if (!fallbackUserId)
       return { success: false, error: { message: "Active unit not found" } };
     const tablesToUpsert = tables.map((t) => {
-      let { id, user_id, ...rest } = t;
+      let id = t.id;
       if (id?.startsWith("temp-")) {
         id = id.replace("temp-", "");
       }
-      return { id, user_id: user_id || fallbackUserId, ...rest };
+      return {
+          id,
+          user_id: t.user_id || fallbackUserId,
+          number: t.number,
+          hall_id: t.hall_id,
+          status: t.status || 'LIVRE',
+          x: t.x || 0,
+          y: t.y || 0,
+          width: t.width || 80,
+          height: t.height || 80,
+          employee_id: t.employee_id || null,
+          customer_count: t.customer_count || 0,
+          created_at: t.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+      };
     });
     const { error } = await supabase.from("tables").upsert(tablesToUpsert);
+    if (error) console.error("Error upserting tables:", error);
     return { success: !error, error };
   }
 

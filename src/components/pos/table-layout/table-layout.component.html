@@ -142,17 +142,30 @@
         >
         Editar layout
       </h3>
-      <button
-        (click)="addTable()"
-        class="px-4 py-2 font-bold rounded-xl text-brand bg-brand/10 border border-brand/20 hover:bg-brand/20 transition-colors shadow-sm flex items-center gap-1"
-      >
-        <span
-          translate="no"
-          class="notranslate material-symbols-outlined text-sm"
-          >add</span
+      <div class="flex items-center gap-2">
+        <button
+          (click)="manualSave()"
+          class="px-4 py-2 font-bold rounded-xl text-success bg-success/10 border border-success/20 hover:bg-success/20 transition-colors shadow-sm flex items-center gap-1"
         >
-        Add
-      </button>
+          <span
+            translate="no"
+            class="notranslate material-symbols-outlined text-sm"
+            >save</span
+          >
+          Salvar
+        </button>
+        <button
+          (click)="addTable()"
+          class="px-4 py-2 font-bold rounded-xl text-brand bg-brand/10 border border-brand/20 hover:bg-brand/20 transition-colors shadow-sm flex items-center gap-1"
+        >
+          <span
+            translate="no"
+            class="notranslate material-symbols-outlined text-sm"
+            >add</span
+          >
+          Add
+        </button>
+      </div>
     </div>
     @if (localTables().length > 0) {
       <ul class="space-y-3">
@@ -337,6 +350,15 @@
           >add</span
         >
         Adicionar Mesa
+      </button>
+      <button
+        (click)="manualSave()"
+        class="px-5 py-2.5 font-black text-sm rounded-xl text-white bg-success hover:bg-success/90 border border-success/50 shadow-md flex items-center gap-2 transition-transform active:scale-95"
+      >
+        <span translate="no" class="notranslate material-symbols-outlined"
+          >save</span
+        >
+        Salvar
       </button>
     </div>
   </div>

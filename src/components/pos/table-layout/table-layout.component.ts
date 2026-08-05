@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Hall, Table, TableStatus, Order } from '../../../models/db.models';
 import { PosDataService } from '../../../services/pos-data.service';
 import { PosStateService } from '../../../services/pos-state.service';
+import { ToastService } from '../../../services/toast.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
@@ -17,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class TableLayoutComponent implements OnInit, OnDestroy {
   posDataService = inject(PosDataService);
   posState = inject(PosStateService);
+  toastService = inject(ToastService);
   
   hall: InputSignal<Hall> = input.required<Hall>();
   tables: InputSignal<Table[]> = input.required<Table[]>();
@@ -246,13 +248,19 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
   async saveLayout() {
     const tablesToSave = this.localTables();
     if (tablesToSave.length > 0) {
-        await this.posDataService.upsertTables(tablesToSave);
+        const res = await this.posDataService.upsertTables(tablesToSave);
+        if (res.error) console.error('Error upserting tables:', res.error);
     }
     const allTablesInHall = this.tables().filter(t => t.hall_id === this.hall().id);
-    const tablesToDelete = allTablesInHall.filter(t => !tablesToSave.some(lt => lt.id === t.id) && !t.id.startsWith('temp-'));
+    const tablesToDelete = allTablesInHall.filter(t => !tablesToSave.some(lt => lt.id.replace('temp-', '') === t.id) && !t.id.startsWith('temp-'));
     for (const table of tablesToDelete) {
-        await this.posDataService.deleteTable(table.id);
+        const res = await this.posDataService.deleteTable(table.id); if (res.error) console.error('Error deleting table:', res.error);
     }
+  }
+
+  async manualSave() {
+    await this.saveLayout();
+    this.toastService.show('Mapa de mesas salvo com sucesso!', 'success');
   }
 
   // --- Drag and Drop Logic ---

@@ -741,6 +741,17 @@
                         </div>
                       }
 
+                      
+                      <!-- Dispute Alert on Card -->
+                      @if(order.ifood_dispute_id) {
+                        <div class="bg-danger/10 border border-danger/20 text-danger p-2 rounded-xl flex items-center justify-between animate-pulse shrink-0 shadow-sm mt-1 mb-1">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                             <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">error</span>
+                             <span class="font-black text-[9px] uppercase tracking-widest truncate leading-none pt-0.5">Disputa Aberta!</span>
+                          </div>
+                        </div>
+                      }
+
                       <!-- Customer / Main Details -->
                       <div class="space-y-1">
                         <p class="font-black text-title leading-tight text-base">{{ order.customers?.name || 'Cliente Sem Nome' }}</p>
@@ -838,6 +849,17 @@
                           {{ formatTime(order.elapsedTime) }}
                         </span>
                       </div>
+
+                      
+                      <!-- Dispute Alert on Card -->
+                      @if(order.ifood_dispute_id) {
+                        <div class="bg-danger/10 border border-danger/20 text-danger p-2 rounded-xl flex items-center justify-between animate-pulse shrink-0 shadow-sm mt-1 mb-1">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                             <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">error</span>
+                             <span class="font-black text-[9px] uppercase tracking-widest truncate leading-none pt-0.5">Disputa Aberta!</span>
+                          </div>
+                        </div>
+                      }
 
                       <!-- Customer / Main Details -->
                       <div class="space-y-1">
@@ -938,6 +960,17 @@
                           {{ formatTime(order.elapsedTime) }}
                         </span>
                       </div>
+
+                      
+                      <!-- Dispute Alert on Card -->
+                      @if(order.ifood_dispute_id) {
+                        <div class="bg-danger/10 border border-danger/20 text-danger p-2 rounded-xl flex items-center justify-between animate-pulse shrink-0 shadow-sm mt-1 mb-1">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                             <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">error</span>
+                             <span class="font-black text-[9px] uppercase tracking-widest truncate leading-none pt-0.5">Disputa Aberta!</span>
+                          </div>
+                        </div>
+                      }
 
                       <!-- Details -->
                       <div class="space-y-1">
@@ -1043,6 +1076,17 @@
                           {{ formatTime(order.elapsedTime) }}
                         </span>
                       </div>
+
+                      
+                      <!-- Dispute Alert on Card -->
+                      @if(order.ifood_dispute_id) {
+                        <div class="bg-danger/10 border border-danger/20 text-danger p-2 rounded-xl flex items-center justify-between animate-pulse shrink-0 shadow-sm mt-1 mb-1">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                             <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">error</span>
+                             <span class="font-black text-[9px] uppercase tracking-widest truncate leading-none pt-0.5">Disputa Aberta!</span>
+                          </div>
+                        </div>
+                      }
 
                       <!-- Details -->
                       <div class="space-y-1">
@@ -1815,7 +1859,18 @@
                      </div>
                   </div>
 
-                  <!-- Details -->
+                  
+                      <!-- Dispute Alert on Card -->
+                      @if(order.ifood_dispute_id) {
+                        <div class="bg-danger/10 border border-danger/20 text-danger p-2 rounded-xl flex items-center justify-between animate-pulse shrink-0 shadow-sm mt-1 mb-1">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                             <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">error</span>
+                             <span class="font-black text-[9px] uppercase tracking-widest truncate leading-none pt-0.5">Disputa Aberta!</span>
+                          </div>
+                        </div>
+                      }
+
+                      <!-- Details -->
                   <div class="mt-4">
                      <h4 class="text-xl font-black text-title group-hover:text-brand transition-colors tracking-tight">{{ station.name }}</h4>
                      <div class="flex items-center gap-2 mt-2">

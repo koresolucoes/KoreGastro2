@@ -71,14 +71,66 @@ export class NotificationService {
     return list.filter(n => n.type === filter);
   });
 
+  private pollingInterval: any;
+
   constructor() {
     effect(() => {
       const storeId = this.unitContext.activeUnitId();
       if (storeId) {
         this.loadNotifications(storeId);
         this.subscribeToNotifications(storeId);
+        this.startPolling(storeId);
+      } else {
+        this.stopPolling();
       }
     });
+  }
+
+  private startPolling(storeId: string) {
+    this.stopPolling();
+    this.pollingInterval = setInterval(() => {
+      this.pollNewNotifications(storeId);
+    }, 10000);
+  }
+
+  private stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
+  }
+
+  private async pollNewNotifications(storeId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error || !data) return;
+
+      const currentIds = new Set(this.systemNotifications().map(n => n.id));
+      const newModels = data.map(this.mapDbToModel);
+      const addedNotifications = newModels.filter(n => !currentIds.has(n.id));
+
+      if (addedNotifications.length > 0) {
+        this.systemNotifications.set(newModels);
+        
+        // Play sound and show toast for the most recent new notification
+        const latest = addedNotifications[0];
+        if (this.soundEnabled()) {
+           this.playSound(latest.type, latest.severity);
+        }
+        this.show(`${latest.title}: ${latest.message}`, latest.severity === 'error' ? 'error' : latest.severity === 'warning' ? 'warning' : 'info', 4500);
+      } else {
+        // Just update state in case read status changed
+        this.systemNotifications.set(newModels);
+      }
+    } catch (e) {
+      console.error('Failed to poll notifications', e);
+    }
   }
 
   private async loadNotifications(storeId: string) {
@@ -115,6 +167,10 @@ export class NotificationService {
         },
         (payload) => {
           const newNotif = this.mapDbToModel(payload.new);
+          // Check for duplicate to avoid showing toast twice if optimistic update or polling already added it
+          const exists = this.systemNotifications().some(n => n.id === newNotif.id);
+          if (exists) return;
+
           this.systemNotifications.update(current => [newNotif, ...current]);
           
           if (this.soundEnabled()) {
@@ -224,11 +280,23 @@ export class NotificationService {
       if (data.showToast !== false) {
          this.show(`${fallbackNotif.title}: ${fallbackNotif.message}`, fallbackNotif.severity === 'error' ? 'error' : fallbackNotif.severity === 'warning' ? 'warning' : 'info', 4500);
       }
-
       return fallbackNotif;
     }
     
-    return this.mapDbToModel(inserted);
+    const dbModel = this.mapDbToModel(inserted);
+    const exists = this.systemNotifications().some(n => n.id === dbModel.id);
+    if (!exists) {
+      this.systemNotifications.update(current => [dbModel, ...current]);
+      
+      if (this.soundEnabled()) {
+         this.playSound(dbModel.type, dbModel.severity);
+      }
+      if (data.showToast !== false) {
+         this.show(`${dbModel.title}: ${dbModel.message}`, dbModel.severity === 'error' ? 'error' : dbModel.severity === 'warning' ? 'warning' : 'info', 4500);
+      }
+    }
+    
+    return dbModel;
   }
 
   async markAsRead(id: string): Promise<void> {
