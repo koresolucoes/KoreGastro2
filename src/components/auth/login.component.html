@@ -1,6 +1,6 @@
-<div class="flex min-h-screen bg-app relative overflow-hidden">
+<div class="flex min-h-screen bg-app items-center justify-center p-4 relative overflow-hidden">
   <!-- Theme Toggle Floating Button -->
-  <div class="absolute top-4 right-4 z-20">
+  <div class="absolute top-4 right-4 z-30">
     <button (click)="toggleTheme()" type="button" 
             class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-elevated/80 border border-strong text-muted hover:text-title hover:border-brand/40 transition-all shadow-sm active:scale-95 text-xs font-bold">
       <span translate="no" class="notranslate material-symbols-outlined text-lg text-brand">
@@ -16,99 +16,236 @@
     <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-brand/10 blur-[100px] mix-blend-screen" style="animation: pulse 8s infinite alternate;"></div>
   </div>
 
-  <!-- Left Side: Branding (Hidden on Mobile) -->
-  <div class="hidden lg:flex lg:w-1/2 relative p-6">
-    <div class="relative w-full h-full rounded-[2.5rem] overflow-hidden border border-strong shadow-2xl flex flex-col justify-center items-center">
-      <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center"></div>
-      <div class="absolute inset-0 bg-surface-elevated/70 backdrop-blur-[4px]"></div>
-      <div class="relative z-10 text-center p-12">
-        <h1 class="text-7xl font-black text-title mb-6 tracking-tighter drop-shadow-xl">
-          Chef<span class="text-brand">OS</span>
-        </h1>
-        <p class="text-2xl text-body font-medium max-w-lg mx-auto drop-shadow-md">
-          O Sistema Operacional definitivo para o seu restaurante.
-        </p>
+  <!-- Main Container -->
+  <div class="relative w-full max-w-5xl min-h-[650px] bg-surface-elevated/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden flex flex-col lg:flex-row z-10">
+    
+    <!-- Login Form (Left Side Desktop, Toggleable Mobile) -->
+    <div class="w-full lg:w-1/2 h-full lg:absolute lg:top-0 lg:left-0 flex flex-col justify-center p-8 sm:p-12 transition-all duration-500"
+         [ngClass]="{'hidden lg:flex opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto': isRegistering(), 'flex opacity-100 pointer-events-auto': !isRegistering()}">
+      
+      <div class="max-w-md w-full mx-auto">
+        <div class="text-center lg:text-left mb-10">
+          <h1 class="text-5xl font-black text-title mb-4 lg:hidden tracking-tighter">
+            Chef<span class="text-brand">OS</span>
+          </h1>
+          <h2 class="text-3xl font-bold text-title tracking-tight">Acesse sua conta</h2>
+          <p class="mt-2 text-sm text-muted font-medium">Entre com seu e-mail e senha para continuar.</p>
+        </div>
+        
+        <form class="space-y-6" (ngSubmit)="handleLogin()" novalidate>
+          <div class="space-y-4">
+            <div class="relative group">
+              <label for="email-login" class="sr-only">Endereço de e-mail</label>
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
+                <span translate="no" class="notranslate material-symbols-outlined">mail</span>
+              </div>
+              <input id="email-login" name="emailLogin" type="email" autocomplete="email" required
+                [value]="email()" (input)="email.set($any($event.target).value)"
+                class="block w-full pl-12 pr-4 py-4 text-base bg-surface border border-strong rounded-2xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner" 
+                placeholder="seu-email@dominio.com">
+            </div>
+            <div class="relative group">
+              <label for="password-login" class="sr-only">Senha</label>
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
+                <span translate="no" class="notranslate material-symbols-outlined">lock</span>
+              </div>
+              <input id="password-login" name="passwordLogin" type="password" autocomplete="current-password" required
+                [value]="password()" (input)="password.set($any($event.target).value)"
+                class="block w-full pl-12 pr-4 py-4 text-base bg-surface border border-strong rounded-2xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner" 
+                placeholder="Sua senha">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end text-sm">
+            <a (click)="forgotPassword()" class="font-bold text-brand hover:text-brand-light cursor-pointer transition-colors">
+              Esqueceu sua senha?
+            </a>
+          </div>
+
+          @if(authState() === 'error' && !isRegistering()) {
+            <div class="p-4 bg-danger/10 border border-danger/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
+              <p class="text-sm font-semibold text-danger text-center">{{ errorMessage() }}</p>
+            </div>
+          }
+
+          <button type="submit" [disabled]="authState() === 'loading' && !isRegistering()"
+            class="group relative w-full flex justify-center items-center gap-2 py-4 px-4 text-lg font-black rounded-2xl text-white bg-brand hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-brand/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-1 active:translate-y-0 shadow-lg shadow-brand/20">
+            @if(authState() === 'loading' && !isRegistering()) {
+              <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Entrando...
+            } @else {
+               Entrar <span translate="no" class="notranslate material-symbols-outlined text-2xl transition-transform group-hover:translate-x-1">arrow_forward</span>
+            }
+          </button>
+        </form>
+
+        <div class="text-center pt-8 mt-8 border-t border-subtle lg:hidden">
+          <p class="text-sm font-medium text-muted">
+            Novo no ChefOS?
+            <button type="button" (click)="toggleMode()" class="font-bold text-brand hover:text-brand-light transition-colors ml-1">
+              Crie sua conta
+            </button>
+          </p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Right Side: Form -->
-  <div class="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-12 relative z-10">
-    <div class="w-full max-w-md bg-surface-elevated/80 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong relative overflow-hidden">
-      <!-- Glow accent line top -->
-      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brand to-transparent opacity-60"></div>
+    <!-- Register Form (Right Side Desktop, Toggleable Mobile) -->
+    <div class="w-full lg:w-1/2 h-full lg:absolute lg:top-0 lg:right-0 flex flex-col justify-center p-8 sm:p-12 transition-all duration-500"
+         [ngClass]="{'hidden lg:flex opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto': !isRegistering(), 'flex opacity-100 pointer-events-auto': isRegistering()}">
       
-      <div class="text-center lg:text-left mb-10">
-        <h1 class="text-5xl font-black text-title mb-4 lg:hidden tracking-tighter">
-          Chef<span class="text-brand">OS</span>
-        </h1>
-        <h2 class="text-3xl font-bold text-title tracking-tight">Acesse sua conta</h2>
-        <p class="mt-2 text-sm text-muted font-medium">Entre com seu e-mail e senha para continuar.</p>
-      </div>
-      
-      <form class="space-y-6" (ngSubmit)="handleLogin()" novalidate>
-        <div class="space-y-4">
-          <div class="relative group">
-            <label for="email-address" class="sr-only">Endereço de e-mail</label>
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-              <span translate="no" class="notranslate material-symbols-outlined">mail</span>
-            </div>
-            <input id="email-address" name="email" type="email" autocomplete="email" required
-              [value]="email()" (input)="email.set($any($event.target).value)"
-              class="block w-full pl-12 pr-4 py-4 text-base bg-surface border border-strong rounded-2xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner" 
-              placeholder="seu-email@dominio.com">
-          </div>
-          <div class="relative group">
-            <label for="password" class="sr-only">Senha</label>
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
-              <span translate="no" class="notranslate material-symbols-outlined">lock</span>
-            </div>
-            <input id="password" name="password" type="password" autocomplete="current-password" required
-              [value]="password()" (input)="password.set($any($event.target).value)"
-              class="block w-full pl-12 pr-4 py-4 text-base bg-surface border border-strong rounded-2xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner" 
-              placeholder="Sua senha">
-          </div>
+      <div class="max-w-md w-full mx-auto">
+        <div class="text-center lg:text-left mb-8">
+          <h1 class="text-5xl font-black text-title mb-4 lg:hidden tracking-tighter">
+            Chef<span class="text-brand">OS</span>
+          </h1>
+          <h2 class="text-3xl font-bold text-title tracking-tight">Crie sua conta</h2>
+          <p class="mt-2 text-sm text-muted font-medium">Cadastre-se para começar a usar o ChefOS.</p>
         </div>
-
-        <div class="flex items-center justify-end text-sm">
-          <a (click)="forgotPassword()" class="font-bold text-brand hover:text-brand-light cursor-pointer transition-colors">
-            Esqueceu sua senha?
-          </a>
-        </div>
-
-        @if(authState() === 'error') {
-          <div class="p-4 bg-danger/10 border border-danger/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
-            <p class="text-sm font-semibold text-danger text-center">{{ errorMessage() }}</p>
-          </div>
-        }
-
-        <button type="submit" [disabled]="authState() === 'loading'"
-          class="group relative w-full flex justify-center items-center gap-2 py-4 px-4 text-lg font-black rounded-2xl text-white bg-brand hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-brand/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-1 active:translate-y-0 shadow-lg shadow-brand/20">
-          @if(authState() === 'loading') {
-            <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Entrando...
-          } @else {
-             Entrar <span translate="no" class="notranslate material-symbols-outlined text-2xl transition-transform group-hover:translate-x-1">arrow_forward</span>
-          }
-        </button>
-      </form>
-
-      <div class="text-center pt-8 mt-8 border-t border-subtle space-y-5">
-        <p class="text-sm font-medium text-muted">
-          Novo no ChefOS?
-          <a routerLink="/register" class="font-bold text-brand hover:text-brand-light transition-colors cursor-pointer ml-1">
-            Crie sua conta
-          </a>
-        </p>
         
-        <div class="pt-2">
-          <a routerLink="/admin" class="inline-flex items-center gap-2 text-[10px] font-black text-muted hover:text-title transition-colors uppercase tracking-widest bg-surface px-4 py-2 rounded-full border border-strong shadow-sm hover:-translate-y-0.5">
-            <span translate="no" class="notranslate material-symbols-outlined text-sm">admin_panel_settings</span>
-            Acesso Administrativo
-          </a>
+        <form class="space-y-5" (ngSubmit)="handleRegister()" novalidate>
+          <div class="space-y-4">
+            <div class="relative group">
+              <label for="email-reg" class="sr-only">Endereço de e-mail</label>
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
+                <span translate="no" class="notranslate material-symbols-outlined">mail</span>
+              </div>
+              <input id="email-reg" name="emailReg" type="email" autocomplete="email" required
+                [value]="email()" (input)="email.set($any($event.target).value)"
+                class="block w-full pl-12 pr-4 py-4 text-base bg-surface border border-strong rounded-2xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner" 
+                placeholder="seu-email@dominio.com">
+            </div>
+            
+            <div class="relative group">
+              <label for="password-reg" class="sr-only">Senha</label>
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
+                <span translate="no" class="notranslate material-symbols-outlined">lock</span>
+              </div>
+              <input id="password-reg" name="passwordReg" type="password" autocomplete="new-password" required
+                [value]="password()" (input)="password.set($any($event.target).value)"
+                class="block w-full pl-12 pr-4 py-4 text-base bg-surface border border-strong rounded-2xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner" 
+                placeholder="Sua senha">
+            </div>
+
+            <!-- Password Strength Bar -->
+            @if(password().length > 0) {
+              <div class="px-2 animate-in fade-in slide-in-from-top-1">
+                <div class="flex justify-between items-center mb-1.5">
+                  <span class="text-[10px] font-bold uppercase tracking-widest text-muted">Segurança da Senha</span>
+                  <span class="text-[10px] font-black uppercase tracking-widest" [ngClass]="passwordStrengthColor().replace('bg-', 'text-')">
+                    {{ passwordStrengthLabel() }}
+                  </span>
+                </div>
+                <div class="h-1.5 w-full bg-surface border border-strong rounded-full overflow-hidden">
+                  <div class="h-full transition-all duration-300" [ngClass]="passwordStrengthColor()" [style.width]="passwordStrength() + '%'"></div>
+                </div>
+              </div>
+            }
+
+            <div class="relative group">
+              <label for="confirm-password" class="sr-only">Confirme a Senha</label>
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted group-focus-within:text-brand transition-colors">
+                <span translate="no" class="notranslate material-symbols-outlined">lock_reset</span>
+              </div>
+              <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required
+                [value]="confirmPassword()" (input)="confirmPassword.set($any($event.target).value)"
+                class="block w-full pl-12 pr-4 py-4 text-base bg-surface border border-strong rounded-2xl text-title placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all shadow-inner" 
+                placeholder="Confirme sua senha">
+            </div>
+          </div>
+
+          @if(authState() === 'error' && isRegistering()) {
+            <div class="p-4 bg-danger/10 border border-danger/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
+              <p class="text-sm font-semibold text-danger text-center">{{ errorMessage() }}</p>
+            </div>
+          }
+
+          <button type="submit" [disabled]="authState() === 'loading' && isRegistering()"
+            class="group relative w-full flex justify-center items-center gap-2 py-4 px-4 text-lg font-black rounded-2xl text-white bg-brand hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-brand/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-1 active:translate-y-0 shadow-lg shadow-brand/20">
+            @if(authState() === 'loading' && isRegistering()) {
+              <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Cadastrando...
+            } @else {
+               Criar Conta <span translate="no" class="notranslate material-symbols-outlined text-2xl transition-transform group-hover:translate-x-1">person_add</span>
+            }
+          </button>
+        </form>
+
+        <div class="text-center pt-8 mt-8 border-t border-subtle lg:hidden">
+          <p class="text-sm font-medium text-muted">
+            Já tem uma conta?
+            <button type="button" (click)="toggleMode()" class="font-bold text-brand hover:text-brand-light transition-colors ml-1">
+              Faça login
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sliding Overlay (Desktop Only) -->
+    <div class="hidden lg:flex absolute top-0 left-0 w-1/2 h-full z-20 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden shadow-2xl"
+         [ngClass]="{'translate-x-0': isRegistering(), 'translate-x-full': !isRegistering()}">
+      
+      <!-- Overlay Background Images -->
+      <div class="absolute inset-0 w-[200%] h-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+           [ngClass]="{'-translate-x-1/2': isRegistering(), 'translate-x-0': !isRegistering()}">
+           
+        <!-- Left Image (Login active - covers right side) -->
+        <div class="absolute inset-y-0 right-0 w-1/2 h-full">
+          <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="absolute inset-0 bg-brand/80 mix-blend-multiply"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+        </div>
+
+        <!-- Right Image (Register active - covers left side) -->
+        <div class="absolute inset-y-0 left-0 w-1/2 h-full">
+          <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1583394838336-acd977736f90?q=80&w=1984&auto=format&fit=crop')] bg-cover bg-center"></div>
+          <div class="absolute inset-0 bg-brand/80 mix-blend-multiply"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+        </div>
+      </div>
+
+      <!-- Overlay Content wrapper -->
+      <div class="relative w-full h-full flex flex-col justify-center items-center text-center p-12 text-white">
+        
+        <!-- Welcome Back Content (Shown when Login is active) -->
+        <div class="absolute flex flex-col justify-center items-center transition-all duration-500 transform w-full px-12"
+             [ngClass]="{'opacity-0 scale-95 pointer-events-none': isRegistering(), 'opacity-100 scale-100 pointer-events-auto delay-200': !isRegistering()}">
+          <h1 class="text-7xl font-black mb-6 tracking-tighter drop-shadow-xl">
+            Chef<span class="text-white/80">OS</span>
+          </h1>
+          <h2 class="text-3xl font-bold mb-4 drop-shadow-md">Bem-vindo(a) de volta!</h2>
+          <p class="text-lg font-medium text-white/80 mb-10 max-w-sm">
+            Pronto para revolucionar a gestão do seu restaurante hoje?
+          </p>
+          <p class="text-sm font-medium mb-4 uppercase tracking-widest text-white/60">Ainda não tem conta?</p>
+          <button (click)="toggleMode()" 
+                  class="px-10 py-4 rounded-2xl border-2 border-white text-white font-black hover:bg-white hover:text-brand transition-all active:scale-95 shadow-lg">
+            Criar Conta Agora
+          </button>
+        </div>
+
+        <!-- Start Journey Content (Shown when Register is active) -->
+        <div class="absolute flex flex-col justify-center items-center transition-all duration-500 transform w-full px-12"
+             [ngClass]="{'opacity-0 scale-95 pointer-events-none': !isRegistering(), 'opacity-100 scale-100 pointer-events-auto delay-200': isRegistering()}">
+          <h1 class="text-7xl font-black mb-6 tracking-tighter drop-shadow-xl">
+            Chef<span class="text-white/80">OS</span>
+          </h1>
+          <h2 class="text-3xl font-bold mb-4 drop-shadow-md">Evolua seu negócio</h2>
+          <p class="text-lg font-medium text-white/80 mb-10 max-w-sm">
+            Junte-se aos melhores restaurantes e simplifique sua operação com nossa plataforma.
+          </p>
+          <p class="text-sm font-medium mb-4 uppercase tracking-widest text-white/60">Já faz parte do time?</p>
+          <button (click)="toggleMode()" 
+                  class="px-10 py-4 rounded-2xl border-2 border-white text-white font-black hover:bg-white hover:text-brand transition-all active:scale-95 shadow-lg">
+            Fazer Login
+          </button>
         </div>
       </div>
     </div>

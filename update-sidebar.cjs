@@ -1,49 +1,10 @@
-import { Component, ChangeDetectionStrategy, inject, computed, signal, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive, Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { OperationalAuthService } from '../../services/operational-auth.service';
-import { DemoService } from '../../services/demo.service';
-import { UnitContextService } from '../../services/unit-context.service';
-import { LayoutService } from '../../services/layout.service';
+const fs = require('fs');
+const path = require('path');
 
-export interface NavLink {
-  name: string;
-  path: string;
-  icon: string;
-}
+const filePath = path.join(__dirname, 'src/components/sidebar/sidebar.component.ts');
+let content = fs.readFileSync(filePath, 'utf8');
 
-export interface NavGroup {
-  name: string;
-  id: string;
-  children: NavLink[];
-}
-
-@Component({
-  selector: 'app-sidebar',
-  standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
-  templateUrl: './sidebar.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-export class SidebarComponent {
-  authService = inject(AuthService);
-  operationalAuthService = inject(OperationalAuthService);
-  demoService = inject(DemoService);
-  unitContextService = inject(UnitContextService);
-  layoutService = inject(LayoutService);
-  router = inject(Router);
-
-  isDemoMode = this.demoService.isDemoMode;
-  activeEmployee = this.operationalAuthService.activeEmployee;
-  currentUnitName = this.unitContextService.activeUnitName;
-  activeUnitId = this.unitContextService.activeUnitId;
-  availableUnits = this.unitContextService.availableUnits;
-
-  isCollapsed = signal(false);
-  isUnitSelectorOpen = signal(false);
-  
-    allNavGroups: NavGroup[] = [
+const newGroups = `  allNavGroups: NavGroup[] = [
     {
       name: 'Painel',
       id: 'painel',
@@ -126,52 +87,9 @@ export class SidebarComponent {
         { name: 'Suporte', path: '/support', icon: 'help_center' },
       ]
     }
-  ];
+  ];`;
 
-  navGroups = computed(() => {
-    const isDemo = this.isDemoMode();
-    const demoAllowedPaths = [
-      '/dashboard', '/tutorials', '/pos', '/reservations', '/kds', '/delivery', '/cashier',
-      '/whatsapp-chats', '/ifood-kds', '/ifood-menu', '/ifood-store-manager', '/menu',
-      '/menu-builder', '/technical-sheets', '/mise-en-place', '/checklists', '/temperatures',
-      '/inventory', '/inventory/portioning', '/requisitions', '/purchasing', '/suppliers',
-      '/inventory/audit', '/employees', '/time-clock', '/schedules', '/leave-management',
-      '/my-leave', '/payroll', '/performance', '/customers', '/reports', '/settings', '/support'
-    ];
-    
-    return this.allNavGroups.map(group => ({
-      ...group,
-      children: group.children.filter(link => {
-        if (isDemo) return demoAllowedPaths.includes(link.path);
-        return this.operationalAuthService.hasPermission(link.path);
-      })
-    })).filter(group => group.children.length > 0);
-  });
+content = content.replace(/allNavGroups: NavGroup\[\] = \[.*}\s*\];/s, newGroups);
 
-  toggleSidebar() {
-    this.isCollapsed.update(v => !v);
-  }
-
-  toggleUnitSelector(event?: Event) {
-    if (event) {
-      event.stopPropagation();
-    }
-    this.isUnitSelectorOpen.update(v => !v);
-  }
-
-  switchUnit(unitId: string, event?: Event) {
-    if (event) {
-      event.stopPropagation();
-    }
-    this.unitContextService.setUnit(unitId);
-    this.isUnitSelectorOpen.set(false);
-  }
-
-  @HostListener('document:click', ['$event'])
-  closeDropdowns(event: Event) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.unit-selector')) {
-      this.isUnitSelectorOpen.set(false);
-    }
-  }
-}
+fs.writeFileSync(filePath, content);
+console.log('Sidebar updated!');
