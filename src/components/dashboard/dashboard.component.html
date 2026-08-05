@@ -11,10 +11,10 @@
     
     <div class="flex flex-wrap items-center gap-3">
       <!-- Period Selector -->
-      <div class="flex space-x-1 bg-surface-elevated p-1 rounded-2xl border border-subtle shadow-sm">
-        <button (click)="setPeriod('day')" class="px-4 py-1.5 text-xs font-bold rounded-xl transition-all" [class]="period() === 'day' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Hoje</button>
-        <button (click)="setPeriod('week')" class="px-4 py-1.5 text-xs font-bold rounded-xl transition-all" [class]="period() === 'week' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Semana</button>
-        <button (click)="setPeriod('month')" class="px-4 py-1.5 text-xs font-bold rounded-xl transition-all" [class]="period() === 'month' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Mês</button>
+      <div class="flex space-x-1 bg-surface-elevated p-1 rounded-xl border border-subtle shadow-sm">
+        <button (click)="setPeriod('day')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'day' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Hoje</button>
+        <button (click)="setPeriod('week')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'week' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Semana</button>
+        <button (click)="setPeriod('month')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'month' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Mês</button>
       </div>
 
       <!-- Control Panel / Edit Layout Button -->
@@ -39,81 +39,81 @@
     </div>
   } @else {
 
-    <!-- 2. Top KPI Cards Row (5 Cards matching reference design) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <!-- 2. Top KPI Cards Row (Horizontal scroll on mobile, Grid on desktop) -->
+    <div class="flex overflow-x-auto pb-4 mb-2 lg:grid lg:grid-cols-5 gap-4 snap-x snap-mandatory hide-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 lg:pb-0 lg:mb-6">
       
       <!-- Card 1: Vendas -->
-      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+      <div class="snap-start shrink-0 min-w-[260px] lg:min-w-0 bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
         <div class="min-w-0 flex-1 pr-2">
           <p class="text-xs font-medium text-muted truncate mb-1">
             Vendas {{ period() === 'day' ? 'Hoje' : period() === 'week' ? 'Semana' : 'Mês' }}
           </p>
           <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ totalSales() | currency:'BRL' }}</h2>
           <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
-            <span translate="no" class="notranslate material-symbols-outlined text-xs text-brand">equalizer</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-xs">equalizer</span>
             <span>no período</span>
           </div>
         </div>
-        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+        <div class="w-12 h-12 rounded-2xl bg-surface border border-subtle text-title flex items-center justify-center shrink-0">
           <span translate="no" class="notranslate material-symbols-outlined text-2xl">shopping_bag</span>
         </div>
       </div>
 
       <!-- Card 2: Pedidos -->
-      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+      <div class="snap-start shrink-0 min-w-[260px] lg:min-w-0 bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
         <div class="min-w-0 flex-1 pr-2">
           <p class="text-xs font-medium text-muted truncate mb-1">Pedidos</p>
           <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ totalOrders() }}</h2>
           <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
-            <span translate="no" class="notranslate material-symbols-outlined text-xs text-blue-500">shopping_cart</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-xs">shopping_cart</span>
             <span>no período</span>
           </div>
         </div>
-        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+        <div class="w-12 h-12 rounded-2xl bg-surface border border-subtle text-title flex items-center justify-center shrink-0">
           <span translate="no" class="notranslate material-symbols-outlined text-2xl">shopping_basket</span>
         </div>
       </div>
 
       <!-- Card 3: Ticket Médio -->
-      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+      <div class="snap-start shrink-0 min-w-[260px] lg:min-w-0 bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
         <div class="min-w-0 flex-1 pr-2">
           <p class="text-xs font-medium text-muted truncate mb-1">Ticket Médio</p>
           <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ averageTicket() | currency:'BRL' }}</h2>
           <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
-            <span translate="no" class="notranslate material-symbols-outlined text-xs text-purple-500">analytics</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-xs">analytics</span>
             <span>por pedido</span>
           </div>
         </div>
-        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+        <div class="w-12 h-12 rounded-2xl bg-surface border border-subtle text-title flex items-center justify-center shrink-0">
           <span translate="no" class="notranslate material-symbols-outlined text-2xl">receipt_long</span>
         </div>
       </div>
 
       <!-- Card 4: CMV -->
-      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+      <div class="snap-start shrink-0 min-w-[260px] lg:min-w-0 bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
         <div class="min-w-0 flex-1 pr-2">
           <p class="text-xs font-medium text-muted truncate mb-1">CMV Real</p>
           <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">
             {{ totalSales() > 0 ? ((cogs() / totalSales()) | percent:'1.1-1') : '0,0%' }}
           </h2>
           <div class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-muted">
-            <span translate="no" class="notranslate material-symbols-outlined text-xs text-amber-500">inventory_2</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-xs">inventory_2</span>
             <span>custo insumos</span>
           </div>
         </div>
-        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+        <div class="w-12 h-12 rounded-2xl bg-surface border border-subtle text-title flex items-center justify-center shrink-0">
           <span translate="no" class="notranslate material-symbols-outlined text-2xl">inventory_2</span>
         </div>
       </div>
 
       <!-- Card 5: Mesas Ocupadas -->
-      <div class="bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+      <div class="snap-start shrink-0 min-w-[260px] lg:min-w-0 bg-surface-elevated border border-subtle rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
         <div class="min-w-0 flex-1 pr-2">
           <p class="text-xs font-medium text-muted truncate mb-1">Mesas Ocupadas</p>
           <h2 class="text-xl font-extrabold text-title data-mono tracking-tight truncate">{{ occupiedTablesCount() }} / {{ totalTablesCount() }}</h2>
           <p class="text-[11px] font-semibold text-muted mt-1">{{ occupancyRate() | percent:'1.0-0' }} ocupação</p>
         </div>
-        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+        <div class="w-12 h-12 rounded-2xl bg-surface border border-subtle text-title flex items-center justify-center shrink-0">
           <span translate="no" class="notranslate material-symbols-outlined text-2xl">groups</span>
         </div>
       </div>
@@ -124,43 +124,43 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
       
       <!-- Alert 1: Cozinha -->
-      <div class="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
-        <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-semibold truncate">
-          @if(delayedKitchenOrders() > 0) {
-            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-          } @else {
-            <span translate="no" class="notranslate material-symbols-outlined text-sm text-emerald-500">check_circle</span>
-          }
-          <span class="truncate">{{ delayedKitchenOrders() }} {{ delayedKitchenOrders() === 1 ? 'pedido atrasado' : 'pedidos atrasados' }} na cozinha</span>
+      @if(delayedKitchenOrders() > 0) {
+      <div class="bg-rose-500/10 border border-rose-500 rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-sm">
+        <div class="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-bold truncate">
+          <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0"></span>
+          <span class="truncate">{{ delayedKitchenOrders() }} {{ delayedKitchenOrders() === 1 ? 'pedido atrasado' : 'pedidos atrasados' }}</span>
         </div>
-        <a routerLink="/kds" class="text-rose-600 dark:text-rose-400 font-bold hover:underline shrink-0 ml-2">Ver agora</a>
+        <a routerLink="/kds" class="text-rose-700 dark:text-rose-400 font-extrabold hover:underline shrink-0 ml-2 py-1 px-2 bg-rose-500/20 rounded-lg whitespace-nowrap">Ver agora</a>
       </div>
+      }
 
       <!-- Alert 2: Estoque -->
-      <div class="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
-        <div class="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold truncate">
-          <span translate="no" class="notranslate material-symbols-outlined text-sm text-amber-500">warning</span>
-          <span class="truncate">{{ lowStockCount() }} {{ lowStockCount() === 1 ? 'item abaixo' : 'itens abaixo' }} do estoque mínimo</span>
+      @if(lowStockCount() > 0) {
+      <div class="bg-amber-500/10 border border-amber-500 rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-sm">
+        <div class="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold truncate">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">warning</span>
+          <span class="truncate">{{ lowStockCount() }} {{ lowStockCount() === 1 ? 'item abaixo' : 'itens abaixo' }} do mínimo</span>
         </div>
-        <a routerLink="/inventory" class="text-amber-700 dark:text-amber-400 font-bold hover:underline shrink-0 ml-2">Ver estoque</a>
+        <a routerLink="/inventory" class="text-amber-700 dark:text-amber-400 font-extrabold hover:underline shrink-0 ml-2 py-1 px-2 bg-amber-500/20 rounded-lg whitespace-nowrap">Estoque</a>
       </div>
+      }
 
       <!-- Alert 3: Caixa -->
-      <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
-        <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold truncate">
-          <span translate="no" class="notranslate material-symbols-outlined text-sm text-emerald-500">check_circle</span>
-          <span class="truncate">Caixa do dia anterior fechado</span>
+      <div class="bg-surface-elevated border border-subtle rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
+        <div class="flex items-center gap-2 text-muted font-semibold truncate">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">check_circle</span>
+          <span class="truncate">Caixa anterior fechado</span>
         </div>
-        <a routerLink="/cashier" class="text-emerald-700 dark:text-emerald-400 font-bold hover:underline shrink-0 ml-2">Ver caixa</a>
+        <a routerLink="/cashier" class="text-title font-bold hover:underline shrink-0 ml-2 whitespace-nowrap">Ver caixa</a>
       </div>
 
       <!-- Alert 4: Entregas -->
-      <div class="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
-        <div class="flex items-center gap-2 text-purple-700 dark:text-purple-400 font-semibold truncate">
-          <span translate="no" class="notranslate material-symbols-outlined text-sm text-purple-500">two_wheeler</span>
-          <span class="truncate">{{ activeDeliveriesCount() }} {{ activeDeliveriesCount() === 1 ? 'entrega em andamento' : 'entregas em andamento' }}</span>
+      <div class="bg-surface-elevated border border-subtle rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-xs">
+        <div class="flex items-center gap-2 text-muted font-semibold truncate">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">two_wheeler</span>
+          <span class="truncate">{{ activeDeliveriesCount() }} {{ activeDeliveriesCount() === 1 ? 'entrega ativa' : 'entregas ativas' }}</span>
         </div>
-        <a routerLink="/delivery" class="text-purple-700 dark:text-purple-400 font-bold hover:underline shrink-0 ml-2">Ver entregas</a>
+        <a routerLink="/delivery" class="text-title font-bold hover:underline shrink-0 ml-2 whitespace-nowrap">Ver entregas</a>
       </div>
 
     </div>
@@ -174,12 +174,12 @@
         </div>
         <div class="flex items-center gap-3">
            <!-- View Mode Toggle -->
-           <div class="flex items-center bg-surface-elevated rounded-xl p-1 border border-subtle shadow-xs">
-             <button (click)="viewMode.set('grid')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" [class]="viewMode() === 'grid' ? 'bg-surface text-brand shadow-xs' : 'text-muted hover:text-title'">
-               <span translate="no" class="notranslate material-symbols-outlined text-base">grid_view</span> Grade
+           <div class="flex space-x-1 bg-surface-elevated rounded-xl p-1 border border-subtle shadow-xs">
+             <button (click)="viewMode.set('grid')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1" [class]="viewMode() === 'grid' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">
+               <span translate="no" class="notranslate material-symbols-outlined text-[16px]">grid_view</span> Grade
              </button>
-             <button (click)="viewMode.set('list')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" [class]="viewMode() === 'list' ? 'bg-surface text-brand shadow-xs' : 'text-muted hover:text-title'">
-               <span translate="no" class="notranslate material-symbols-outlined text-base">view_list</span> Lista
+             <button (click)="viewMode.set('list')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1" [class]="viewMode() === 'list' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">
+               <span translate="no" class="notranslate material-symbols-outlined text-[16px]">view_list</span> Lista
              </button>
            </div>
            
@@ -194,16 +194,16 @@
       <!-- Grid/List View of Categories -->
       <div [class]="viewMode() === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5' : 'flex flex-col gap-4'">
         @for(cat of activeCategories(); track cat.id) {
-          <div class="bg-surface-elevated border border-subtle rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[185px]">
+          <div (click)="selectedCategoryForModal.set(cat)" class="bg-surface-elevated border border-subtle rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[185px] cursor-pointer group">
             
             <!-- Top Part of Card -->
             <div>
               <div class="flex items-start gap-3.5 mb-3">
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" [class]="cat.iconBgClass">
-                  <span translate="no" class="notranslate material-symbols-outlined text-2xl">{{ cat.icon }}</span>
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors group-hover:bg-brand/5 group-hover:border-brand/30" [class]="cat.iconBgClass">
+                  <span translate="no" class="notranslate material-symbols-outlined text-2xl group-hover:text-brand transition-colors">{{ cat.icon }}</span>
                 </div>
                 <div class="min-w-0 flex-1">
-                  <h3 class="text-base font-bold text-title tracking-tight truncate">{{ cat.title }}</h3>
+                  <h3 class="text-base font-bold text-title tracking-tight truncate group-hover:text-brand transition-colors">{{ cat.title }}</h3>
                   <p class="text-xs text-muted line-clamp-2 mt-0.5 leading-relaxed">{{ cat.description }}</p>
                   <span class="text-xs font-bold block mt-1" [class]="cat.textColorClass">{{ cat.items.length }} apps</span>
                 </div>
@@ -211,14 +211,14 @@
             </div>
             
             <!-- Bottom Launcher Row -->
-            <div class="flex items-center gap-2 pt-3 border-t border-subtle/50 mt-auto">
+            <div class="flex items-center gap-2 pt-3 border-t border-subtle/50 mt-auto" (click)="$event.stopPropagation()">
               @for(item of cat.items | slice:0:4; track item.path) {
-                <a [routerLink]="item.path" class="w-8 h-8 rounded-xl flex items-center justify-center hover:scale-110 transition-transform cursor-pointer" [class]="item.color" [title]="item.name">
-                  <span translate="no" class="notranslate material-symbols-outlined text-white text-[16px] drop-shadow-xs">{{ item.icon }}</span>
+                <a [routerLink]="item.path" class="w-8 h-8 rounded-xl flex items-center justify-center hover:scale-110 transition-all cursor-pointer" [class]="item.color" [title]="item.name">
+                  <span translate="no" class="notranslate material-symbols-outlined text-[16px]">{{ item.icon }}</span>
                 </a>
               }
               @if(cat.items.length > 4) {
-                 <div (click)="selectedCategoryForModal.set(cat)" class="w-8 h-8 rounded-xl bg-surface border border-subtle flex items-center justify-center text-xs font-bold text-muted cursor-pointer hover:bg-surface-elevated hover:text-title">
+                 <div (click)="selectedCategoryForModal.set(cat)" class="w-8 h-8 rounded-xl bg-surface border border-subtle flex items-center justify-center text-xs font-bold text-muted cursor-pointer hover:bg-surface-elevated hover:text-title hover:border-brand">
                    +{{ cat.items.length - 4 }}
                  </div>
               }
@@ -236,17 +236,22 @@
     <!-- 5. Customizable Analytical Widgets (DRE, BCG Matrix, Charts, Top Sellers, Waiter Ranking, Stock Alerts) -->
     @if (editMode() || dashboardWidgets().length > 0) {
       <div class="mt-8 border-t border-subtle pt-8">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center justify-between mb-6 cursor-pointer select-none md:cursor-auto" (click)="toggleIndicators()">
           <h3 class="text-lg font-bold text-title flex items-center gap-2">
             <span translate="no" class="notranslate material-symbols-outlined text-brand">analytics</span>
             Indicadores & Análises Detalhadas
           </h3>
+          <span translate="no" class="notranslate material-symbols-outlined text-muted md:hidden transition-transform" [class.rotate-180]="showIndicators()">
+            expand_more
+          </span>
         </div>
 
         <div 
           cdkDropList 
           (cdkDropListDropped)="drop($event)" 
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-visible"
+          class="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-visible transition-all duration-300 md:!grid"
+          [class.hidden]="!showIndicators() && !editMode()"
+          [class.grid]="true"
         >
           @for (widget of dashboardWidgets(); track widget.id) {
             <div 
@@ -305,12 +310,21 @@
                             {{ chart.title }}
                         </h3>
                         <div class="flex-1 min-h-[250px] relative">
-                             @if(isChartLoading()) {
-                                <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-xs z-20 rounded-2xl">
-                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+                             @if(totalSales() === 0) {
+                                <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-surface/50 rounded-xl border border-dashed border-subtle">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">insights</span>
+                                    <h4 class="text-sm font-bold text-title mb-1">Sem vendas registradas</h4>
+                                    <p class="text-xs text-muted mb-4">Abra uma mesa ou lance um pedido no PDV.</p>
+                                    <a routerLink="/pos" class="px-4 py-2 bg-brand text-white text-xs font-bold rounded-xl hover:opacity-90">Acessar PDV</a>
                                 </div>
+                             } @else {
+                                 @if(isChartLoading()) {
+                                    <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-xs z-20 rounded-2xl">
+                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+                                    </div>
+                                 }
+                                 <app-sales-cogs-chart [data]="salesCogsData()" class="block w-full h-full"></app-sales-cogs-chart>
                              }
-                             <app-sales-cogs-chart [data]="salesCogsData()" class="block w-full h-full"></app-sales-cogs-chart>
                         </div>
                     </div>
                 }
@@ -364,12 +378,21 @@
                             {{ chart.title }}
                         </h3>
                         <div class="flex-1 min-h-[250px] relative">
-                            @if(isHourlyChartLoading()) {
-                                <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-xs z-20 rounded-2xl">
-                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                             @if(totalSales() === 0) {
+                                <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-surface/50 rounded-xl border border-dashed border-subtle">
+                                    <span translate="no" class="notranslate material-symbols-outlined text-4xl text-muted mb-2">schedule</span>
+                                    <h4 class="text-sm font-bold text-title mb-1">Gráfico inativo</h4>
+                                    <p class="text-xs text-muted mb-4">Nenhum horário de pico detectado.</p>
+                                    <a routerLink="/pos" class="px-4 py-2 bg-brand text-white text-xs font-bold rounded-xl hover:opacity-90">Registrar Venda</a>
                                 </div>
+                             } @else {
+                                @if(isHourlyChartLoading()) {
+                                    <div class="absolute inset-0 flex items-center justify-center bg-surface/20 backdrop-blur-xs z-20 rounded-2xl">
+                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                                    </div>
+                                 }
+                                <app-hourly-sales-chart [data]="hourlySalesData()" class="block w-full h-full"></app-hourly-sales-chart>
                              }
-                            <app-hourly-sales-chart [data]="hourlySalesData()" class="block w-full h-full"></app-hourly-sales-chart>
                         </div>
                     </div>
                 }
@@ -393,37 +416,37 @@
                         <!-- BCG Quadrant Selector -->
                         <div class="grid grid-cols-4 gap-2 mb-4">
                             <button (click)="selectedBcgTab.set('stars')" 
-                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'stars' 
                                         ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-emerald-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">star</span>
                                 <span class="text-[10px] font-bold uppercase">Estrelas</span>
                             </button>
                             
                             <button (click)="selectedBcgTab.set('plowhorses')" 
-                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'plowhorses' 
                                         ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-bold' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-amber-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">directions_run</span>
                                 <span class="text-[10px] font-bold uppercase">Cavalos</span>
                             </button>
 
                             <button (click)="selectedBcgTab.set('puzzles')" 
-                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'puzzles' 
                                         ? 'bg-blue-500/15 border-blue-500 text-blue-600 dark:text-blue-400 font-bold' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-blue-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">help_outline</span>
                                 <span class="text-[10px] font-bold uppercase">Desafios</span>
                             </button>
 
                             <button (click)="selectedBcgTab.set('dogs')" 
-                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center"
+                                    class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'dogs' 
                                         ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 font-bold' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title'">
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-rose-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">delete_outline</span>
                                 <span class="text-[10px] font-bold uppercase">Alerta</span>
                             </button>

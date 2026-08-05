@@ -66,6 +66,7 @@ interface BaseTicket {
   customerName?: string;
   waiterName?: string;
   isTest?: boolean;
+  urgency: number;
 }
 
 interface KdsDisplayItem {
@@ -865,18 +866,18 @@ export class KdsComponent implements OnInit, OnDestroy {
             
             const isTest = order.notes ? order.notes.includes('[TESTE IA]') : false;
 
-            let ticketTimerColor = 'bg-green-600';
+            let ticketTimerColor = 'border-success text-success';
             if (isTest) {
-                ticketTimerColor = 'bg-purple-600';
-            } else if (percentage > 50) {
-                ticketTimerColor = 'bg-yellow-600';
-            } else if (percentage > 80) {
-                ticketTimerColor = 'bg-red-600';
+                ticketTimerColor = 'border-purple-500 text-purple-500';
+            } else if (ticketElapsedTime > 600) {
+                ticketTimerColor = 'border-danger text-danger';
+            } else if (ticketElapsedTime > 300) {
+                ticketTimerColor = 'border-warning text-warning';
             }
             
             const isOrderCancelled = order.status === 'CANCELLED';
             if (isOrderCancelled) {
-                ticketTimerColor = 'bg-red-800'; 
+                ticketTimerColor = 'border-danger text-danger'; 
             }
 
             const groupedItems = this.groupItemsForDisplay(orderItems);
@@ -896,10 +897,11 @@ export class KdsComponent implements OnInit, OnDestroy {
                 isOrderCancelled,
                 customerName: order.customers?.name,
                 waiterName: order.waiter?.name,
-                isTest
+                isTest,
+                urgency: percentage
             });
         }
-        return tickets.sort((a, b) => new Date(a.oldestTimestamp).getTime() - new Date(b.oldestTimestamp).getTime());
+        return tickets.sort((a, b) => b.urgency - a.urgency || b.ticketElapsedTime - a.ticketElapsedTime);
     }
 
     selectStation(station: Station) { this.selectedStation.set(station); }
