@@ -53,11 +53,11 @@ export class OperationalService {
   }
 
   // --- Temperature Logs ---
-  async getRecentTemperatureLogs(limit = 50): Promise<TemperatureLog[]> {
+  async getRecentTemperatureLogs(limit: number | null = 50, startDate?: string, endDate?: string, equipmentId?: string, statusFilter?: 'all' | 'out_of_standard'): Promise<TemperatureLog[]> {
     const storeId = this.unitContext.activeUnitId();
     if (!storeId) return [];
 
-    const { data, error } = await this.supabase
+    let query = this.supabase
       .from('temperature_logs')
       .select(`
         *,
@@ -65,14 +65,39 @@ export class OperationalService {
         employees (name)
       `)
       .eq('store_id', storeId)
-      .order('recorded_at', { ascending: false })
-      .limit(limit);
+      .order('recorded_at', { ascending: false });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+    if (startDate) {
+      query = query.gte('recorded_at', startDate + 'T00:00:00.000Z');
+    }
+    if (endDate) {
+      query = query.lte('recorded_at', endDate + 'T23:59:59.999Z');
+    }
+    if (equipmentId) {
+      query = query.eq('equipment_id', equipmentId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching temperature logs:', error);
       return [];
     }
-    return data || [];
+    
+    let result = (data || []) as any[];
+    if (statusFilter === 'out_of_standard') {
+       result = result.filter(log => {
+          const eq = log.equipment;
+          if (!eq) return false;
+          const temp = log.temperature;
+          return (eq.min_temp !== null && temp < eq.min_temp) || (eq.max_temp !== null && temp > eq.max_temp);
+       });
+    }
+
+    return result;
   }
 
   async logTemperature(log: Partial<TemperatureLog>): Promise<TemperatureLog | null> {
@@ -161,11 +186,11 @@ export class OperationalService {
   }
 
   // --- Checklist Logs ---
-  async getRecentChecklistLogs(limit = 100): Promise<ChecklistLog[]> {
+  async getRecentChecklistLogs(limit: number | null = 100, startDate?: string, endDate?: string, section?: string, statusFilter?: 'all' | 'completed' | 'issue'): Promise<ChecklistLog[]> {
     const storeId = this.unitContext.activeUnitId();
     if (!storeId) return [];
 
-    const { data, error } = await this.supabase
+    let query = this.supabase
       .from('checklist_logs')
       .select(`
         *,
@@ -173,14 +198,34 @@ export class OperationalService {
         employees (name)
       `)
       .eq('store_id', storeId)
-      .order('completed_at', { ascending: false })
-      .limit(limit);
+      .order('completed_at', { ascending: false });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+    if (startDate) {
+      query = query.gte('completed_at', startDate + 'T00:00:00.000Z');
+    }
+    if (endDate) {
+      query = query.lte('completed_at', endDate + 'T23:59:59.999Z');
+    }
+    if (statusFilter && statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching checklist logs:', error);
       return [];
     }
-    return data || [];
+    
+    let result = (data || []) as any[];
+    if (section && section !== 'all') {
+       result = result.filter(log => log.checklist_templates?.section === section);
+    }
+
+    return result;
   }
 
   async logChecklistTask(log: Partial<ChecklistLog>): Promise<ChecklistLog | null> {

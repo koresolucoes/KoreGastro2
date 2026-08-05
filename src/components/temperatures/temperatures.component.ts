@@ -27,9 +27,9 @@ import autoTable from 'jspdf-autotable';
         </div>
 
         <div class="flex flex-wrap gap-3">
-          <button (click)="generatePDF()" class="flex-1 md:flex-none chef-surface hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-subtle shadow-sm active:scale-95 transition-all">
+          <button (click)="showReportModal.set(true)" class="flex-1 md:flex-none chef-surface hover-surface-elevated text-title px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-subtle shadow-sm active:scale-95 transition-all">
             <span translate="no" class="notranslate material-symbols-outlined text-info">picture_as_pdf</span>
-            Relatório
+            Gerar Relatório
           </button>
           @if (isManager()) {
             <button (click)="showAddEquipmentModal.set(true)" class="flex-1 md:flex-none btn-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all border border-brand/50 uppercase tracking-wider">
@@ -157,14 +157,21 @@ import autoTable from 'jspdf-autotable';
 
         <!-- Recent Logs -->
         <div class="xl:col-span-1 border-l border-subtle pl-0 xl:pl-8">
-            <h3 class="text-xl font-bold text-title title-display tracking-tight mb-6 flex items-center gap-2">
-                <span translate="no" class="notranslate material-symbols-outlined text-brand">history</span>
-                Diário Técnico
-            </h3>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-title title-display tracking-tight flex items-center gap-2">
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand">history</span>
+                    Diário Técnico
+                </h3>
+                <select [ngModel]="sidebarPeriod()" (ngModelChange)="onSidebarPeriodChange($event)" class="bg-surface-elevated border border-strong rounded-lg px-2 py-1 text-xs font-bold focus:outline-none">
+                    <option value="today">Hoje</option>
+                    <option value="yesterday">Ontem</option>
+                    <option value="last7">Últ. 7 dias</option>
+                </select>
+            </div>
             
             <div class="relative border-l-2 border-subtle ml-3 space-y-6 pb-8">
                 @if (recentLogs().length === 0) {
-                    <div class="pl-8 text-muted italic text-sm">Nenhum registro.</div>
+                    <div class="pl-8 text-muted italic text-sm">Nenhum registro para este período.</div>
                 }
                 
                 @for (log of recentLogs(); track log.id) {
@@ -177,7 +184,7 @@ import autoTable from 'jspdf-autotable';
                          <div class="p-4 chef-surface rounded-2xl border border-subtle shadow-sm">
                              <div class="flex justify-between items-start mb-2">
                                  <div>
-                                    <div class="text-[10px] font-black uppercase tracking-widest text-muted">{{ log.recorded_at | date:'HH:mm' }}</div>
+                                    <div class="text-[10px] font-black uppercase tracking-widest text-muted">{{ log.recorded_at | date:'dd/MM HH:mm' }}</div>
                                     <p class="text-sm font-bold text-title leading-snug">{{ log.equipment?.name }}</p>
                                  </div>
                                  <div class="text-lg font-black data-mono" [ngClass]="getTemperatureStatusColor(log.temperature, log.equipment?.min_temp, log.equipment?.max_temp)">
@@ -204,6 +211,14 @@ import autoTable from 'jspdf-autotable';
                          </div>
                     </div>
                 }
+                
+                @if (recentLogs().length >= sidebarLimit()) {
+                    <div class="pl-8 pt-4">
+                        <button (click)="loadMoreLogs()" class="w-full chef-surface border border-subtle hover:bg-surface-elevated py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors active:scale-95 text-brand">
+                            Carregar Mais
+                        </button>
+                    </div>
+                }
             </div>
         </div>
       </div>
@@ -212,7 +227,7 @@ import autoTable from 'jspdf-autotable';
     <!-- Add Equipment Modal -->
     @if (showAddEquipmentModal()) {
       <div class="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300" (click)="showAddEquipmentModal.set(false)">
-        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong" (click)="$event.stopPropagation()">
+        <div class="chef-surface w-full max-w-md overflow-hidden transform scale-100 transition-all shadow-2xl border-2 border-strong rounded-3xl" (click)="$event.stopPropagation()">
           <div class="px-6 py-5 border-b border-subtle bg-surface-elevated/50 flex justify-between items-center">
             <h3 class="text-xl font-black text-title title-display tracking-tight flex items-center gap-2">
                <span translate="no" class="notranslate material-symbols-outlined text-brand">add_circle</span>
@@ -327,7 +342,7 @@ import autoTable from 'jspdf-autotable';
                              }
                          </div>
                          @if(selectedCorrectiveAction() === 'other') {
-                             <input type="text" [ngModel]="customCorrectionNote()" (ngModelChange)="customCorrectionNote.set($event)" placeholder="Descreva a ação tomada..." class="mt-2 w-full bg-surface border border-strong rounded-lg px-3 py-2 text-title text-sm focus:outline-none focus:border-danger font-medium shadow-inner">
+                             <input type="text" [ngModel]="customCorrectionNote()" (ngModelChange)="customCorrectionNote.set($event)" placeholder="Descreva a ação tomada..." class="mt-2 w-full bg-surface-elevated border-2 border-strong rounded-xl px-4 py-3 text-title font-bold focus:outline-none focus:border-danger focus:ring-4 focus:ring-danger/10 transition-all shadow-inner">
                          }
                      </div>
                   }
@@ -386,6 +401,20 @@ export class TemperaturesComponent implements OnInit {
 
   // Custom Numpad & Action State
   activeNumpadEq = signal<Equipment | null>(null);
+
+  // Sidebar state
+  sidebarPeriod = signal<'today' | 'yesterday' | 'last7'>('today');
+  sidebarLimit = signal(15);
+
+  // Report Modal state
+  showReportModal = signal(false);
+  reportForm = this.fb.group({
+    period: ['today'],
+    startDate: [''],
+    endDate: [''],
+    equipmentId: ['all'],
+    status: ['all']
+  });
   numpadValue = signal<string>('');
   logImageFile = signal<File | null>(null);
   logImageUrlPreview = signal<string | null>(null);
@@ -414,15 +443,65 @@ export class TemperaturesComponent implements OnInit {
   async loadData() {
     this.isLoading.set(true);
     try {
-      const [equipment, logs] = await Promise.all([
-        this.operationalService.getEquipment(),
-        this.operationalService.getRecentTemperatureLogs()
-      ]);
+      const equipment = await this.operationalService.getEquipment();
       this.equipmentList.set(equipment);
-      this.recentLogs.set(logs);
+      await this.loadSidebarLogs();
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  async loadSidebarLogs() {
+    const range = this.getDateRange(this.sidebarPeriod());
+    const logs = await this.operationalService.getRecentTemperatureLogs(
+      this.sidebarLimit(), 
+      range.start, 
+      range.end
+    );
+    this.recentLogs.set(logs);
+  }
+
+  loadMoreLogs() {
+    this.sidebarLimit.update(l => l + 15);
+    this.loadSidebarLogs();
+  }
+
+  onSidebarPeriodChange(period: 'today' | 'yesterday' | 'last7') {
+    this.sidebarPeriod.set(period);
+    this.sidebarLimit.set(15);
+    this.loadSidebarLogs();
+  }
+
+  getDateRange(period: string, startStr?: string, endStr?: string): {start?: string, end?: string} {
+    const today = new Date();
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+    if (period === 'custom' && startStr && endStr) {
+      return { start: startStr, end: endStr };
+    }
+    if (period === 'today') {
+      return { start: formatDate(today), end: formatDate(today) };
+    }
+    if (period === 'yesterday') {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return { start: formatDate(yesterday), end: formatDate(yesterday) };
+    }
+    if (period === 'last7') {
+      const last7 = new Date(today);
+      last7.setDate(last7.getDate() - 7);
+      return { start: formatDate(last7), end: formatDate(today) };
+    }
+    if (period === 'last30') {
+      const last30 = new Date(today);
+      last30.setDate(last30.getDate() - 30);
+      return { start: formatDate(last30), end: formatDate(today) };
+    }
+    if (period === 'thisMonth') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      return { start: formatDate(firstDay), end: formatDate(today) };
+    }
+    return {};
   }
 
   isManager(): boolean {
@@ -733,42 +812,100 @@ export class TemperaturesComponent implements OnInit {
     return 'text-success';
   }
 
-  generatePDF() {
-    const doc = new jsPDF();
-    const logs = this.recentLogs();
-    
-    doc.setFontSize(18);
-    doc.text('Relatório de Temperaturas', 14, 22);
-    
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 30);
+  async generatePDF() {
+    this.isSubmitting.set(true);
+    try {
+      const values = this.reportForm.value;
+      const range = this.getDateRange(values.period || 'today', values.startDate || undefined, values.endDate || undefined);
+      
+      const logs = await this.operationalService.getRecentTemperatureLogs(
+        null, // fetch all for the report
+        range.start,
+        range.end,
+        values.equipmentId !== 'all' ? values.equipmentId : undefined,
+        values.status as any || 'all'
+      );
 
-    const tableData = logs.map(log => {
-      let status = 'OK';
-      if (log.equipment?.min_temp !== null && log.equipment?.min_temp !== undefined && log.temperature < log.equipment.min_temp) {
-        status = 'Abaixo do ideal';
-      } else if (log.equipment?.max_temp !== null && log.equipment?.max_temp !== undefined && log.temperature > log.equipment.max_temp) {
-        status = 'Acima do ideal';
-      }
+      const doc = new jsPDF();
+      
+      // Cabeçalho Gerencial
+      doc.setFontSize(22);
+      doc.setTextColor(33, 37, 41);
+      doc.text('Relatório de Temperaturas', 14, 22);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      let periodText = 'Período: Hoje';
+      if(values.period !== 'today') periodText = `Período: ${range.start || ''} a ${range.end || ''}`;
+      doc.text(`Unidade: Restaurante Principal | ${periodText}`, 14, 30);
+      doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 35);
 
-      return [
-        log.equipment?.name || 'Desconhecido',
-        `${log.temperature} °C`,
-        status,
-        log.employees?.name || 'Desconhecido',
-        new Date(log.recorded_at).toLocaleString()
-      ];
-    });
+      // Resumo Executivo
+      const total = logs.length;
+      let outOfStandard = 0;
+      let correctiveActions = 0;
+      
+      logs.forEach(log => {
+          if ((log.equipment?.min_temp !== null && log.equipment?.min_temp !== undefined && log.temperature < log.equipment.min_temp) ||
+              (log.equipment?.max_temp !== null && log.equipment?.max_temp !== undefined && log.temperature > log.equipment.max_temp)) {
+              outOfStandard++;
+          }
+          if (log.notes) {
+              correctiveActions++;
+          }
+      });
+      
+      doc.setFillColor(248, 249, 250);
+      doc.roundedRect(14, 42, 182, 20, 3, 3, 'F');
+      
+      doc.setFontSize(11);
+      doc.setTextColor(33, 37, 41);
+      doc.text(`Total de Aferições: ${total}`, 20, 50);
+      doc.setTextColor(220, 53, 69);
+      doc.text(`Fora do Padrão: ${outOfStandard}`, 80, 50);
+      doc.setTextColor(23, 162, 184);
+      doc.text(`Ações Corretivas: ${correctiveActions}`, 140, 50);
 
-    autoTable(doc, {
-      startY: 36,
-      head: [['Equipamento', 'Temperatura', 'Status', 'Registrado por', 'Data/Hora']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [41, 128, 185] },
-    });
+      const tableData = logs.map(log => {
+        let status = 'OK';
+        if (log.equipment?.min_temp !== null && log.equipment?.min_temp !== undefined && log.temperature < log.equipment.min_temp) {
+          status = 'Abaixo do ideal';
+        } else if (log.equipment?.max_temp !== null && log.equipment?.max_temp !== undefined && log.temperature > log.equipment.max_temp) {
+          status = 'Acima do ideal';
+        }
 
-    doc.save(`relatorio-temperaturas-${new Date().getTime()}.pdf`);
+        return [
+          new Date(log.recorded_at).toLocaleString(),
+          log.equipment?.name || 'Desconhecido',
+          `${log.temperature} °C`,
+          status,
+          log.employees?.name || 'Desconhecido',
+          log.notes || '-'
+        ];
+      });
+
+      autoTable(doc, {
+        startY: 70,
+        head: [['Data/Hora', 'Equipamento', 'Temp.', 'Status', 'Registrado por', 'Ação Corretiva']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: {
+          5: { cellWidth: 50 } // Ação Corretiva
+        },
+        willDrawCell: (data) => {
+           // Destacar linhas com problema
+           if (data.row.section === 'body' && data.row.raw[3] !== 'OK') {
+              doc.setFillColor(255, 235, 238); // light red
+           }
+        }
+      });
+
+      doc.save(`relatorio-temperaturas-${new Date().getTime()}.pdf`);
+      this.showReportModal.set(false);
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 }
