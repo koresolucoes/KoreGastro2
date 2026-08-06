@@ -1,4 +1,4 @@
-<div class="flex min-h-screen bg-app items-center justify-center p-4 relative overflow-hidden font-sans">
+<div class="flex min-h-[100dvh] bg-app items-center justify-center p-2 sm:p-4 relative overflow-hidden font-sans">
   
   <!-- Liquid Glow Background Orbs -->
   <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -7,13 +7,13 @@
   </div>
 
   <!-- Main Container -->
-  <div class="relative w-full max-w-6xl min-h-[700px] bg-surface-elevated/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden flex flex-col lg:flex-row items-stretch z-10">
+  <div class="relative w-full max-w-6xl h-[95dvh] lg:h-[800px] lg:min-h-[700px] bg-surface-elevated/90 backdrop-blur-xl rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden flex flex-col lg:flex-row items-stretch z-10">
     
     <!-- Left: Content Area -->
-    <div class="flex-1 flex flex-col relative min-h-[700px] lg:min-h-0 transition-all duration-500">
+    <div class="flex-1 flex flex-col relative h-full transition-all duration-500">
       
       <!-- Top Navigation / Progress -->
-      <div class="p-8 flex items-center justify-between">
+      <div class="p-4 sm:p-6 lg:p-8 flex items-center justify-between shrink-0">
          <img src="/logo.svg" alt="ChefOS Logo" class="h-8 w-auto">
          
          <div class="flex items-center gap-2">
@@ -27,82 +27,82 @@
          </div>
       </div>
 
-      <div class="flex-1 p-8 md:p-12 overflow-y-auto flex flex-col justify-center">
+      <div class="flex-1 p-4 sm:p-6 lg:p-12 overflow-y-auto overflow-x-hidden flex flex-col justify-center">
         
         <!-- ============================================== -->
         <!-- STEP 0: IDENTITY -->
         <!-- ============================================== -->
         @if (currentStep() === 0) {
-          <div class="w-full flex flex-col md:flex-row items-center gap-16 animate-in fade-in slide-in-from-right-8 duration-700">
+          <div class="w-full flex flex-col lg:flex-row items-center gap-6 lg:gap-16 animate-in fade-in slide-in-from-right-8 duration-700">
             <!-- Left: Form -->
             <div class="flex-1 w-full">
-              <h2 class="text-5xl font-black text-title tracking-tight mb-4">Qual o nome do seu império?</h2>
-              <p class="text-xl text-muted font-medium mb-10">Vamos começar a personalizar seu sistema ChefOS.</p>
+              <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-title tracking-tight mb-2 sm:mb-4">Qual o nome do seu império?</h2>
+              <p class="text-base sm:text-xl text-muted font-medium mb-6 sm:mb-10">Vamos começar a personalizar seu sistema ChefOS.</p>
               
               <div class="relative group">
                 <input type="text" [(ngModel)]="data.companyName" required autofocus
-                  class="block w-full px-0 py-6 text-4xl font-bold bg-transparent border-b-4 border-strong text-title placeholder-muted/30 focus:outline-none focus:border-brand transition-all" 
+                  class="block w-full px-0 py-3 sm:py-6 text-2xl sm:text-4xl font-bold bg-transparent border-b-4 border-strong text-title placeholder-muted/30 focus:outline-none focus:border-brand transition-all" 
                   placeholder="Ex: Burger King">
               </div>
             </div>
 
             <!-- Right: Dynamic Mockup -->
-            <div class="hidden lg:flex w-[320px] flex-shrink-0 justify-center">
-                <div class="mockup-phone w-[280px] h-[580px] p-4 flex flex-col bg-surface overflow-hidden relative">
+            <div class="hidden md:flex w-[280px] lg:w-[320px] flex-shrink-0 justify-center">
+                <div class="mockup-phone w-[260px] h-[520px] p-4 flex flex-col overflow-hidden relative">
                     <!-- Faux App UI inside phone -->
                     <div class="mt-8 mb-6 flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-xl bg-brand flex items-center justify-center text-white shadow-lg shadow-brand/30">
-                            <span translate="no" class="notranslate material-symbols-outlined">restaurant</span>
+                        <div class="w-10 h-10 rounded-xl bg-brand flex items-center justify-center text-white shadow-lg shadow-brand/30">
+                            <span translate="no" class="notranslate material-symbols-outlined text-lg">restaurant</span>
                         </div>
                         <div>
-                            <div class="text-xs text-muted font-bold uppercase tracking-wider">Bem-vindo(a) ao</div>
-                            <div class="text-xl font-black text-title truncate w-[160px] leading-tight">
+                            <div class="text-[10px] text-white/50 font-bold uppercase tracking-wider">Bem-vindo(a) ao</div>
+                            <div class="text-lg font-black text-white truncate w-[140px] leading-tight">
                                 {{ data.companyName || 'ChefOS' }}
                             </div>
                         </div>
                     </div>
                     
                     <!-- Search Bar Mockup -->
-                    <div class="h-10 rounded-full bg-surface-elevated border border-strong flex items-center px-4 mb-4 text-muted/50">
+                    <div class="h-9 rounded-full bg-white/10 border border-white/5 flex items-center px-4 mb-4 text-white/40">
                        <span translate="no" class="notranslate material-symbols-outlined text-sm mr-2">search</span>
                        <span class="text-xs font-medium">Buscar no cardápio...</span>
                     </div>
 
                     <!-- Categories Mockup -->
                     <div class="flex gap-2 mb-4 overflow-hidden">
-                       <div class="px-3 py-1.5 rounded-full bg-brand text-white text-[10px] font-bold">Destaques</div>
-                       <div class="px-3 py-1.5 rounded-full bg-surface-elevated border border-strong text-[10px] font-bold text-muted">Promoções</div>
-                       <div class="px-3 py-1.5 rounded-full bg-surface-elevated border border-strong text-[10px] font-bold text-muted">Bebidas</div>
+                       <div class="px-3 py-1.5 rounded-full bg-brand text-white text-[10px] font-bold shrink-0">Destaques</div>
+                       <div class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/60 shrink-0">Promoções</div>
+                       <div class="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/60 shrink-0">Bebidas</div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div class="rounded-2xl bg-surface-elevated border border-strong flex flex-col overflow-hidden">
-                            <div class="h-20 bg-brand/10 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=300&auto=format&fit=crop');"></div>
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="rounded-2xl bg-white/5 border border-white/10 flex flex-col overflow-hidden">
+                            <div class="h-16 bg-brand/10 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=300&auto=format&fit=crop');"></div>
                             <div class="p-2">
-                               <div class="text-xs font-bold mb-1">Clássico Burger</div>
-                               <div class="text-brand font-black text-sm">R$ 32,90</div>
+                               <div class="text-[10px] font-bold mb-1 text-white">Clássico Burger</div>
+                               <div class="text-brand font-black text-xs">R$ 32,90</div>
                             </div>
                         </div>
-                        <div class="rounded-2xl bg-surface-elevated border border-strong flex flex-col overflow-hidden">
-                            <div class="h-20 bg-brand/10 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=300&auto=format&fit=crop');"></div>
+                        <div class="rounded-2xl bg-white/5 border border-white/10 flex flex-col overflow-hidden">
+                            <div class="h-16 bg-brand/10 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=300&auto=format&fit=crop');"></div>
                             <div class="p-2">
-                               <div class="text-xs font-bold mb-1">Pizza Marguerita</div>
-                               <div class="text-brand font-black text-sm">R$ 58,00</div>
+                               <div class="text-[10px] font-bold mb-1 text-white">Pizza Marguerita</div>
+                               <div class="text-brand font-black text-xs">R$ 58,00</div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="flex-1 rounded-2xl bg-brand/5 border border-brand/20 p-4 flex flex-col justify-center items-center text-center">
-                       <span translate="no" class="notranslate material-symbols-outlined text-brand text-3xl mb-2">shopping_bag</span>
-                       <div class="text-sm font-bold">Carrinho Vazio</div>
-                       <div class="text-[10px] text-muted">Adicione itens para começar</div>
+                    <div class="flex-1 rounded-2xl bg-brand/10 border border-brand/20 p-4 flex flex-col justify-center items-center text-center">
+                       <span translate="no" class="notranslate material-symbols-outlined text-brand text-2xl mb-2">shopping_bag</span>
+                       <div class="text-xs font-bold text-white">Carrinho Vazio</div>
+                       <div class="text-[9px] text-white/40 mt-1">Adicione itens para começar</div>
                     </div>
                     
                     <!-- Bottom Nav Mockup -->
-                    <div class="absolute bottom-0 left-0 right-0 h-16 bg-surface-elevated border-t border-strong flex items-center justify-around pb-2">
-                       <span translate="no" class="notranslate material-symbols-outlined text-brand">home</span>
-                       <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-50">receipt_long</span>
-                       <span translate="no" class="notranslate material-symbols-outlined text-muted opacity-50">person</span>
+                    <div class="absolute bottom-0 left-0 right-0 h-14 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-around pb-2">
+                       <span translate="no" class="notranslate material-symbols-outlined text-brand text-xl">home</span>
+                       <span translate="no" class="notranslate material-symbols-outlined text-white/40 text-xl">receipt_long</span>
+                       <span translate="no" class="notranslate material-symbols-outlined text-white/40 text-xl">person</span>
                     </div>
                 </div>
             </div>
@@ -114,29 +114,29 @@
         <!-- ============================================== -->
         @if (currentStep() === 1) {
           <div class="w-full flex flex-col animate-in fade-in slide-in-from-right-8 duration-700">
-            <h2 class="text-4xl font-black text-title tracking-tight mb-2">O Modelo de Negócio</h2>
-            <p class="text-lg text-muted font-medium mb-12">Escolha seu segmento e nós prepararemos as estações e cardápio base.</p>
+            <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2">O Modelo de Negócio</h2>
+            <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-12">Escolha seu segmento e nós prepararemos as estações e cardápio base.</p>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-6">
               @for (template of templates; track template.id) {
                 <button type="button" (click)="applyTemplate(template.id)"
-                  class="relative group flex flex-col sm:flex-row items-start sm:items-center p-6 rounded-[2rem] border-2 transition-all duration-300 text-left overflow-hidden bg-surface/50 backdrop-blur-sm"
+                  class="relative group flex flex-row items-center p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all duration-300 text-left overflow-hidden bg-surface/50 backdrop-blur-sm"
                   [ngClass]="{
-                    'border-brand shadow-xl shadow-brand/20 -translate-y-2 bg-surface': data.selectedTemplate === template.id,
+                    'border-brand shadow-xl shadow-brand/20 -translate-y-1 sm:-translate-y-2 bg-surface': data.selectedTemplate === template.id,
                     'border-strong hover:border-brand/50 hover:-translate-y-1': data.selectedTemplate !== template.id
                   }">
                   <!-- Glassmorphism gradient effect -->
                   <div class="absolute inset-0 bg-gradient-to-br from-brand/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
                        [class.opacity-100]="data.selectedTemplate === template.id"></div>
                   
-                  <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
-                      <div class="w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center transition-colors"
+                  <div class="relative z-10 flex flex-row items-center gap-4 w-full">
+                      <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl shrink-0 flex items-center justify-center transition-colors"
                            [ngClass]="data.selectedTemplate === template.id ? 'bg-brand text-white shadow-lg shadow-brand/30' : 'bg-surface-elevated border border-strong text-muted group-hover:text-brand'">
-                        <span translate="no" class="notranslate material-symbols-outlined text-3xl">{{ template.icon }}</span>
+                        <span translate="no" class="notranslate material-symbols-outlined text-2xl sm:text-3xl">{{ template.icon }}</span>
                       </div>
                       <div class="flex-1">
-                          <h3 class="font-bold text-title text-xl mb-1">{{ template.title }}</h3>
-                          <p class="text-sm text-muted font-medium leading-relaxed">{{ template.desc }}</p>
+                          <h3 class="font-bold text-title text-base sm:text-xl mb-0.5 sm:mb-1">{{ template.title }}</h3>
+                          <p class="text-xs sm:text-sm text-muted font-medium leading-relaxed line-clamp-2">{{ template.desc }}</p>
                       </div>
                   </div>
                 </button>
@@ -150,51 +150,51 @@
         <!-- ============================================== -->
         @if (currentStep() === 2) {
           <div class="w-full h-full flex flex-col animate-in fade-in slide-in-from-right-8 duration-700">
-            <h2 class="text-4xl font-black text-title tracking-tight mb-2">Personalização Premium</h2>
-            <p class="text-lg text-muted font-medium mb-10">Recomendamos um tema baseado no seu negócio, mas a escolha é sua.</p>
+            <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2">Personalização Premium</h2>
+            <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-10">Recomendamos um tema baseado no seu negócio, mas a escolha é sua.</p>
             
-            <div class="flex-1 flex flex-col md:flex-row gap-12">
+            <div class="flex-1 flex flex-col md:flex-row gap-6 md:gap-12">
                 <!-- Theme Buttons -->
-                <div class="flex flex-col gap-4 w-full md:w-1/2 justify-center">
+                <div class="flex flex-col gap-3 w-full md:w-1/2 justify-center">
                   @for (theme of themes; track theme.id) {
                     <button type="button" (click)="applyTheme(theme.id)"
-                      class="flex items-center gap-4 p-5 rounded-2xl border-2 transition-all duration-300 text-left active:scale-[0.98]"
+                      class="flex items-center gap-4 p-3 sm:p-5 rounded-2xl border-2 transition-all duration-300 text-left active:scale-[0.98]"
                       [ngClass]="{
                         'border-brand bg-brand/5 shadow-md': data.selectedTheme === theme.id,
                         'border-strong bg-surface hover:border-brand/50': data.selectedTheme !== theme.id
                       }">
-                      <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center"
+                      <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0"
                            [ngClass]="data.selectedTheme === theme.id ? 'border-brand' : 'border-muted'">
                          @if (data.selectedTheme === theme.id) {
-                            <div class="w-3 h-3 rounded-full bg-brand"></div>
+                            <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-brand"></div>
                          }
                       </div>
-                      <div>
-                          <h4 class="font-bold text-title text-lg">{{ theme.name }}</h4>
-                          <p class="text-sm text-muted">{{ theme.desc }}</p>
+                      <div class="min-w-0">
+                          <h4 class="font-bold text-title text-base sm:text-lg truncate">{{ theme.name }}</h4>
+                          <p class="text-xs sm:text-sm text-muted truncate">{{ theme.desc }}</p>
                       </div>
                     </button>
                   }
                 </div>
                 
                 <!-- Live Preview -->
-                <div class="w-full md:w-1/2 flex items-center justify-center">
-                    <div class="w-full max-w-[450px] min-h-[320px] rounded-3xl p-4 sm:p-6 transition-all duration-700 shadow-2xl flex flex-col overflow-hidden relative border border-strong"
+                <div class="hidden sm:flex w-full md:w-1/2 items-center justify-center">
+                    <div class="w-full max-w-[450px] min-h-[300px] h-full max-h-[350px] rounded-3xl p-4 sm:p-6 transition-all duration-700 shadow-2xl flex flex-col overflow-hidden relative border border-strong"
                          [ngClass]="'theme-preview-' + data.selectedTheme">
                         
                         <!-- Mockup Header -->
-                        <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center justify-between mb-4 shrink-0">
                             <div class="flex items-center gap-3">
-                               <div class="w-10 h-10 rounded-xl tp-accent flex items-center justify-center text-white shadow-lg">
+                               <div class="w-10 h-10 rounded-xl tp-accent flex items-center justify-center text-white shadow-lg shrink-0">
                                  <span translate="no" class="notranslate material-symbols-outlined text-xl">restaurant</span>
                                </div>
-                               <div>
-                                 <div class="font-black text-xl tracking-tight leading-none">{{ data.companyName || 'ChefOS' }}</div>
-                                 <div class="text-xs opacity-60 font-medium">Dashboard</div>
+                               <div class="min-w-0">
+                                 <div class="font-black text-lg tracking-tight leading-none truncate w-[100px]">{{ data.companyName || 'ChefOS' }}</div>
+                                 <div class="text-[10px] opacity-60 font-medium">Dashboard</div>
                                </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                               <div class="w-8 h-8 rounded-full border-2 border-current opacity-60 flex items-center justify-center">
+                            <div class="flex items-center gap-2 shrink-0">
+                               <div class="w-8 h-8 rounded-full border border-current opacity-40 flex items-center justify-center">
                                   <span translate="no" class="notranslate material-symbols-outlined text-sm">notifications</span>
                                </div>
                                <div class="w-8 h-8 rounded-full tp-accent overflow-hidden">
@@ -203,58 +203,57 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 flex-1">
+                        <div class="flex gap-4 flex-1 min-h-0">
                             <!-- Sidebar Mockup -->
-                            <div class="sm:col-span-4 flex flex-col gap-3">
-                                <div class="tp-card rounded-2xl border flex items-center gap-3 p-3 opacity-90">
-                                   <span translate="no" class="notranslate material-symbols-outlined text-lg tp-accent-text">point_of_sale</span>
-                                   <span class="font-bold text-sm">Caixa</span>
+                            <div class="w-[30%] flex flex-col gap-2 shrink-0">
+                                <div class="tp-card rounded-xl border flex items-center gap-2 p-2 opacity-100 shadow-sm">
+                                   <span translate="no" class="notranslate material-symbols-outlined text-base tp-accent-text">point_of_sale</span>
+                                   <span class="font-bold text-xs truncate">Caixa</span>
                                 </div>
-                                <div class="tp-card rounded-2xl border flex items-center gap-3 p-3 opacity-60">
-                                   <span translate="no" class="notranslate material-symbols-outlined text-lg">table_restaurant</span>
-                                   <span class="font-bold text-sm">Mesas</span>
+                                <div class="tp-card rounded-xl border flex items-center gap-2 p-2 opacity-60">
+                                   <span translate="no" class="notranslate material-symbols-outlined text-base">table_restaurant</span>
+                                   <span class="font-bold text-xs truncate">Mesas</span>
                                 </div>
-                                <div class="tp-card rounded-2xl border flex items-center gap-3 p-3 opacity-60">
-                                   <span translate="no" class="notranslate material-symbols-outlined text-lg">receipt_long</span>
-                                   <span class="font-bold text-sm">Pedidos</span>
+                                <div class="tp-card rounded-xl border flex items-center gap-2 p-2 opacity-60">
+                                   <span translate="no" class="notranslate material-symbols-outlined text-base">receipt_long</span>
+                                   <span class="font-bold text-xs truncate">Pedidos</span>
                                 </div>
-                                <div class="flex-1"></div>
                             </div>
                             <!-- Main Content Mockup -->
-                            <div class="sm:col-span-8 flex flex-col gap-4">
+                            <div class="flex-1 flex flex-col gap-3 min-h-0">
                                 <!-- Cards -->
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="tp-card rounded-2xl border p-4 flex flex-col justify-between">
-                                        <div class="flex items-center justify-between mb-4">
-                                            <div class="w-8 h-8 rounded-lg tp-accent/20 text-current flex items-center justify-center">
-                                                <span translate="no" class="notranslate material-symbols-outlined text-sm">trending_up</span>
+                                <div class="grid grid-cols-2 gap-2 shrink-0">
+                                    <div class="tp-card rounded-xl border p-3 flex flex-col justify-between">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="w-6 h-6 rounded flex items-center justify-center tp-accent opacity-80 text-white">
+                                                <span translate="no" class="notranslate material-symbols-outlined text-[10px]">trending_up</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <div class="text-xl font-black">R$ 2.450</div>
-                                            <div class="text-xs opacity-60 font-medium">Vendas Hoje</div>
+                                            <div class="text-sm font-black">R$ 2.4k</div>
+                                            <div class="text-[9px] opacity-60 font-medium">Vendas</div>
                                         </div>
                                     </div>
-                                    <div class="tp-card rounded-2xl border p-4 flex flex-col justify-between">
-                                        <div class="flex items-center justify-between mb-4">
-                                            <div class="w-8 h-8 rounded-lg tp-accent/20 text-current flex items-center justify-center">
-                                                <span translate="no" class="notranslate material-symbols-outlined text-sm">shopping_bag</span>
+                                    <div class="tp-card rounded-xl border p-3 flex flex-col justify-between">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="w-6 h-6 rounded flex items-center justify-center tp-accent opacity-80 text-white">
+                                                <span translate="no" class="notranslate material-symbols-outlined text-[10px]">shopping_bag</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <div class="text-xl font-black">48</div>
-                                            <div class="text-xs opacity-60 font-medium">Pedidos Totais</div>
+                                            <div class="text-sm font-black">48</div>
+                                            <div class="text-[9px] opacity-60 font-medium">Pedidos</div>
                                         </div>
                                     </div>
                                 </div>
                                 <!-- Chart Area -->
-                                <div class="tp-card rounded-2xl border flex-1 p-4 flex items-end justify-between gap-2 overflow-hidden">
-                                   <div class="w-full tp-accent opacity-30 rounded-t-sm h-[30%]"></div>
-                                   <div class="w-full tp-accent opacity-50 rounded-t-sm h-[60%]"></div>
-                                   <div class="w-full tp-accent opacity-80 rounded-t-sm h-[80%]"></div>
-                                   <div class="w-full tp-accent opacity-100 rounded-t-sm h-[100%] shadow-lg shadow-current/20"></div>
-                                   <div class="w-full tp-accent opacity-60 rounded-t-sm h-[70%]"></div>
-                                   <div class="w-full tp-accent opacity-40 rounded-t-sm h-[40%]"></div>
+                                <div class="tp-card rounded-xl border flex-1 p-3 flex items-end justify-between gap-1.5 overflow-hidden min-h-[60px]">
+                                   <div class="w-full tp-accent opacity-30 rounded-t-[2px] h-[30%]"></div>
+                                   <div class="w-full tp-accent opacity-50 rounded-t-[2px] h-[60%]"></div>
+                                   <div class="w-full tp-accent opacity-80 rounded-t-[2px] h-[80%]"></div>
+                                   <div class="w-full tp-accent opacity-100 rounded-t-[2px] h-[100%] shadow-lg shadow-current/20"></div>
+                                   <div class="w-full tp-accent opacity-60 rounded-t-[2px] h-[70%]"></div>
+                                   <div class="w-full tp-accent opacity-40 rounded-t-[2px] h-[40%]"></div>
                                 </div>
                             </div>
                         </div>
@@ -268,31 +267,31 @@
         <!-- STEP 3: STRUCTURE REVIEW -->
         <!-- ============================================== -->
         @if (currentStep() === 3) {
-          <div class="max-w-3xl mx-auto h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-8 duration-700">
-            <h2 class="text-4xl font-black text-title tracking-tight mb-2">Estrutura Pré-Criada</h2>
-            <p class="text-lg text-muted font-medium mb-12">Com base na sua escolha, já deixamos isso pronto para você.</p>
+          <div class="max-w-3xl mx-auto h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-8 duration-700 w-full">
+            <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2">Estrutura Pré-Criada</h2>
+            <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-12">Com base na sua escolha, já deixamos isso pronto para você.</p>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-12">
                 <!-- Stations Bubble -->
-                <div class="bg-surface border border-strong rounded-3xl p-8 text-center flex flex-col items-center">
-                    <div class="w-16 h-16 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-4">
-                        <span translate="no" class="notranslate material-symbols-outlined text-3xl">soup_kitchen</span>
+                <div class="bg-surface border border-strong rounded-3xl p-6 sm:p-8 text-center flex flex-col items-center">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-3 sm:mb-4 shrink-0">
+                        <span translate="no" class="notranslate material-symbols-outlined text-2xl sm:text-3xl">soup_kitchen</span>
                     </div>
-                    <h3 class="text-2xl font-bold text-title mb-1">{{ data.stations.length }} Praças</h3>
-                    <div class="flex flex-wrap justify-center gap-2 mt-4">
+                    <h3 class="text-xl sm:text-2xl font-bold text-title mb-1">{{ data.stations.length }} Praças</h3>
+                    <div class="flex flex-wrap justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4">
                         @for (station of data.stations; track station) {
-                            <span class="px-3 py-1 bg-surface-elevated border border-strong rounded-full text-sm font-medium">{{ station }}</span>
+                            <span class="px-2.5 py-1 bg-surface-elevated border border-strong rounded-full text-xs sm:text-sm font-medium">{{ station }}</span>
                         }
                     </div>
                 </div>
 
                 <!-- Tables Bubble / Slider -->
-                <div class="bg-surface border border-strong rounded-3xl p-8 text-center flex flex-col items-center">
-                    <div class="w-16 h-16 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-4">
-                        <span translate="no" class="notranslate material-symbols-outlined text-3xl">table_restaurant</span>
+                <div class="bg-surface border border-strong rounded-3xl p-6 sm:p-8 text-center flex flex-col items-center">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-3 sm:mb-4 shrink-0">
+                        <span translate="no" class="notranslate material-symbols-outlined text-2xl sm:text-3xl">table_restaurant</span>
                     </div>
-                    <h3 class="text-2xl font-bold text-title mb-1">{{ data.tableCount }} Mesas</h3>
-                    <p class="text-muted mb-6">Arraste para ajustar</p>
+                    <h3 class="text-xl sm:text-2xl font-bold text-title mb-1">{{ data.tableCount }} Mesas</h3>
+                    <p class="text-xs sm:text-sm text-muted mb-4 sm:mb-6">Arraste para ajustar</p>
                     
                     <input type="range" min="1" max="100" [(ngModel)]="data.tableCount" 
                            class="w-full accent-brand bg-strong rounded-lg appearance-none h-2 cursor-pointer">
@@ -309,63 +308,63 @@
         <!-- STEP 4: iFOOD INTEGRATION -->
         <!-- ============================================== -->
         @if (currentStep() === 4) {
-          <div class="max-w-2xl mx-auto h-full flex flex-col justify-center text-center animate-in fade-in slide-in-from-right-8 duration-700">
+          <div class="max-w-2xl mx-auto h-full flex flex-col justify-center text-center animate-in fade-in slide-in-from-right-8 duration-700 w-full">
             
-            <div class="relative mx-auto w-32 h-32 mb-8 flex items-center justify-center">
-                <div class="absolute inset-0 bg-[#EA1D2C] rounded-[2rem] rotate-3 opacity-20 animate-pulse"></div>
-                <div class="absolute inset-0 bg-[#EA1D2C] rounded-[2rem] -rotate-3 opacity-20 animate-pulse" style="animation-delay: 0.5s"></div>
-                <div class="relative w-24 h-24 bg-[#EA1D2C] rounded-2xl shadow-2xl shadow-[#EA1D2C]/40 flex items-center justify-center">
-                    <span class="text-white font-black text-4xl tracking-tighter">iF</span>
+            <div class="relative mx-auto w-24 h-24 sm:w-32 sm:h-32 mb-6 sm:mb-8 flex items-center justify-center">
+                <div class="absolute inset-0 bg-[#EA1D2C] rounded-[1.5rem] sm:rounded-[2rem] rotate-3 opacity-20 animate-pulse"></div>
+                <div class="absolute inset-0 bg-[#EA1D2C] rounded-[1.5rem] sm:rounded-[2rem] -rotate-3 opacity-20 animate-pulse" style="animation-delay: 0.5s"></div>
+                <div class="relative w-20 h-20 sm:w-24 sm:h-24 bg-[#EA1D2C] rounded-2xl shadow-2xl shadow-[#EA1D2C]/40 flex items-center justify-center">
+                    <span class="text-white font-black text-3xl sm:text-4xl tracking-tighter">iF</span>
                 </div>
             </div>
 
-            <h2 class="text-4xl font-black text-title tracking-tight mb-4">Conecte seu iFood</h2>
-            <p class="text-lg text-muted font-medium mb-12 max-w-lg mx-auto">
+            <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2 sm:mb-4">Conecte seu iFood</h2>
+            <p class="text-sm sm:text-lg text-muted font-medium mb-8 sm:mb-12 max-w-lg mx-auto">
               Importe cardápios e receba pedidos diretamente no ChefOS. Sem complicações.
             </p>
             
             @if (ifoodConnected()) {
-                <div class="bg-green-500/10 border-2 border-green-500 rounded-2xl p-6 text-green-700 dark:text-green-400 font-bold text-xl flex items-center justify-center gap-3">
-                    <span translate="no" class="notranslate material-symbols-outlined text-3xl">check_circle</span>
-                    Loja Conectada com Sucesso!
+                <div class="bg-green-500/10 border-2 border-green-500 rounded-2xl p-4 sm:p-6 text-green-700 dark:text-green-400 font-bold text-lg sm:text-xl flex items-center justify-center gap-3">
+                    <span translate="no" class="notranslate material-symbols-outlined text-2xl sm:text-3xl">check_circle</span>
+                    Conectada!
                 </div>
             } @else {
-                <div class="bg-surface border border-strong rounded-3xl p-8 max-w-md mx-auto text-left shadow-lg">
+                <div class="bg-surface border border-strong rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto text-left shadow-lg">
                     
                     @if (!ifoodUserCode()) {
                         <div class="text-center">
                             <button type="button" (click)="startIfoodAuth()" [disabled]="ifoodConnecting()"
-                                class="w-full py-4 px-8 rounded-2xl font-black text-white text-lg bg-[#EA1D2C] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[#EA1D2C]/30 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-wait">
+                                class="w-full py-3 sm:py-4 px-4 sm:px-8 rounded-xl sm:rounded-2xl font-black text-white text-base sm:text-lg bg-[#EA1D2C] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[#EA1D2C]/30 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-wait">
                                 @if(ifoodConnecting()) {
-                                    <svg class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <svg class="animate-spin h-5 w-5 sm:h-6 sm:w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
                                     Iniciando...
                                 } @else {
-                                    <span translate="no" class="notranslate material-symbols-outlined text-2xl">link</span>
+                                    <span translate="no" class="notranslate material-symbols-outlined text-xl sm:text-2xl">link</span>
                                     Vincular iFood
                                 }
                             </button>
                         </div>
                     } @else {
                         <div class="space-y-4 animate-in slide-in-from-bottom-4">
-                            <div class="bg-surface-elevated border border-strong rounded-xl p-4">
-                                <p class="text-sm text-muted font-bold mb-2">1. Insira este código no Portal do Parceiro:</p>
-                                <div class="text-2xl font-mono font-black text-title tracking-widest text-center py-2 bg-surface rounded-lg">
+                            <div class="bg-surface-elevated border border-strong rounded-xl p-3 sm:p-4">
+                                <p class="text-xs sm:text-sm text-muted font-bold mb-2">1. Insira este código no Portal do Parceiro:</p>
+                                <div class="text-xl sm:text-2xl font-mono font-black text-title tracking-widest text-center py-2 bg-surface rounded-lg">
                                     {{ ifoodUserCode() }}
                                 </div>
                             </div>
                             
                             <div>
-                                <label class="block text-sm text-muted font-bold mb-2">2. Digite o Código de Autorização gerado:</label>
+                                <label class="block text-xs sm:text-sm text-muted font-bold mb-2">2. Digite o Código de Autorização gerado:</label>
                                 <input type="text" [(ngModel)]="ifoodAuthCode" 
-                                       class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-mono text-center text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none"
+                                       class="w-full bg-surface border border-strong rounded-xl px-4 py-3 font-mono text-center text-title focus:border-brand focus:ring-1 focus:ring-brand outline-none text-sm sm:text-base"
                                        placeholder="XXX-XXX">
                             </div>
                             
                             <button type="button" (click)="verifyIfoodAuth()" [disabled]="ifoodConnecting()"
-                                class="w-full py-4 rounded-xl font-black text-white bg-[#EA1D2C] hover:brightness-110 transition-all flex items-center justify-center">
+                                class="w-full py-3 sm:py-4 rounded-xl font-black text-white bg-[#EA1D2C] hover:brightness-110 transition-all flex items-center justify-center text-sm sm:text-base">
                                 @if(ifoodConnecting()) {
                                     Verificando...
                                 } @else {
@@ -377,9 +376,9 @@
                 </div>
             }
             
-            <div class="mt-8">
-                <button type="button" (click)="nextStep()" class="text-muted font-bold hover:text-title transition-colors underline decoration-strong underline-offset-4">
-                    Pular por enquanto, configuro depois
+            <div class="mt-6 sm:mt-8">
+                <button type="button" (click)="nextStep()" class="text-sm sm:text-base text-muted font-bold hover:text-title transition-colors underline decoration-strong underline-offset-4">
+                    Pular por enquanto
                 </button>
             </div>
           </div>
@@ -425,27 +424,27 @@
       
       <!-- Footer Navigation (Hidden on loading) -->
       @if (currentStep() < 5) {
-        <div class="p-8 border-t border-strong bg-surface/30 backdrop-blur-md flex items-center justify-between">
+        <div class="p-4 sm:p-6 lg:p-8 border-t border-strong bg-surface/30 backdrop-blur-md flex items-center justify-between shrink-0">
           <button type="button" (click)="prevStep()" [disabled]="currentStep() === 0"
-                  class="px-6 py-4 rounded-2xl font-bold text-muted hover:text-title hover:bg-surface-elevated transition-all disabled:opacity-0 active:scale-95">
+                  class="px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base text-muted hover:text-title hover:bg-surface-elevated transition-all disabled:opacity-0 active:scale-95">
             Voltar
           </button>
           
           <button type="button" (click)="nextStep()" [disabled]="!isStepValid()"
-                  class="group flex items-center gap-3 px-10 py-4 rounded-2xl font-black text-white bg-brand hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-xl shadow-brand/20">
+                  class="group flex items-center gap-2 sm:gap-3 px-6 py-3 sm:px-10 sm:py-4 rounded-xl sm:rounded-2xl font-black text-white text-sm sm:text-base bg-brand hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-xl shadow-brand/20">
             @if (currentStep() === 4) {
                Finalizar
             } @else {
                Avançar
             }
-            <span translate="no" class="notranslate material-symbols-outlined text-xl transition-transform group-hover:translate-x-1">arrow_forward</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-lg sm:text-xl transition-transform group-hover:translate-x-1">arrow_forward</span>
           </button>
         </div>
       }
     </div>
 
     <!-- Dynamic Image Panel (Top on Mobile, Right on Desktop) -->
-    <div class="w-full h-48 lg:h-auto lg:w-[35%] relative overflow-hidden bg-brand shrink-0 z-20 order-first lg:order-last">
+    <div class="hidden sm:block w-full h-32 lg:h-auto lg:w-[35%] relative overflow-hidden bg-brand shrink-0 z-20 order-first lg:order-last">
        @for (img of stepImages; track $index) {
           <div class="absolute inset-0 transition-opacity duration-1000 ease-in-out"
                [ngClass]="currentStep() === $index ? 'opacity-100 z-10' : 'opacity-0 z-0'">
@@ -453,7 +452,7 @@
                     [ngClass]="currentStep() === $index ? 'scale-105' : 'scale-100'"
                     [style.backgroundImage]="'url(' + img + ')'"></div>
                <div class="absolute inset-0 bg-brand/30 mix-blend-multiply"></div>
-               <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+               <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 lg:via-black/20 to-transparent"></div>
                
                <!-- Subtle overlay pattern -->
                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
@@ -461,31 +460,31 @@
        }
        
        <!-- Content inside the image panel -->
-       <div class="relative z-20 w-full h-full flex flex-col justify-end p-6 lg:p-12 text-white">
-          <div class="space-y-2 lg:space-y-4 max-w-sm">
+       <div class="relative z-20 w-full h-full flex flex-col justify-end p-4 lg:p-12 text-white">
+          <div class="space-y-1 lg:space-y-4 max-w-sm">
              @if (currentStep() === 0) {
-                 <h3 class="text-xl lg:text-3xl font-bold drop-shadow-md">A primeira impressão é a que fica.</h3>
-                 <p class="hidden sm:block text-white/80 font-medium">O nome do seu negócio é o começo de uma grande história.</p>
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">A primeira impressão é a que fica.</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">O nome do seu negócio é o começo de uma grande história.</p>
              }
              @if (currentStep() === 1) {
-                 <h3 class="text-xl lg:text-3xl font-bold drop-shadow-md">Moldado para você.</h3>
-                 <p class="hidden sm:block text-white/80 font-medium">Cada modelo de negócio traz configurações otimizadas para a sua operação.</p>
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Moldado para você.</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Cada modelo de negócio traz configurações otimizadas para a sua operação.</p>
              }
              @if (currentStep() === 2) {
-                 <h3 class="text-xl lg:text-3xl font-bold drop-shadow-md">Sua marca, seu estilo.</h3>
-                 <p class="hidden sm:block text-white/80 font-medium">Temas pensados para reduzir a fadiga visual e combinar com seu ambiente.</p>
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Sua marca, seu estilo.</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Temas pensados para reduzir a fadiga visual e combinar com seu ambiente.</p>
              }
              @if (currentStep() === 3) {
-                 <h3 class="text-xl lg:text-3xl font-bold drop-shadow-md">Pronto para a ação.</h3>
-                 <p class="hidden sm:block text-white/80 font-medium">Nós estruturamos suas praças e salão para você focar no que importa.</p>
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Pronto para a ação.</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Nós estruturamos suas praças e salão para você focar no que importa.</p>
              }
              @if (currentStep() === 4) {
-                 <h3 class="text-xl lg:text-3xl font-bold drop-shadow-md">Integrado ao mundo.</h3>
-                 <p class="hidden sm:block text-white/80 font-medium">Receba e despache pedidos do iFood em uma única tela fluida.</p>
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Integrado ao mundo.</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Receba e despache pedidos do iFood em uma única tela fluida.</p>
              }
              @if (currentStep() === 5) {
-                 <h3 class="text-xl lg:text-3xl font-bold drop-shadow-md">Tudo pronto!</h3>
-                 <p class="hidden sm:block text-white/80 font-medium">Iniciando os motores do ChefOS. O futuro do seu restaurante começa agora.</p>
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Tudo pronto!</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Iniciando os motores do ChefOS. O futuro do seu restaurante começa agora.</p>
              }
           </div>
        </div>
