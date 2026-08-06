@@ -109,7 +109,12 @@ export class MenuDataService {
 
     let result;
     if (category.id) {
-      result = await supabase.from('menu_categories').update(dbPayload).eq('id', category.id).eq('user_id', userId);
+      const { data: existing } = await supabase.from('menu_categories').select('id').eq('id', category.id).eq('user_id', userId).maybeSingle();
+      if (existing) {
+        result = await supabase.from('menu_categories').update(dbPayload).eq('id', category.id).eq('user_id', userId);
+      } else {
+        result = await supabase.from('menu_categories').insert(dbPayload);
+      }
     } else {
       result = await supabase.from('menu_categories').insert(dbPayload);
     }
@@ -173,7 +178,12 @@ export class MenuDataService {
 
     let result;
     if (item.id) {
-       result = await supabase.from('menu_items').update(dbPayload).eq('id', item.id).eq('user_id', userId);
+       const { data: existing } = await supabase.from('menu_items').select('id').eq('id', item.id).eq('user_id', userId).maybeSingle();
+       if (existing) {
+         result = await supabase.from('menu_items').update(dbPayload).eq('id', item.id).eq('user_id', userId);
+       } else {
+         result = await supabase.from('menu_items').insert(dbPayload);
+       }
     } else {
        result = await supabase.from('menu_items').insert(dbPayload);
     }

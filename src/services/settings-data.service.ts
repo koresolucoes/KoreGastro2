@@ -256,11 +256,31 @@ export class SettingsDataService {
     const userId = this.getActiveUnitId();
     if (!userId)
       return { success: false, error: { message: "Active unit not found" } };
+
+    // Check if station already exists to avoid unique constraint violations
+    let { data: existing } = await supabase
+      .from("stations")
+      .select()
+      .eq("user_id", userId)
+      .eq("name", name)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: true, error: null, data: existing };
+    }
+
     const { data, error } = await supabase
       .from("stations")
       .insert({ name, user_id: userId })
       .select()
       .single();
+      
+    // Handle concurrent inserts gracefully
+    if (error && error.code === '23505') {
+       existing = (await supabase.from("stations").select().eq("user_id", userId).eq("name", name).maybeSingle()).data;
+       return { success: true, error: null, data: existing };
+    }
+
     return { success: !error, error, data };
   }
 
