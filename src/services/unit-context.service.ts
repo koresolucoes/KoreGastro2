@@ -18,27 +18,26 @@ export class UnitContextService {
   private authService = inject(AuthService);
 
   // Default initial stores so the unit selector is always operational
-  availableUnits = signal<UnitInfo[]>([
-    { id: 'unit-matriz', name: 'Unidade Matriz - Centro', role: 'owner' },
-    { id: 'unit-shopping', name: 'Unidade Shopping Boulevard', role: 'owner' },
-    { id: 'unit-delivery', name: 'Unidade Express Delivery', role: 'owner' }
-  ]);
-
-  activeUnitId = signal<string>('unit-matriz');
+  availableUnits = signal<UnitInfo[]>([]);
+  activeUnitId = signal<string>('');
 
   isMultiUnit = computed(() => this.availableUnits().length > 1);
 
   activeUnitName = computed(() => {
     const id = this.activeUnitId();
-    if (!id) return 'Unidade Matriz - Centro';
+    if (!id) return 'Unidade Principal';
     const found = this.availableUnits().find(u => u.id === id);
-    return found ? found.name : 'Unidade Matriz - Centro';
+    return found ? found.name : 'Unidade Principal';
   });
 
   constructor() {
     const stored = localStorage.getItem(ACTIVE_UNIT_KEY);
-    if (stored) {
+    // Simple UUID regex
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (stored && uuidRegex.test(stored)) {
       this.activeUnitId.set(stored);
+    } else {
+      localStorage.removeItem(ACTIVE_UNIT_KEY);
     }
   }
 
@@ -85,9 +84,7 @@ export class UnitContextService {
 
     if (allUnits.length === 0) {
       allUnits = [
-        { id: userId || 'unit-matriz', name: 'Unidade Matriz - Centro', role: 'owner' },
-        { id: 'unit-shopping', name: 'Unidade Shopping Boulevard', role: 'owner' },
-        { id: 'unit-delivery', name: 'Unidade Express Delivery', role: 'owner' }
+        { id: userId, name: 'Unidade Principal', role: 'owner' }
       ];
     }
 
@@ -95,7 +92,6 @@ export class UnitContextService {
 
     const storedUnitId = localStorage.getItem(ACTIVE_UNIT_KEY);
     let targetId = storedUnitId;
-
     if (!targetId || !allUnits.some(u => u.id === targetId)) {
       targetId = allUnits[0].id;
     }

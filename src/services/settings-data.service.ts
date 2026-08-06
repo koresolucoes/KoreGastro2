@@ -33,7 +33,7 @@ export class SettingsDataService {
   private hrState = inject(HrStateService);
   private auditService = inject(AuditDataService);
 
-  private getActiveUnitId(): string | null {
+  public getActiveUnitId(): string | null {
     return this.unitContextService.activeUnitId();
   }
 
@@ -460,10 +460,21 @@ export class SettingsDataService {
     }
 
     if (profileData.company_name) {
-      await supabase
+      const { data: authSession } = await supabase.auth.getSession();
+      const ownerId = authSession.session?.user.id || userId;
+      
+      const { error: storeErr } = await supabase
         .from("stores")
-        .update({ name: profileData.company_name })
-        .eq("id", userId);
+        .upsert({ id: userId, name: profileData.company_name, owner_id: ownerId }, { onConflict: 'id' });
+        
+      if (storeErr) {
+        console.error("Failed to upsert store:", storeErr);
+        // Continue anyway, maybe it exists and just lacks permissions to upsert, but update works?
+        await supabase
+          .from("stores")
+          .update({ name: profileData.company_name })
+          .eq("id", userId);
+      }
     }
 
     const { error } = await supabase

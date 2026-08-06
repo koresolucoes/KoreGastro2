@@ -13,6 +13,7 @@ import { SupabaseStateService } from '../../services/supabase-state.service';
 import { ThemeService } from '../../services/theme.service';
 import { IfoodDataService } from '../../services/ifood-data.service';
 import { PosDataService } from '../../services/pos-data.service';
+import { supabase } from '../../services/supabase-client';
 import { v4 as uuidv4 } from 'uuid';
 
 type BusinessTemplate = 'burger' | 'pizza' | 'bar' | 'cafe' | 'restaurant';
@@ -288,15 +289,19 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
     try {
       // 1. Setup Company
-      await this.settingsData.updateCompanyProfile({
+      const companyRes = await this.settingsData.updateCompanyProfile({
         company_name: this.data.companyName,
         cnpj: '',
         ifood_merchant_id: this.data.ifoodMerchantId || null
       } as any);
+      if (!companyRes.success) throw new Error(companyRes.error?.message || 'Erro ao configurar empresa');
 
       // 3. Setup Hall
       const hall = await this.posData.addHall('Salão Principal');
+      if (!hall.success) throw new Error(hall.error?.message || 'Erro ao criar salão');
+      
       if (hall.success && hall.data?.id) {
+          await this.posData.deleteTablesByHallId(hall.data.id);
           // add tables manually
           const tables = [];
           for (let i = 1; i <= this.data.tableCount; i++) {
@@ -310,29 +315,54 @@ export class OnboardingComponent implements OnInit, OnDestroy {
                  y: Math.floor((i - 1) / 5) * 150 + 50
               });
           }
-          await this.posData.upsertTables(tables);
+          const tablesRes = await this.posData.upsertTables(tables);
+          if (!tablesRes.success) throw new Error(tablesRes.error?.message || 'Erro ao criar mesas');
       }
 
       // 4. Setup Stations
       for (const s of this.data.stations) {
-          await this.settingsData.addStation(s);
+          const stationRes = await this.settingsData.addStation(s);
+          if (!stationRes.success) throw new Error(stationRes.error?.message || 'Erro ao criar praça');
       }
 
       // 5. Setup Menu
-      const menuId = uuidv4();
-      await this.menuData.saveMenu({ id: menuId, name: 'Cardápio Principal', type: 'pdv', is_active: true });
+      let menuId = uuidv4();
+      const activeUnitId = this.settingsData.getActiveUnitId();
+      if (!activeUnitId) throw new Error('Nenhuma unidade ativa encontrada para criar o cardápio');
+
+      const { data: existingMenu } = await supabase.from('menus').select('id').eq('user_id', activeUnitId).eq('name', 'Cardápio Principal').maybeSingle();
+      if (existingMenu) {
+        menuId = existingMenu.id;
+        // Clean up old categories to prevent duplicates on retry
+        await supabase.from('menu_categories').delete().eq('menu_id', menuId);
+      }
+      const menuRes = await this.menuData.saveMenu({ id: menuId, name: 'Cardápio Principal', type: 'pdv', is_active: true });
+      if (!menuRes.success) {
+        const errMsg = typeof menuRes.error === 'string' ? menuRes.error : (menuRes.error?.message || 'Erro ao criar cardápio');
+        throw new Error(errMsg);
+      }
+      
       let order = 0;
       for (const cat of this.data.menuCategories) {
           const categoryId = uuidv4();
-          await this.menuData.saveCategory({ id: categoryId, menu_id: menuId, name: cat.name, display_order: order++ });
+          const catRes = await this.menuData.saveCategory({ id: categoryId, menu_id: menuId, name: cat.name, display_order: order++ });
+          if (!catRes.success) {
+            const errMsg = typeof catRes.error === 'string' ? catRes.error : (catRes.error?.message || 'Erro ao criar categoria');
+            throw new Error(errMsg);
+          }
+          
           for (const item of cat.items) {
-              await this.menuData.saveItem({
+              const itemRes = await this.menuData.saveItem({
                   id: uuidv4(),
                   menu_category_id: categoryId,
                   custom_name: item.name,
                   custom_price: item.price || 0,
                   is_active: true
               });
+              if (!itemRes.success) {
+                const errMsg = typeof itemRes.error === 'string' ? itemRes.error : (itemRes.error?.message || 'Erro ao criar item');
+                throw new Error(errMsg);
+              }
           }
       }
 

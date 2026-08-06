@@ -1002,6 +1002,10 @@ export interface Menu {
   description?: string;
   is_active: boolean;
   type: string; // 'pdv' | 'delivery' | 'online' | 'qrcode'
+  channels?: string[];
+  start_time?: string;
+  end_time?: string;
+  days_of_week?: number[];
   availability_hours?: any;
   user_id: string;
   created_at: string;

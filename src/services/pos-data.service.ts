@@ -1060,6 +1060,18 @@ export class PosDataService {
     const userId = this.getActiveUnitId();
     if (!userId)
       return { success: false, error: { message: "Active unit not found" } };
+
+    const { data: existing } = await supabase
+      .from("halls")
+      .select()
+      .eq("user_id", userId)
+      .eq("name", name)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: true, data: existing, error: null };
+    }
+
     const { data, error } = await supabase
       .from("halls")
       .insert({ name, user_id: userId })
