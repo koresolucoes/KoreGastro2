@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SettingsDataService } from '../../services/settings-data.service';
-import { MenuDataService, MenuCategory, MenuCategoryItem } from '../../services/menu-data.service';
+import { MenuDataService } from '../../services/menu-data.service';
+import { MenuCategory, MenuItem } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { DemoModeService } from '../../services/demo-mode.service';
@@ -16,6 +17,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 type BusinessTemplate = 'burger' | 'pizza' | 'bar' | 'cafe' | 'restaurant';
 type ThemeOption = 'midnight' | 'pearl' | 'spice' | 'slate';
+
+type TemplateCategory = { name: string, items: { name: string, price: number }[] };
 
 @Component({
   selector: 'app-onboarding',
@@ -46,6 +49,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   ifoodConnected = signal(false);
   ifoodUserCode = signal('');
   ifoodAuthCode = signal('');
+  ifoodCodeData: any = null;
 
   // Form Data
   data = {
@@ -55,7 +59,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     selectedTheme: 'midnight' as ThemeOption,
     tableCount: 15,
     stations: [] as string[],
-    menuCategories: [] as MenuCategory[],
+    menuCategories: [] as TemplateCategory[],
     managerName: 'Administrador',
     managerPin: '1234',
     ifoodMerchantId: '',
@@ -159,19 +163,42 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   applyTheme(themeId: ThemeOption) {
     this.data.selectedTheme = themeId;
-    if (themeId === 'midnight') this.themeService.enableDarkMode();
-    else this.themeService.enableLightMode();
+    if (themeId === 'midnight') {
+        this.themeService.setTheme('dark');
+        this.themeService.setPalette('chefos');
+    } else if (themeId === 'pearl') {
+        this.themeService.setTheme('light');
+        this.themeService.setPalette('lyon');
+    } else if (themeId === 'spice') {
+        this.themeService.setTheme('light');
+        this.themeService.setPalette('napoli');
+    } else if (themeId === 'slate') {
+        this.themeService.setTheme('light');
+        this.themeService.setPalette('kyoto');
+    }
   }
 
   async startIfoodAuth() {
     this.ifoodConnecting.set(true);
     try {
-      // Mocked for UX flow. 
-      await new Promise(r => setTimeout(r, 1500));
-      this.ifoodUserCode.set('JXKL-QXWJ');
-      // window.open('https://portal.ifood.com.br/app/integracoes', '_blank');
-    } catch (e) {
-      this.notification.show('Erro ao iniciar integração com iFood.', 'error');
+      const res = await fetch('/api/ifood-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'userCode' })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+          throw new Error(data.message || 'Erro ao iniciar autorização');
+      }
+      
+      this.ifoodUserCode.set(data.userCode);
+      // We store the whole data object to have the verifier for the next step
+      this.ifoodCodeData = data;
+      // Option to open portal
+      window.open('https://portal.ifood.com.br/app/integracoes', '_blank');
+    } catch (e: any) {
+      this.notification.show('Erro ao iniciar integração com iFood: ' + e.message, 'error');
     } finally {
       this.ifoodConnecting.set(false);
     }
@@ -184,13 +211,26 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     }
     this.ifoodConnecting.set(true);
     try {
-      // Mocked for UX flow.
-      await new Promise(r => setTimeout(r, 1500));
-      this.data.ifoodMerchantId = 'IFOOD_CONNECTED';
+      const res = await fetch('/api/ifood-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              action: 'token',
+              authorizationCode: this.ifoodAuthCode(),
+              authorizationCodeVerifier: this.ifoodCodeData?.authorizationCodeVerifier
+          })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+          throw new Error(data.message || 'Erro ao validar autorização');
+      }
+
+      this.data.ifoodMerchantId = data.tenantId || 'IFOOD_CONNECTED';
       this.ifoodConnected.set(true);
       this.notification.show('iFood conectado com sucesso!', 'success');
-    } catch (e) {
-      this.notification.show('Código inválido ou expirado.', 'error');
+    } catch (e: any) {
+      this.notification.show('Código inválido ou expirado: ' + e.message, 'error');
     } finally {
       this.ifoodConnecting.set(false);
     }
@@ -238,62 +278,54 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
     try {
       // 1. Setup Company
-      this.settingsData.updateSettings({
-        companyName: this.data.companyName,
-        companyCnpj: '',
-      });
-
-      // 2. Waiters & Tables
-      await this.settingsData.updateOperationSettings({
-        hasWaiters: true,
-        hasKitchen: true,
-        hasCashiers: true,
-        hasDrivers: true,
-        hasTableTokens: false,
-        useKds: true
-      });
+      await this.settingsData.updateCompanyProfile({
+        company_name: this.data.companyName,
+        cnpj: '',
+        ifood_merchant_id: this.data.ifoodMerchantId || null
+      } as any);
 
       // 3. Setup Hall
-      const hall = await this.posData.addHall({ name: 'Salão Principal', is_active: true });
-      if (hall?.id) {
+      const hall = await this.posData.addHall('Salão Principal');
+      if (hall.success && hall.data?.id) {
           // add tables manually
+          const tables = [];
           for (let i = 1; i <= this.data.tableCount; i++) {
-              await this.posData.addTable(hall.id, {
+              tables.push({
+                 hall_id: hall.data.id,
+                 number: i,
                  name: `Mesa ${i}`,
                  is_active: true,
-                 x_position: (i % 5) * 100 + 50,
-                 y_position: Math.floor(i / 5) * 100 + 50
+                 x_position: ((i - 1) % 5) * 150 + 50,
+                 y_position: Math.floor((i - 1) / 5) * 150 + 50
               });
           }
+          await this.posData.upsertTables(tables);
       }
 
       // 4. Setup Stations
-      await this.settingsData.updateKitchenStations(this.data.stations.map(s => ({
-          id: uuidv4(),
-          name: s,
-          isActive: true
-      })));
+      for (const s of this.data.stations) {
+          await this.settingsData.addStation(s);
+      }
 
       // 5. Setup Menu
       let order = 0;
       for (const cat of this.data.menuCategories) {
-          const category = await this.menuData.addCategory({ name: cat.name, sortOrder: order++, isActive: true });
-          if (category?.id) {
-              for (const item of cat.items) {
-                  await this.menuData.addItem({
-                      categoryId: category.id,
-                      name: item.name,
-                      price: item.price || 0,
-                      isActive: true
-                  });
-              }
+          const categoryId = uuidv4();
+          await this.menuData.saveCategory({ id: categoryId, name: cat.name, display_order: order++ });
+          for (const item of cat.items) {
+              await this.menuData.saveItem({
+                  id: uuidv4(),
+                  menu_category_id: categoryId,
+                  custom_name: item.name,
+                  custom_price: item.price || 0,
+                  is_active: true
+              });
           }
       }
 
       // Simulate network delay for effect
       await new Promise(r => setTimeout(r, 4500));
 
-      this.demoMode.completeOnboarding();
       this.router.navigate(['/pos']);
     } catch (e: any) {
         console.error('Onboarding Error:', e);
