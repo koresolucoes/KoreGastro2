@@ -63,7 +63,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     tableCount: 15,
     stations: [] as string[],
     menuCategories: [] as TemplateCategory[],
-    managerName: 'Administrador',
+    managerName: 'Gerente Geral',
     managerPin: '1234',
     ifoodMerchantId: '',
   };
@@ -73,6 +73,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     { id: 'template', title: 'Modelo de Negócio' },
     { id: 'theme', title: 'Personalização' },
     { id: 'structure', title: 'Estrutura' },
+    { id: 'manager', title: 'Gerente Geral' },
     { id: 'ifood', title: 'Conectividade' },
     { id: 'finish', title: 'Conclusão' }
   ];
@@ -82,8 +83,9 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1974&auto=format&fit=crop', // Step 1: Model
     'https://images.unsplash.com/photo-1578474846511-04ba529f0b88?q=80&w=1974&auto=format&fit=crop', // Step 2: Theme
     'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?q=80&w=2070&auto=format&fit=crop', // Step 3: Structure
-    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=1981&auto=format&fit=crop', // Step 4: iFood
-    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1974&auto=format&fit=crop'  // Step 5: Finish
+    'https://images.unsplash.com/photo-1556742049-0a67568d049f?q=80&w=1974&auto=format&fit=crop', // Step 4: Manager
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=1981&auto=format&fit=crop', // Step 5: iFood
+    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1974&auto=format&fit=crop'  // Step 6: Finish
   ];
 
   templates = [
@@ -253,7 +255,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     if (this.isStepValid()) {
       const next = this.currentStep() + 1;
       this.currentStep.set(next);
-      if (next === 5) {
+      if (next === 6) {
         this.finish();
       }
     }
@@ -267,11 +269,12 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   isStepValid(): boolean {
     switch (this.currentStep()) {
-      case 0: return !!this.data.companyName; 
+      case 0: return !!this.data.companyName.trim(); 
       case 1: return true; 
       case 2: return true; 
       case 3: return this.data.tableCount > 0;
-      case 4: return true; // ifood is optional
+      case 4: return !!this.data.managerName.trim() && !!this.data.managerPin.trim() && this.data.managerPin.trim().length >= 4;
+      case 5: return true; // ifood is optional
       default: return false;
     }
   }
@@ -285,7 +288,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   async finish() {
-    this.currentStep.set(5); 
+    this.currentStep.set(6); 
     this.isProcessing.set(true);
     this.startLoadingAnimation();
 
@@ -398,19 +401,35 @@ export class OnboardingComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Check or create default manager employee
+      // Create or update default Manager employee with the name and pin entered by user
+      const managerNameInput = (this.data.managerName || '').trim() || 'Gerente Geral';
+      const managerPinInput = (this.data.managerPin || '').trim() || '1234';
+
       const { data: existingEmployees } = await supabase.from('employees').select('*').eq('user_id', activeUnitId);
-      let activeEmp = existingEmployees?.find((e: any) => e.role_id === gerenteRole?.id || e.name === 'Gerente Geral') || existingEmployees?.[0];
+      let activeEmp = existingEmployees?.find((e: any) => e.role_id === gerenteRole?.id || e.name === managerNameInput) || existingEmployees?.[0];
 
       if (!activeEmp) {
         const empRes = await this.settingsData.addEmployee({
-          name: 'Gerente Geral',
-          pin: '1234',
+          name: managerNameInput,
+          pin: managerPinInput,
           role_id: gerenteRole?.id || null
         });
         if (empRes.success && empRes.data) {
           activeEmp = empRes.data;
         }
+      } else {
+        await this.settingsData.updateEmployee({
+          id: activeEmp.id,
+          name: managerNameInput,
+          pin: managerPinInput,
+          role_id: gerenteRole?.id || activeEmp.role_id
+        });
+        activeEmp = {
+          ...activeEmp,
+          name: managerNameInput,
+          pin: managerPinInput,
+          role_id: gerenteRole?.id || activeEmp.role_id
+        };
       }
 
       // Reload main app data & permissions so state is 100% synchronized
@@ -431,7 +450,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(4); 
+        this.currentStep.set(5); 
     } finally {
         this.isProcessing.set(false);
         if (this.loadingInterval) clearInterval(this.loadingInterval);

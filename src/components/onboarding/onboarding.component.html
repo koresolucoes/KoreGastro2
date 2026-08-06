@@ -305,9 +305,59 @@
         }
 
         <!-- ============================================== -->
-        <!-- STEP 4: iFOOD INTEGRATION -->
+        <!-- STEP 4: GERENTE (MANAGER PROFILE & PERMISSIONS) -->
         <!-- ============================================== -->
         @if (currentStep() === 4) {
+          <div class="max-w-2xl mx-auto h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-8 duration-700 w-full">
+            <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2">Criar Perfil do Gerente</h2>
+            <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-8">
+              Defina o nome e o PIN de acesso do operador principal. Este usuário terá o cargo de Gerente com todas as permissões liberadas.
+            </p>
+            
+            <div class="bg-surface border border-strong rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+              
+              <!-- Manager Name Input -->
+              <div>
+                <label class="block text-xs sm:text-sm font-bold text-title uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">person</span>
+                  Nome do Gerente / Administrador
+                </label>
+                <input type="text" [(ngModel)]="data.managerName" required
+                       class="w-full bg-surface-elevated border border-strong rounded-2xl px-4 py-3.5 sm:py-4 text-title font-bold text-base sm:text-lg focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all placeholder-muted/40"
+                       placeholder="Ex: Carlos Silva (Gerente)">
+              </div>
+
+              <!-- Manager PIN Input -->
+              <div>
+                <label class="block text-xs sm:text-sm font-bold text-title uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand text-lg">pin</span>
+                  PIN de Acesso (4 dígitos)
+                </label>
+                <div class="relative max-w-xs">
+                  <input type="password" maxlength="4" pattern="[0-9]*" [(ngModel)]="data.managerPin" required
+                         class="w-full bg-surface-elevated border border-strong rounded-2xl px-4 py-3.5 sm:py-4 text-center font-mono font-black text-2xl tracking-[0.5em] text-title focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all placeholder-muted/40"
+                         placeholder="1234">
+                </div>
+                <p class="text-xs text-muted mt-1 font-medium">Este PIN será usado para autorizar cancelamentos, sangrias e gerenciar o sistema.</p>
+              </div>
+
+              <!-- Info Box for Permissions -->
+              <div class="p-4 rounded-2xl bg-brand/10 border border-brand/20 flex items-start gap-3 text-brand">
+                <span translate="no" class="notranslate material-symbols-outlined text-2xl shrink-0 mt-0.5">verified_user</span>
+                <div class="text-xs sm:text-sm font-medium leading-relaxed">
+                  <strong class="font-bold text-title block mb-0.5">Permissões Totais Automáticas:</strong>
+                  Ao concluir a configuração, este operador será criado com o cargo <strong class="text-brand font-bold">Gerente</strong> e receberá acesso irrestrito a todos os módulos do sistema (PDV, Caixa, Dashboard, Financeiro, Relatórios, RH e Configurações).
+                </div>
+              </div>
+
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- STEP 5: iFOOD INTEGRATION -->
+        <!-- ============================================== -->
+        @if (currentStep() === 5) {
           <div class="max-w-2xl mx-auto h-full flex flex-col justify-center text-center animate-in fade-in slide-in-from-right-8 duration-700 w-full">
             
             <div class="relative mx-auto w-24 h-24 sm:w-32 sm:h-32 mb-6 sm:mb-8 flex items-center justify-center">
@@ -385,9 +435,9 @@
         }
 
         <!-- ============================================== -->
-        <!-- STEP 5: FINISH (LOADING) -->
+        <!-- STEP 6: FINISH (LOADING) -->
         <!-- ============================================== -->
-        @if (currentStep() === 5) {
+        @if (currentStep() === 6) {
           <div class="max-w-md mx-auto h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
             
             <!-- Elegant Loading Animation -->
@@ -423,7 +473,7 @@
       </div>
       
       <!-- Footer Navigation (Hidden on loading) -->
-      @if (currentStep() < 5) {
+      @if (currentStep() < 6) {
         <div class="p-4 sm:p-6 lg:p-8 border-t border-strong bg-surface/30 backdrop-blur-md flex items-center justify-between shrink-0">
           <button type="button" (click)="prevStep()" [disabled]="currentStep() === 0"
                   class="px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base text-muted hover:text-title hover:bg-surface-elevated transition-all disabled:opacity-0 active:scale-95">
@@ -432,7 +482,7 @@
           
           <button type="button" (click)="nextStep()" [disabled]="!isStepValid()"
                   class="group flex items-center gap-2 sm:gap-3 px-6 py-3 sm:px-10 sm:py-4 rounded-xl sm:rounded-2xl font-black text-white text-sm sm:text-base bg-brand hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-xl shadow-brand/20">
-            @if (currentStep() === 4) {
+            @if (currentStep() === 5) {
                Finalizar
             } @else {
                Avançar
@@ -479,10 +529,14 @@
                  <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Nós estruturamos suas praças e salão para você focar no que importa.</p>
              }
              @if (currentStep() === 4) {
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Gerenciamento & Controle.</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Seu perfil de Gerente com todas as permissões liberadas para administrar o sistema.</p>
+             }
+             @if (currentStep() === 5) {
                  <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Integrado ao mundo.</h3>
                  <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Receba e despache pedidos do iFood em uma única tela fluida.</p>
              }
-             @if (currentStep() === 5) {
+             @if (currentStep() === 6) {
                  <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Tudo pronto!</h3>
                  <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Iniciando os motores do ChefOS. O futuro do seu restaurante começa agora.</p>
              }
