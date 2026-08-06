@@ -24,10 +24,10 @@
          [ngClass]="{'hidden lg:flex opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto': isRegistering(), 'flex opacity-100 pointer-events-auto': !isRegistering()}">
       
       <div class="max-w-md w-full mx-auto">
-        <div class="text-center lg:text-left mb-10">
-          <h1 class="text-5xl font-black text-title mb-4 lg:hidden tracking-tighter">
-            Chef<span class="text-brand">OS</span>
-          </h1>
+        <div class="text-center lg:text-left mb-10 flex flex-col items-center lg:items-start">
+          <div class="flex items-center justify-center lg:justify-start gap-3 mb-4 lg:hidden">
+            <img src="/logo.svg" alt="ChefOS Logo" class="h-16 w-auto">
+          </div>
           <h2 class="text-3xl font-bold text-title tracking-tight">Acesse sua conta</h2>
           <p class="mt-2 text-sm text-muted font-medium">Entre com seu e-mail e senha para continuar.</p>
         </div>
@@ -98,10 +98,10 @@
          [ngClass]="{'hidden lg:flex opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto': !isRegistering(), 'flex opacity-100 pointer-events-auto': isRegistering()}">
       
       <div class="max-w-md w-full mx-auto">
-        <div class="text-center lg:text-left mb-8">
-          <h1 class="text-5xl font-black text-title mb-4 lg:hidden tracking-tighter">
-            Chef<span class="text-brand">OS</span>
-          </h1>
+        <div class="text-center lg:text-left mb-8 flex flex-col items-center lg:items-start">
+          <div class="flex items-center justify-center lg:justify-start gap-3 mb-4 lg:hidden">
+            <img src="/logo.svg" alt="ChefOS Logo" class="h-16 w-auto">
+          </div>
           <h2 class="text-3xl font-bold text-title tracking-tight">Crie sua conta</h2>
           <p class="mt-2 text-sm text-muted font-medium">Cadastre-se para começar a usar o ChefOS.</p>
         </div>
@@ -217,9 +217,9 @@
         <!-- Welcome Back Content (Shown when Login is active) -->
         <div class="absolute flex flex-col justify-center items-center transition-all duration-500 transform w-full px-12"
              [ngClass]="{'opacity-0 scale-95 pointer-events-none': isRegistering(), 'opacity-100 scale-100 pointer-events-auto delay-200': !isRegistering()}">
-          <h1 class="text-7xl font-black mb-6 tracking-tighter drop-shadow-xl">
-            Chef<span class="text-white/80">OS</span>
-          </h1>
+          <div class="flex items-center justify-center gap-4 mb-6">
+            <img src="/logo.svg" alt="ChefOS Logo" class="h-24 w-auto drop-shadow-xl">
+          </div>
           <h2 class="text-3xl font-bold mb-4 drop-shadow-md">Bem-vindo(a) de volta!</h2>
           <p class="text-lg font-medium text-white/80 mb-10 max-w-sm">
             Pronto para revolucionar a gestão do seu restaurante hoje?
@@ -234,9 +234,9 @@
         <!-- Start Journey Content (Shown when Register is active) -->
         <div class="absolute flex flex-col justify-center items-center transition-all duration-500 transform w-full px-12"
              [ngClass]="{'opacity-0 scale-95 pointer-events-none': !isRegistering(), 'opacity-100 scale-100 pointer-events-auto delay-200': isRegistering()}">
-          <h1 class="text-7xl font-black mb-6 tracking-tighter drop-shadow-xl">
-            Chef<span class="text-white/80">OS</span>
-          </h1>
+          <div class="flex items-center justify-center gap-4 mb-6">
+            <img src="/logo.svg" alt="ChefOS Logo" class="h-24 w-auto drop-shadow-xl">
+          </div>
           <h2 class="text-3xl font-bold mb-4 drop-shadow-md">Evolua seu negócio</h2>
           <p class="text-lg font-medium text-white/80 mb-10 max-w-sm">
             Junte-se aos melhores restaurantes e simplifique sua operação com nossa plataforma.

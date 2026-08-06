@@ -560,20 +560,20 @@
         <div class="w-full lg:w-96 bg-surface-elevated flex flex-col border-t lg:border-t-0 lg:border-l border-subtle shadow-xl z-10 shrink-0 lg:h-full">
              
              <!-- Scrollable Content -->
-             <div class="p-6 lg:p-8 flex-1 lg:overflow-y-auto custom-scrollbar space-y-6">
+             <div class="p-4 lg:p-6 flex-1 lg:overflow-y-auto custom-scrollbar space-y-4">
                  <h4 class="text-[10px] font-bold text-muted uppercase tracking-widest flex items-center gap-2">
                      <span translate="no" class="notranslate material-symbols-outlined text-[16px]">payments</span> Análise Financeira
                  </h4>
                  
                  <!-- Total Cost Card -->
-                 <div class="demo-financial-card bg-surface rounded-2xl p-6 border border-strong shadow-sm group">
+                 <div class="demo-financial-card bg-surface rounded-2xl p-4 border border-strong shadow-sm group">
                      <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-1">Custo Total (CMV)</p>
                      <div class="flex items-baseline gap-2">
-                         <p class="text-5xl font-black text-title tracking-tight data-mono drop-shadow-sm group-hover:text-brand transition-colors">{{ formTotalOverallCost() | currency:'BRL' }}</p>
+                         <p class="text-3xl font-black text-title tracking-tight data-mono drop-shadow-sm group-hover:text-brand transition-colors">{{ formTotalOverallCost() | currency:'BRL' }}</p>
                      </div>
                      
                      <!-- Cost Composition Chart -->
-                     <div class="mt-6 h-40 w-full relative">
+                     <div class="mt-3 h-24 w-full relative">
                         <canvas baseChart
                           [data]="costChartData()"
                           [options]="chartOptions"
@@ -583,26 +583,26 @@
                  </div>
 
                  @if (!recipeForm().recipe.is_sub_recipe) {
-                    <div class="bg-surface rounded-2xl p-6 border border-strong shadow-sm relative overflow-hidden group">
+                    <div class="bg-surface rounded-2xl p-4 border border-strong shadow-sm relative overflow-hidden group">
                         <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <span translate="no" class="notranslate material-symbols-outlined text-7xl text-brand">sell</span>
+                            <span translate="no" class="notranslate material-symbols-outlined text-6xl text-brand">sell</span>
                         </div>
                         <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10">Preço Sugerido (30%)</p>
-                        <p class="text-3xl font-black text-brand relative z-10 data-mono">{{ (formTotalOverallCost() / 0.3) | currency:'BRL' }}</p>
+                        <p class="text-2xl font-black text-brand relative z-10 data-mono">{{ (formTotalOverallCost() / 0.3) | currency:'BRL' }}</p>
                     </div>
                     
                     @if (recipeForm().recipe.price && recipeForm().recipe.price > 0) {
-                        <div class="bg-surface rounded-2xl p-6 border border-strong shadow-sm">
+                        <div class="bg-surface rounded-2xl p-4 border border-strong shadow-sm">
                             <p class="text-muted text-[10px] font-bold uppercase tracking-widest mb-2">Margem de Lucro</p>
                             @let margin = ((recipeForm().recipe.price! - formTotalOverallCost()) / recipeForm().recipe.price!) * 100;
-                            <div class="flex items-end gap-3 mb-3">
-                                <p class="text-4xl font-black tracking-tight" [class.text-success]="margin >= 50" [class.text-warning]="margin < 50 && margin >= 30" [class.text-danger]="margin < 30">
+                            <div class="flex items-end gap-2 mb-2">
+                                <p class="text-2xl font-black tracking-tight" [class.text-success]="margin >= 50" [class.text-warning]="margin < 50 && margin >= 30" [class.text-danger]="margin < 30">
                                     {{ margin | number:'1.1-1' }}%
                                 </p>
-                                <span class="text-xs text-muted font-bold tracking-widest uppercase mb-1.5">de {{ recipeForm().recipe.price | currency:'BRL' }}</span>
+                                <span class="text-[10px] text-muted font-bold tracking-widest uppercase mb-0.5">de {{ recipeForm().recipe.price | currency:'BRL' }}</span>
                             </div>
                             <!-- Progress Bar -->
-                            <div class="w-full bg-surface-elevated h-3 rounded-full overflow-hidden border border-strong shadow-inner">
+                            <div class="w-full bg-surface-elevated h-2 rounded-full overflow-hidden border border-strong shadow-inner">
                                 <div class="h-full rounded-full transition-all duration-500" 
                                     [style.width.%]="margin > 0 ? margin : 0"
                                     [class.bg-success]="margin >= 50" 
@@ -616,31 +616,31 @@
                  
                  <!-- AI Section -->
                  <div class="pt-2 border-t border-subtle">
-                     <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="demo-ai-btn w-full py-4 bg-gradient-to-r from-brand to-brand-hover hover:from-brand-hover hover:to-brand text-white rounded-2xl font-bold shadow-lg shadow-brand/30 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait group relative overflow-hidden">
+                     <button (click)="getMiseEnPlaceSuggestions()" [disabled]="isAiLoading()" class="demo-ai-btn w-full py-3 bg-gradient-to-r from-brand to-brand-hover hover:from-brand-hover hover:to-brand text-white rounded-xl font-bold shadow-lg shadow-brand/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait group relative overflow-hidden">
                         <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity blur-md"></div>
                         @if(isAiLoading()) {
-                            <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent relative z-10"></div>
+                            <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent relative z-10"></div>
                         } @else {
-                            <span translate="no" class="notranslate material-symbols-outlined group-hover:rotate-12 transition-transform relative z-10">psychology</span>
+                            <span translate="no" class="notranslate material-symbols-outlined group-hover:rotate-12 transition-transform relative z-10 text-[18px]">psychology</span>
                         }
-                        <span class="relative z-10 uppercase tracking-widest text-xs">Gerar Dicas com IA</span>
+                        <span class="relative z-10 uppercase tracking-widest text-[10px]">Gerar Dicas com IA</span>
                      </button>
                      
                      @if(aiSuggestions(); as suggestions) {
-                        <div class="mt-6 bg-brand/5 border border-brand/20 rounded-2xl p-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <h5 class="text-brand font-bold text-[10px] uppercase tracking-widest mb-3 flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">auto_awesome</span> Sugestões do Chef</h5>
-                            <div class="text-xs text-body leading-relaxed max-h-48 overflow-y-auto custom-scrollbar font-medium" [innerHTML]="suggestions"></div>
+                        <div class="mt-4 bg-brand/5 border border-brand/20 rounded-xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <h5 class="text-brand font-bold text-[10px] uppercase tracking-widest mb-2 flex items-center gap-1.5"><span translate="no" class="notranslate material-symbols-outlined text-[14px]">auto_awesome</span> Sugestões do Chef</h5>
+                            <div class="text-xs text-body leading-relaxed max-h-32 overflow-y-auto custom-scrollbar font-medium" [innerHTML]="suggestions"></div>
                         </div>
                      }
                  </div>
              </div>
 
              <!-- Footer Actions -->
-             <div class="p-6 lg:p-8 pt-4 lg:pt-4 border-t border-subtle flex flex-col gap-3 shrink-0 bg-surface-elevated">
-                 <button (click)="saveTechnicalSheet()" class="w-full py-4 bg-success hover:bg-success-hover text-white font-black text-lg rounded-2xl shadow-lg shadow-success/30 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2">
-                     <span translate="no" class="notranslate material-symbols-outlined">check_circle</span> Salvar Ficha
+             <div class="p-4 lg:p-5 pt-3 lg:pt-3 border-t border-subtle flex flex-col gap-2 shrink-0 bg-surface-elevated">
+                 <button (click)="saveTechnicalSheet()" class="w-full py-3 bg-success hover:bg-success-hover text-white font-black text-base rounded-xl shadow-lg shadow-success/30 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2">
+                     <span translate="no" class="notranslate material-symbols-outlined text-[18px]">check_circle</span> Salvar Ficha
                  </button>
-                 <button (click)="closeModal()" class="w-full py-3 bg-transparent hover:bg-surface text-muted hover:text-title font-bold rounded-2xl transition-colors text-sm uppercase tracking-widest">
+                 <button (click)="closeModal()" class="w-full py-2 bg-transparent hover:bg-surface text-muted hover:text-title font-bold rounded-xl transition-colors text-xs uppercase tracking-widest">
                      Cancelar
                  </button>
              </div>
