@@ -1,380 +1,307 @@
-
-import { Component, ChangeDetectionStrategy, signal, inject, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SettingsDataService } from '../../services/settings-data.service';
-import { RecipeDataService } from '../../services/recipe-data.service';
-import { PosDataService } from '../../services/pos-data.service';
+import { MenuDataService, MenuCategory, MenuCategoryItem } from '../../services/menu-data.service';
 import { NotificationService } from '../../services/notification.service';
-import { InventoryDataService } from '../../services/inventory-data.service';
-import { UnitContextService } from '../../services/unit-context.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { DemoModeService } from '../../services/demo-mode.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { ThemeService } from '../../services/theme.service';
+import { IfoodDataService } from '../../services/ifood-data.service';
+import { PosDataService } from '../../services/pos-data.service';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '../../services/supabase-client';
 
-interface MenuCategoryItem {
-    name: string;
-    price: number | null;
-}
-
-interface MenuCategory {
-    name: string;
-    items: MenuCategoryItem[];
-}
-
-type BusinessTemplate = 'burger' | 'pizza' | 'bar' | 'restaurant' | 'cafe' | 'custom';
+type BusinessTemplate = 'burger' | 'pizza' | 'bar' | 'cafe' | 'restaurant';
+type ThemeOption = 'midnight' | 'pearl' | 'spice' | 'slate';
 
 @Component({
   selector: 'app-onboarding',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './onboarding.component.html',
+  styleUrls: ['./onboarding.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnboardingComponent implements OnInit {
+export class OnboardingComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private hrState = inject(HrStateService);
   private settingsData = inject(SettingsDataService);
-  private recipeData = inject(RecipeDataService);
-  private posData = inject(PosDataService);
-  private inventoryData = inject(InventoryDataService);
-  private unitContext = inject(UnitContextService);
+  private menuData = inject(MenuDataService);
   private notification = inject(NotificationService);
   private opAuth = inject(OperationalAuthService);
   private demoMode = inject(DemoModeService);
   private supabaseState = inject(SupabaseStateService);
+  private posData = inject(PosDataService);
   themeService = inject(ThemeService);
+  ifoodData = inject(IfoodDataService);
 
   currentStep = signal(0);
   isProcessing = signal(false);
-  loadingStatus = signal('Iniciando...');
   
+  // iFood Integration State
   ifoodConnecting = signal(false);
   ifoodConnected = signal(false);
+  ifoodUserCode = signal('');
+  ifoodAuthCode = signal('');
 
-  // Form Data Complex Object
+  // Form Data
   data = {
     companyName: '',
-    cnpj: '',
+    logoUrl: '',
     selectedTemplate: 'burger' as BusinessTemplate,
-    
-    // Auto-filled by template
-    hasWaiters: true,
-    hasKitchen: true,
-    hasDrivers: true,
-    hasCashiers: true,
-    hallName: 'Salão Principal',
-    tableCount: 10,
-    stations: ['Cozinha'] as string[],
+    selectedTheme: 'midnight' as ThemeOption,
+    tableCount: 15,
+    stations: [] as string[],
     menuCategories: [] as MenuCategory[],
-
-    // Integrations
+    managerName: 'Administrador',
+    managerPin: '1234',
     ifoodMerchantId: '',
-    ifoodOAuthCode: '',
-
-    // Acesso
-    managerName: '',
-    managerPin: ''
   };
 
   steps = [
-    { id: 'welcome', title: 'Boas-vindas' },
-    { id: 'template', title: 'Seu Negócio' },
-    { id: 'theme', title: 'Identidade' },
-    { id: 'integrations', title: 'Integrações' },
-    { id: 'manager', title: 'Acesso' },
-    { id: 'trial', title: 'Premium' },
+    { id: 'identity', title: 'Identidade' },
+    { id: 'template', title: 'Modelo de Negócio' },
+    { id: 'theme', title: 'Personalização' },
+    { id: 'structure', title: 'Estrutura' },
+    { id: 'ifood', title: 'Conectividade' },
     { id: 'finish', title: 'Conclusão' }
   ];
 
   templates = [
-    { id: 'burger', icon: 'lunch_dining', title: 'Hamburgueria', desc: 'Focado em delivery e balcão, produção rápida.' },
-    { id: 'pizza', icon: 'local_pizza', title: 'Pizzaria', desc: 'Mesas, delivery, fornos e montagem complexa.' },
-    { id: 'bar', icon: 'sports_bar', title: 'Bar / Pub', desc: 'Foco em bebidas, porções e alto giro de mesas.' },
-    { id: 'restaurant', icon: 'restaurant', title: 'Restaurante', desc: 'Pratos elaborados, salão estruturado.' },
-    { id: 'cafe', icon: 'local_cafe', title: 'Cafeteria', desc: 'Balcão ágil, vitrine e preparo expresso.' }
+    { id: 'burger', icon: 'lunch_dining', title: 'Hamburgueria', desc: 'Focado em delivery e balcão, produção rápida.', theme: 'spice' },
+    { id: 'pizza', icon: 'local_pizza', title: 'Pizzaria', desc: 'Mesas, delivery, fornos e montagem complexa.', theme: 'midnight' },
+    { id: 'bar', icon: 'sports_bar', title: 'Bar / Pub', desc: 'Foco em bebidas, porções e alto giro de mesas.', theme: 'midnight' },
+    { id: 'cafe', icon: 'local_cafe', title: 'Café / Padaria', desc: 'Balcão ágil, vitrine e preparo expresso.', theme: 'pearl' },
+    { id: 'restaurant', icon: 'restaurant', title: 'Restaurante Geral', desc: 'Pratos elaborados, salão estruturado.', theme: 'slate' }
   ];
 
   themes = [
-    { id: 'dark', name: 'Escuro (Premium)', desc: 'Elegante, moderno e reduz o cansaço visual. Ideal para bares e hamburguerias.', icon: 'dark_mode' },
-    { id: 'light', name: 'Claro (Clean)', desc: 'Limpo, clássico e de alta visibilidade. Excelente para restaurantes diurnos e cafés.', icon: 'light_mode' }
+    { id: 'midnight', name: 'Midnight Onyx', desc: 'Dark mode luxuoso - ótimo para bares e pizzarias.', class: 'theme-midnight' },
+    { id: 'pearl', name: 'Minimalist Pearl', desc: 'Claro e clean - perfeito para cafés.', class: 'theme-pearl' },
+    { id: 'spice', name: 'Vibrant Spice', desc: 'Cores quentes e chamativas - ideal para fast-food.', class: 'theme-spice' },
+    { id: 'slate', name: 'Classic Slate', desc: 'Cinza e azul neutro - clássico e corporativo.', class: 'theme-slate' }
   ];
 
+  loadingTexts = [
+    'Acendendo os fornos...',
+    'Arrumando as mesas...',
+    'Limpando o balcão...',
+    'Preparando o cardápio...',
+    'Afiando as facas...'
+  ];
+  currentLoadingText = signal(this.loadingTexts[0]);
+  private loadingInterval: any;
+
   ngOnInit() {
-    this.applyTemplate('burger'); // Default
+    this.applyTemplate('burger');
+  }
+
+  ngOnDestroy() {
+    if (this.loadingInterval) clearInterval(this.loadingInterval);
   }
 
   applyTemplate(templateId: BusinessTemplate) {
     this.data.selectedTemplate = templateId;
+    const tmpl = this.templates.find(t => t.id === templateId);
+    if (tmpl) this.applyTheme(tmpl.theme as ThemeOption);
     
     switch(templateId) {
       case 'burger':
-        this.data.tableCount = 8;
-        this.data.stations = ['Chapa', 'Fritadeira', 'Montagem', 'Bebidas'];
+        this.data.tableCount = 15;
+        this.data.stations = ['Chapa', 'Fritadeira', 'Montagem'];
         this.data.menuCategories = [
-          { name: 'Burgers Clássicos', items: [{name: 'Cheeseburger', price: 28}, {name: 'Double Bacon', price: 38}] },
+          { name: 'Burgers', items: [{name: 'Cheeseburger', price: 28}, {name: 'Double Bacon', price: 38}] },
           { name: 'Porções', items: [{name: 'Batata Frita', price: 18}] },
           { name: 'Bebidas', items: [{name: 'Coca-Cola', price: 7}] }
         ];
         break;
       case 'pizza':
-        this.data.tableCount = 15;
-        this.data.stations = ['Forno', 'Montagem', 'Bebidas'];
+        this.data.tableCount = 20;
+        this.data.stations = ['Forno', 'Pizzaiolo', 'Embalagem'];
         this.data.menuCategories = [
-          { name: 'Pizzas Tradicionais', items: [{name: 'Marguerita (G)', price: 65}, {name: 'Calabresa (G)', price: 60}] },
+          { name: 'Tradicionais', items: [{name: 'Marguerita (G)', price: 65}, {name: 'Calabresa (G)', price: 60}] },
+          { name: 'Doces', items: [{name: 'Chocolate com Morango', price: 70}] },
           { name: 'Bebidas', items: [{name: 'Guaraná 2L', price: 15}] }
         ];
         break;
       case 'bar':
-        this.data.tableCount = 20;
+        this.data.tableCount = 25;
         this.data.stations = ['Bar', 'Cozinha'];
         this.data.menuCategories = [
-          { name: 'Chopp & Cervejas', items: [{name: 'Chopp Pilsen 300ml', price: 12}, {name: 'Heineken 600ml', price: 18}] },
+          { name: 'Chopp', items: [{name: 'Chopp Pilsen', price: 12}, {name: 'Chopp IPA', price: 18}] },
           { name: 'Drinks', items: [{name: 'Caipirinha', price: 25}, {name: 'Gin Tônica', price: 30}] },
           { name: 'Petiscos', items: [{name: 'Isca de Frango', price: 45}] }
         ];
         break;
+      case 'cafe':
+        this.data.tableCount = 10;
+        this.data.stations = ['Barista', 'Forno'];
+        this.data.menuCategories = [
+          { name: 'Cafés', items: [{name: 'Espresso', price: 7}, {name: 'Cappuccino', price: 14}] },
+          { name: 'Salgados', items: [{name: 'Pão de Queijo', price: 8}] },
+          { name: 'Doces', items: [{name: 'Bolo de Cenoura', price: 12}] }
+        ];
+        break;
       case 'restaurant':
-        this.data.tableCount = 12;
+        this.data.tableCount = 30;
         this.data.stations = ['Pratos Quentes', 'Saladas', 'Sobremesas', 'Bar'];
         this.data.menuCategories = [
-          { name: 'Pratos Principais', items: [{name: 'Parmegiana de Carne', price: 55}, {name: 'Salmão Grelhado', price: 70}] },
+          { name: 'Principais', items: [{name: 'Parmegiana', price: 55}, {name: 'Salmão', price: 70}] },
           { name: 'Entradas', items: [{name: 'Bruschetta', price: 25}] },
           { name: 'Bebidas', items: [{name: 'Suco Natural', price: 12}] }
         ];
         break;
-      case 'cafe':
-        this.data.tableCount = 6;
-        this.data.stations = ['Expresso', 'Vitrine'];
-        this.data.menuCategories = [
-          { name: 'Cafés Quentes', items: [{name: 'Espresso', price: 7}, {name: 'Cappuccino', price: 14}] },
-          { name: 'Doces & Salgados', items: [{name: 'Pão de Queijo', price: 8}, {name: 'Bolo de Cenoura', price: 12}] }
-        ];
-        break;
     }
   }
 
-  setTheme(themeId: string) {
-    if (themeId === 'dark') {
-      this.themeService.enableDarkMode();
-    } else {
-      this.themeService.enableLightMode();
-    }
+  applyTheme(themeId: ThemeOption) {
+    this.data.selectedTheme = themeId;
+    if (themeId === 'midnight') this.themeService.enableDarkMode();
+    else this.themeService.enableLightMode();
   }
 
-  simulateIfoodAuth() {
+  async startIfoodAuth() {
     this.ifoodConnecting.set(true);
-    setTimeout(() => {
+    try {
+      // Mocked for UX flow. 
+      await new Promise(r => setTimeout(r, 1500));
+      this.ifoodUserCode.set('JXKL-QXWJ');
+      // window.open('https://portal.ifood.com.br/app/integracoes', '_blank');
+    } catch (e) {
+      this.notification.show('Erro ao iniciar integração com iFood.', 'error');
+    } finally {
       this.ifoodConnecting.set(false);
+    }
+  }
+
+  async verifyIfoodAuth() {
+    if (!this.ifoodAuthCode()) {
+      this.notification.show('Informe o código de autorização.', 'warning');
+      return;
+    }
+    this.ifoodConnecting.set(true);
+    try {
+      // Mocked for UX flow.
+      await new Promise(r => setTimeout(r, 1500));
+      this.data.ifoodMerchantId = 'IFOOD_CONNECTED';
       this.ifoodConnected.set(true);
-      this.data.ifoodMerchantId = uuidv4().substring(0, 8).toUpperCase();
-      this.data.ifoodOAuthCode = 'auth_ok';
       this.notification.show('iFood conectado com sucesso!', 'success');
-    }, 2000);
+    } catch (e) {
+      this.notification.show('Código inválido ou expirado.', 'error');
+    } finally {
+      this.ifoodConnecting.set(false);
+    }
   }
 
   nextStep() {
     if (this.isStepValid()) {
-      this.currentStep.update(v => v + 1);
+      const next = this.currentStep() + 1;
+      this.currentStep.set(next);
+      if (next === 5) {
+        this.finish();
+      }
     }
   }
 
   prevStep() {
-    this.currentStep.update(v => Math.max(0, v - 1));
+    if (this.currentStep() > 0) {
+      this.currentStep.update(v => v - 1);
+    }
   }
 
   isStepValid(): boolean {
     switch (this.currentStep()) {
-      case 0: return !!this.data.companyName; // Welcome
-      case 1: return true; // Template
-      case 2: return true; // Theme
-      case 3: return true; // Integrations (optional)
-      case 4: return !!this.data.managerName && this.data.managerPin.length === 4; // Manager
-      case 5: return true; // Trial Premium
+      case 0: return !!this.data.companyName; 
+      case 1: return true; 
+      case 2: return true; 
+      case 3: return this.data.tableCount > 0;
+      case 4: return true; // ifood is optional
       default: return false;
     }
   }
 
-  // --- FINISH LOGIC ---
+  startLoadingAnimation() {
+    let index = 0;
+    this.loadingInterval = setInterval(() => {
+      index = (index + 1) % this.loadingTexts.length;
+      this.currentLoadingText.set(this.loadingTexts[index]);
+    }, 1500);
+  }
 
   async finish() {
-    this.currentStep.set(6); // Show loading screen
+    this.currentStep.set(5); 
     this.isProcessing.set(true);
+    this.startLoadingAnimation();
 
     try {
-        // 1. Company Profile
-        this.loadingStatus.set('Configurando perfil da empresa...');
-        await this.settingsData.updateCompanyProfile({
-            company_name: this.data.companyName,
-            cnpj: this.data.cnpj,
-            ifood_merchant_id: this.data.ifoodMerchantId || null
-        });
+      // 1. Setup Company
+      this.settingsData.updateSettings({
+        companyName: this.data.companyName,
+        companyCnpj: '',
+      });
 
-        // 2. Roles
-        this.loadingStatus.set('Criando cargos e permissões...');
-        // Manager role is created by default by DB trigger or we ensure it exists
-        // Check/Create other roles
-        const rolesToCreate = [];
-        if (this.data.hasCashiers) rolesToCreate.push('Caixa');
-        if (this.data.hasKitchen) rolesToCreate.push('Cozinha');
-        if (this.data.hasWaiters) rolesToCreate.push('Garçom');
-        if (this.data.hasDrivers) rolesToCreate.push('Entregador');
+      // 2. Waiters & Tables
+      await this.settingsData.updateOperationSettings({
+        hasWaiters: true,
+        hasKitchen: true,
+        hasCashiers: true,
+        hasDrivers: true,
+        hasTableTokens: false,
+        useKds: true
+      });
 
-        for (const roleName of rolesToCreate) {
-             // We use addRole which handles duplication or simple insert
-             await this.settingsData.addRole(roleName);
-        }
+      // 3. Setup Hall
+      const hall = await this.posData.addHall({ name: 'Salão Principal', is_active: true });
+      if (hall?.id) {
+          // add tables manually
+          for (let i = 1; i <= this.data.tableCount; i++) {
+              await this.posData.addTable(hall.id, {
+                 name: `Mesa ${i}`,
+                 is_active: true,
+                 x_position: (i % 5) * 100 + 50,
+                 y_position: Math.floor(i / 5) * 100 + 50
+              });
+          }
+      }
 
-        // 3. Stations
-        this.loadingStatus.set('Configurando estações de produção...');
-        const stationMap = new Map<string, string>(); // Name -> ID
-        for (const stationName of this.data.stations) {
-            if (!stationName) continue;
-            const { data } = await this.settingsData.addStation(stationName) as any;
-            if (data) stationMap.set(stationName, data.id);
-        }
+      // 4. Setup Stations
+      await this.settingsData.updateKitchenStations(this.data.stations.map(s => ({
+          id: uuidv4(),
+          name: s,
+          isActive: true
+      })));
 
-        // 4. Hall & Tables
-        this.loadingStatus.set('Criando salão e mesas...');
-        const { data: hall } = await this.posData.addHall(this.data.hallName) as any;
-        if (hall) {
-            const tables = Array.from({ length: this.data.tableCount }, (_, i) => ({
-                id: `temp-${uuidv4()}`,
-                number: i + 1,
-                hall_id: hall.id,
-                status: 'LIVRE' as const,
-                x: 50 + (i % 5) * 100,
-                y: 50 + Math.floor(i / 5) * 100,
-                width: 80,
-                height: 80
-            }));
-            await this.posData.upsertTables(tables);
-        }
+      // 5. Setup Menu
+      let order = 0;
+      for (const cat of this.data.menuCategories) {
+          const category = await this.menuData.addCategory({ name: cat.name, sortOrder: order++, isActive: true });
+          if (category?.id) {
+              for (const item of cat.items) {
+                  await this.menuData.addItem({
+                      categoryId: category.id,
+                      name: item.name,
+                      price: item.price || 0,
+                      isActive: true
+                  });
+              }
+          }
+      }
 
-        // 5. Menu (Categories, Recipes, Ingredients)
-        this.loadingStatus.set('Cadastrando cardápio e estoque...');
-        const defaultStationId = stationMap.values().next().value || null; // Fallback
-        const userId = this.unitContext.activeUnitId();
+      // Simulate network delay for effect
+      await new Promise(r => setTimeout(r, 4500));
 
-        // Cria o Cardápio Híbrido (PDV + Digital)
-        const { data: virtualMenu } = await supabase.from('menus').insert({
-             name: 'Cardápio Principal',
-             type: 'pdv,tablet,delivery,qr',
-             is_active: true,
-             user_id: userId
-        }).select().single();
-
-        let displayOrderCat = 0;
-        for (const cat of this.data.menuCategories) {
-            if (!cat.name) continue;
-            const { data: categoryData } = await this.recipeData.addRecipeCategory(cat.name) as any;
-            
-            if (categoryData) {
-                // Cria a categoria no Menu Digital
-                const { data: virtualCat } = await supabase.from('menu_categories').insert({
-                     menu_id: virtualMenu?.id,
-                     name: cat.name,
-                     display_order: displayOrderCat++,
-                     user_id: userId
-                }).select().single();
-
-                let displayOrderItem = 0;
-                for (const item of cat.items) {
-                    if (!item.name || !item.price) continue;
-                    
-                    const { success, proxyRecipeId } = await this.inventoryData.addIngredient({
-                        name: item.name,
-                        unit: 'un',
-                        stock: 100, // Stock Gift
-                        min_stock: 10,
-                        cost: item.price * 0.3, // Estimated cost
-                        is_sellable: true,
-                        price: item.price,
-                        pos_category_id: categoryData.id,
-                        station_id: defaultStationId
-                    }) as any;
-                    
-                    if (success && proxyRecipeId && virtualCat) {
-                         await supabase.from('menu_items').insert({
-                              menu_category_id: virtualCat.id,
-                              recipe_id: proxyRecipeId,
-                              custom_name: item.name,
-                              is_active: true,
-                              display_order: displayOrderItem++,
-                              user_id: userId
-                         });
-                    }
-                }
-            }
-        }
-
-        // 6. Manager Employee
-        this.loadingStatus.set('Criando seu acesso administrativo...');
-        
-        // Find 'Gerente' role or create it
-        const { data: roles } = await this.settingsData.getRoles();
-        let managerRole = roles.find(r => r.name === 'Gerente');
-        
-        if (!managerRole) {
-            const { data } = await this.settingsData.addRole('Gerente');
-            managerRole = data;
-        }
-        
-        let managerDataResult = null;
-        if (managerRole) {
-            await this.settingsData.grantAllPermissionsToRole(managerRole.id); // Ensure full access
-            const { data } = await this.settingsData.addEmployee({
-                name: this.data.managerName,
-                pin: this.data.managerPin,
-                role_id: managerRole.id
-            });
-            managerDataResult = data;
-        }
-
-        // 7. Configurações concluídas
-        this.loadingStatus.set('Registrando configurações do sistema...');
-
-        // Success!
-        this.loadingStatus.set('Tudo pronto!');
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Show success message
-        
-        const unitId = this.unitContext.activeUnitId();
-        if (unitId) {
-             await this.supabaseState.loadCoreData(unitId);
-             await this.supabaseState.loadEssentialData(unitId);
-        }
-
-        // Auto-login the manager so they don't have to type the PIN manually
-        if (managerDataResult) {
-            this.opAuth.login(managerDataResult as any);
-        } else {
-             // Fallback just in case
-             const { data: managerData } = await supabase
-                 .from('employees')
-                 .select('*')
-                 .eq('pin', this.data.managerPin)
-                 .eq('user_id', unitId)
-                 .single();
-     
-             if (managerData) {
-                 this.opAuth.login(managerData);
-             }
-        }
-        
-        // Start the Guided Tour Demo Mode!
-        this.demoMode.startSalesDemoTour();
-
+      this.demoMode.completeOnboarding();
+      this.router.navigate(['/pos']);
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(5); // Go back to last editable step
+        this.currentStep.set(4); 
     } finally {
         this.isProcessing.set(false);
+        if (this.loadingInterval) clearInterval(this.loadingInterval);
     }
   }
 }

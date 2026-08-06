@@ -1,0 +1,61 @@
+/* Animates the liquid gradient background */
+@keyframes fluid-blob {
+    0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+    50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+}
+
+.blob-shape {
+    animation: fluid-blob 10s ease-in-out infinite;
+}
+
+/* Custom Themes purely for the mock preview (the main app uses tailwind variables, but we simulate it in the card) */
+.theme-preview-midnight {
+    background-color: #0F1115;
+    color: #FFFFFF;
+}
+.theme-preview-midnight .tp-card { background-color: #1C1F26; border-color: rgba(255,255,255,0.05); }
+.theme-preview-midnight .tp-accent { background-color: #FF6B00; }
+
+.theme-preview-pearl {
+    background-color: #F8F9FA;
+    color: #1A1D20;
+}
+.theme-preview-pearl .tp-card { background-color: #FFFFFF; border-color: rgba(0,0,0,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+.theme-preview-pearl .tp-accent { background-color: #000000; }
+
+.theme-preview-spice {
+    background-color: #FFF3E0;
+    color: #3E2723;
+}
+.theme-preview-spice .tp-card { background-color: #FFFFFF; border-color: #FFE0B2; }
+.theme-preview-spice .tp-accent { background-color: #E64A19; }
+
+.theme-preview-slate {
+    background-color: #E2E8F0;
+    color: #1E293B;
+}
+.theme-preview-slate .tp-card { background-color: #F8FAFC; border-color: #CBD5E1; }
+.theme-preview-slate .tp-accent { background-color: #3B82F6; }
+
+/* Phone Mockup */
+.mockup-phone {
+    border: 12px solid #1a1a1a;
+    border-radius: 40px;
+    background: #000;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+.mockup-phone::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 25px;
+    background: #1a1a1a;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    z-index: 10;
+}
