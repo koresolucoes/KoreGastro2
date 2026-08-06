@@ -319,10 +319,12 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       }
 
       // 5. Setup Menu
+      const menuId = uuidv4();
+      await this.menuData.saveMenu({ id: menuId, name: 'Cardápio Principal', type: 'pdv', is_active: true });
       let order = 0;
       for (const cat of this.data.menuCategories) {
           const categoryId = uuidv4();
-          await this.menuData.saveCategory({ id: categoryId, name: cat.name, display_order: order++ });
+          await this.menuData.saveCategory({ id: categoryId, menu_id: menuId, name: cat.name, display_order: order++ });
           for (const item of cat.items) {
               await this.menuData.saveItem({
                   id: uuidv4(),
