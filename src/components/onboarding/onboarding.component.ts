@@ -62,7 +62,6 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     selectedTheme: 'midnight' as ThemeOption,
     tableCount: 15,
     stations: [] as string[],
-    menuCategories: [] as TemplateCategory[],
     managerName: 'Gerente Geral',
     managerPin: '1234',
     ifoodMerchantId: '',
@@ -73,6 +72,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     { id: 'template', title: 'Modelo de Negócio' },
     { id: 'theme', title: 'Personalização' },
     { id: 'structure', title: 'Estrutura' },
+    { id: 'dishes_guide', title: 'Cardápio & Pratos' },
     { id: 'manager', title: 'Gerente Geral' },
     { id: 'ifood', title: 'Conectividade' },
     { id: 'finish', title: 'Conclusão' }
@@ -83,9 +83,10 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1974&auto=format&fit=crop', // Step 1: Model
     'https://images.unsplash.com/photo-1578474846511-04ba529f0b88?q=80&w=1974&auto=format&fit=crop', // Step 2: Theme
     'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?q=80&w=2070&auto=format&fit=crop', // Step 3: Structure
-    'https://images.unsplash.com/photo-1556742049-0a67568d049f?q=80&w=1974&auto=format&fit=crop', // Step 4: Manager
-    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=1981&auto=format&fit=crop', // Step 5: iFood
-    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1974&auto=format&fit=crop'  // Step 6: Finish
+    'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop', // Step 4: Dishes Guide
+    'https://images.unsplash.com/photo-1556742049-0a67568d049f?q=80&w=1974&auto=format&fit=crop', // Step 5: Manager
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=1981&auto=format&fit=crop', // Step 6: iFood
+    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1974&auto=format&fit=crop'  // Step 7: Finish
   ];
 
   templates = [
@@ -131,47 +132,22 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       case 'burger':
         this.data.tableCount = 15;
         this.data.stations = ['Chapa', 'Fritadeira', 'Montagem'];
-        this.data.menuCategories = [
-          { name: 'Burgers', items: [{name: 'Cheeseburger', price: 28}, {name: 'Double Bacon', price: 38}] },
-          { name: 'Porções', items: [{name: 'Batata Frita', price: 18}] },
-          { name: 'Bebidas', items: [{name: 'Coca-Cola', price: 7}] }
-        ];
         break;
       case 'pizza':
         this.data.tableCount = 20;
         this.data.stations = ['Forno', 'Pizzaiolo', 'Embalagem'];
-        this.data.menuCategories = [
-          { name: 'Tradicionais', items: [{name: 'Marguerita (G)', price: 65}, {name: 'Calabresa (G)', price: 60}] },
-          { name: 'Doces', items: [{name: 'Chocolate com Morango', price: 70}] },
-          { name: 'Bebidas', items: [{name: 'Guaraná 2L', price: 15}] }
-        ];
         break;
       case 'bar':
         this.data.tableCount = 25;
         this.data.stations = ['Bar', 'Cozinha'];
-        this.data.menuCategories = [
-          { name: 'Chopp', items: [{name: 'Chopp Pilsen', price: 12}, {name: 'Chopp IPA', price: 18}] },
-          { name: 'Drinks', items: [{name: 'Caipirinha', price: 25}, {name: 'Gin Tônica', price: 30}] },
-          { name: 'Petiscos', items: [{name: 'Isca de Frango', price: 45}] }
-        ];
         break;
       case 'cafe':
         this.data.tableCount = 10;
         this.data.stations = ['Barista', 'Forno'];
-        this.data.menuCategories = [
-          { name: 'Cafés', items: [{name: 'Espresso', price: 7}, {name: 'Cappuccino', price: 14}] },
-          { name: 'Salgados', items: [{name: 'Pão de Queijo', price: 8}] },
-          { name: 'Doces', items: [{name: 'Bolo de Cenoura', price: 12}] }
-        ];
         break;
       case 'restaurant':
         this.data.tableCount = 30;
         this.data.stations = ['Pratos Quentes', 'Saladas', 'Sobremesas', 'Bar'];
-        this.data.menuCategories = [
-          { name: 'Principais', items: [{name: 'Parmegiana', price: 55}, {name: 'Salmão', price: 70}] },
-          { name: 'Entradas', items: [{name: 'Bruschetta', price: 25}] },
-          { name: 'Bebidas', items: [{name: 'Suco Natural', price: 12}] }
-        ];
         break;
     }
   }
@@ -261,6 +237,16 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     }
   }
 
+  nextStep() {
+    if (this.isStepValid()) {
+      const next = this.currentStep() + 1;
+      this.currentStep.set(next);
+      if (next === 7) {
+        this.finish();
+      }
+    }
+  }
+
   prevStep() {
     if (this.currentStep() > 0) {
       this.currentStep.update(v => v - 1);
@@ -273,8 +259,9 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       case 1: return true; 
       case 2: return true; 
       case 3: return this.data.tableCount > 0;
-      case 4: return !!this.data.managerName.trim() && !!this.data.managerPin.trim() && this.data.managerPin.trim().length >= 4;
-      case 5: return true; // ifood is optional
+      case 4: return true; // Cardápio & Pratos guide step
+      case 5: return !!this.data.managerName.trim() && !!this.data.managerPin.trim() && this.data.managerPin.trim().length >= 4;
+      case 6: return true; // ifood is optional
       default: return false;
     }
   }
@@ -288,7 +275,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   async finish() {
-    this.currentStep.set(6); 
+    this.currentStep.set(7); 
     this.isProcessing.set(true);
     this.startLoadingAnimation();
 
@@ -301,7 +288,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       } as any);
       if (!companyRes.success) throw new Error(companyRes.error?.message || 'Erro ao configurar empresa');
 
-      // 3. Setup Hall
+      // 2. Setup Hall
       const hall = await this.posData.addHall('Salão Principal');
       if (!hall.success) throw new Error(hall.error?.message || 'Erro ao criar salão');
       
@@ -324,54 +311,25 @@ export class OnboardingComponent implements OnInit, OnDestroy {
           if (!tablesRes.success) throw new Error(tablesRes.error?.message || 'Erro ao criar mesas');
       }
 
-      // 4. Setup Stations
+      // 3. Setup Stations
       for (const s of this.data.stations) {
           const stationRes = await this.settingsData.addStation(s);
           if (!stationRes.success) throw new Error(stationRes.error?.message || 'Erro ao criar praça');
       }
 
-      // 5. Setup Menu
-      let menuId = uuidv4();
+      // 4. Setup Base Menu (Empty, user will create dishes inside system)
       const activeUnitId = this.settingsData.getActiveUnitId();
       if (!activeUnitId) throw new Error('Nenhuma unidade ativa encontrada para criar o cardápio');
 
       const { data: existingMenu } = await supabase.from('menus').select('id').eq('user_id', activeUnitId).eq('name', 'Cardápio Principal').maybeSingle();
-      if (existingMenu) {
-        menuId = existingMenu.id;
-        // Clean up old categories to prevent duplicates on retry
-        await supabase.from('menu_categories').delete().eq('menu_id', menuId);
-      }
+      let menuId = existingMenu?.id || uuidv4();
+      
       const menuRes = await this.menuData.saveMenu({ id: menuId, name: 'Cardápio Principal', type: 'pdv', is_active: true });
       if (!menuRes.success) {
-        const errMsg = typeof menuRes.error === 'string' ? menuRes.error : (menuRes.error?.message || 'Erro ao criar cardápio');
-        throw new Error(errMsg);
-      }
-      
-      let order = 0;
-      for (const cat of this.data.menuCategories) {
-          const categoryId = uuidv4();
-          const catRes = await this.menuData.saveCategory({ id: categoryId, menu_id: menuId, name: cat.name, display_order: order++ });
-          if (!catRes.success) {
-            const errMsg = typeof catRes.error === 'string' ? catRes.error : (catRes.error?.message || 'Erro ao criar categoria');
-            throw new Error(errMsg);
-          }
-          
-          for (const item of cat.items) {
-              const itemRes = await this.menuData.saveItem({
-                  id: uuidv4(),
-                  menu_category_id: categoryId,
-                  custom_name: item.name,
-                  custom_price: item.price || 0,
-                  is_active: true
-              });
-              if (!itemRes.success) {
-                const errMsg = typeof itemRes.error === 'string' ? itemRes.error : (itemRes.error?.message || 'Erro ao criar item');
-                throw new Error(errMsg);
-              }
-          }
+        console.warn('Aviso ao inicializar cardápio base:', menuRes.error);
       }
 
-      // 6. Setup Default Roles & Default Manager Employee with ALL permissions
+      // 5. Setup Default Roles & Default Manager Employee with ALL permissions
       let gerenteRole = this.hrState.roles().find(r => r.name.toLowerCase().includes('gerente') || r.name.toLowerCase().includes('admin'));
       if (!gerenteRole) {
         const { data: dbRoles } = await supabase.from('roles').select('*').eq('user_id', activeUnitId);
@@ -450,7 +408,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(5); 
+        this.currentStep.set(6); 
     } finally {
         this.isProcessing.set(false);
         if (this.loadingInterval) clearInterval(this.loadingInterval);

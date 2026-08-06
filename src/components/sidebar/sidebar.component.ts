@@ -56,11 +56,11 @@ export class SidebarComponent {
       name: 'Atendimento & Vendas',
       id: 'vendas',
       children: [
-        { name: 'PDV', path: '/pos', icon: 'point_of_sale' },
-        { name: 'Salão & Mesas', path: '/reservations', icon: 'event_seat' },
+        { name: 'PDV e Mesas', path: '/pos', icon: 'point_of_sale' },
+        { name: 'Reservas', path: '/reservations', icon: 'event_seat' },
         { name: 'Delivery', path: '/delivery', icon: 'local_shipping' },
         { name: 'WhatsApp', path: '/whatsapp-chats', icon: 'chat' },
-        { name: 'Caixa & Fechamento', path: '/cashier', icon: 'payments' },
+        { name: 'Caixa e Fechamento', path: '/cashier', icon: 'payments' },
       ]
     },
     {

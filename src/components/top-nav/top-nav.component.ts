@@ -63,8 +63,8 @@ export class TopNavComponent {
 
   systemPages: SearchPageItem[] = [
     { name: 'Visão Geral & Dashboard', path: '/dashboard', icon: 'dashboard', category: 'Painel' },
-    { name: 'PDV - Frente de Caixa', path: '/pos', icon: 'point_of_sale', category: 'Operação' },
-    { name: 'Salão & Reservas de Mesas', path: '/reservations', icon: 'event_seat', category: 'Operação' },
+    { name: 'PDV e Mesas', path: '/pos', icon: 'point_of_sale', category: 'Operação' },
+    { name: 'Reservas', path: '/reservations', icon: 'event_seat', category: 'Operação' },
     { name: 'Cozinha (KDS)', path: '/kds', icon: 'soup_kitchen', category: 'Operação' },
     { name: 'Delivery & Entregas', path: '/delivery', icon: 'local_shipping', category: 'Operação' },
     { name: 'Fechamento de Caixa', path: '/cashier', icon: 'payments', category: 'Operação' },

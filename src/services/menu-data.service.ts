@@ -79,7 +79,7 @@ export class MenuDataService {
     const dbPayload: any = {
       id: menu.id || undefined,
       user_id: userId,
-      name: menu.name,
+      name: menu.name || 'Cardápio Principal',
       description: menu.description,
       is_active: menu.is_active !== undefined ? menu.is_active : true,
       type: menu.type || 'pdv',

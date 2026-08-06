@@ -18,9 +18,9 @@
          
          <div class="flex items-center gap-2">
             @for (step of steps; track step.id; let i = $index) {
-                @if (i < 5) {
+                @if (i < 7) {
                     <div class="h-2 rounded-full transition-all duration-500"
-                         [ngClass]="currentStep() >= i ? 'w-12 bg-brand' : 'w-4 bg-strong'">
+                         [ngClass]="currentStep() >= i ? 'w-10 sm:w-12 bg-brand' : 'w-3 sm:w-4 bg-strong'">
                     </div>
                 }
             }
@@ -115,7 +115,7 @@
         @if (currentStep() === 1) {
           <div class="w-full flex flex-col animate-in fade-in slide-in-from-right-8 duration-700">
             <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2">O Modelo de Negócio</h2>
-            <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-12">Escolha seu segmento e nós prepararemos as estações e cardápio base.</p>
+            <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-12">Escolha seu segmento para pré-configurar as estações e salão do seu estabelecimento.</p>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-6">
               @for (template of templates; track template.id) {
@@ -305,9 +305,73 @@
         }
 
         <!-- ============================================== -->
-        <!-- STEP 4: GERENTE (MANAGER PROFILE & PERMISSIONS) -->
+        <!-- STEP 4: CARDÁPIO & PRATOS GUIDE -->
         <!-- ============================================== -->
         @if (currentStep() === 4) {
+          <div class="max-w-3xl mx-auto h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-8 duration-700 w-full">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 text-brand text-xs sm:text-sm font-bold w-fit mb-3">
+              <span translate="no" class="notranslate material-symbols-outlined text-base">restaurant_menu</span>
+              Cardápio & Produtos
+            </div>
+            <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2">Como cadastrar seus pratos</h2>
+            <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-8">
+              Para garantir total personalização e flexibilidade, os pratos e bebidas são cadastrados diretamente no sistema após a criação da loja.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              
+              <!-- Card 1 -->
+              <div class="bg-surface border border-strong rounded-2xl p-5 flex flex-col hover:border-brand/40 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center font-black text-lg mb-3">
+                  1
+                </div>
+                <h3 class="font-bold text-title text-base mb-1">Acesse "Cardápio"</h3>
+                <p class="text-xs text-muted leading-relaxed">
+                  No menu lateral do sistema, clique na opção <strong>Cardápio</strong> para acessar o gestor visual de produtos.
+                </p>
+              </div>
+
+              <!-- Card 2 -->
+              <div class="bg-surface border border-strong rounded-2xl p-5 flex flex-col hover:border-brand/40 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center font-black text-lg mb-3">
+                  2
+                </div>
+                <h3 class="font-bold text-title text-base mb-1">Crie Categorias & Itens</h3>
+                <p class="text-xs text-muted leading-relaxed">
+                  Organize em seções como <em>Entradas</em>, <em>Lanches</em> e <em>Bebidas</em> com fotos, preços e descrições.
+                </p>
+              </div>
+
+              <!-- Card 3 -->
+              <div class="bg-surface border border-strong rounded-2xl p-5 flex flex-col hover:border-brand/40 transition-all">
+                <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center font-black text-lg mb-3">
+                  3
+                </div>
+                <h3 class="font-bold text-title text-base mb-1">Fichas & Integrações</h3>
+                <p class="text-xs text-muted leading-relaxed">
+                  Vincule fichas técnicas para baixa automática de estoque ou importe seu cardápio do <strong>iFood</strong>.
+                </p>
+              </div>
+
+            </div>
+
+            <!-- Highlight Tip Box -->
+            <div class="p-4 rounded-2xl bg-surface-elevated border border-strong flex items-center gap-4 text-left">
+              <div class="w-12 h-12 rounded-2xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
+                <span translate="no" class="notranslate material-symbols-outlined text-2xl">auto_awesome</span>
+              </div>
+              <div>
+                <h4 class="font-bold text-title text-sm">IA do ChefOS & Cadastro Inteligente</h4>
+                <p class="text-xs text-muted">Você também poderá utilizar a Inteligência Artificial integrada para gerar sugestões de receitas e fichas técnicas automaticamente!</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- STEP 5: GERENTE (MANAGER PROFILE & PERMISSIONS) -->
+        <!-- ============================================== -->
+        @if (currentStep() === 5) {
           <div class="max-w-2xl mx-auto h-full flex flex-col justify-center animate-in fade-in slide-in-from-right-8 duration-700 w-full">
             <h2 class="text-2xl sm:text-4xl font-black text-title tracking-tight mb-2">Criar Perfil do Gerente</h2>
             <p class="text-sm sm:text-lg text-muted font-medium mb-6 sm:mb-8">
@@ -355,9 +419,9 @@
         }
 
         <!-- ============================================== -->
-        <!-- STEP 5: iFOOD INTEGRATION -->
+        <!-- STEP 6: iFOOD INTEGRATION -->
         <!-- ============================================== -->
-        @if (currentStep() === 5) {
+        @if (currentStep() === 6) {
           <div class="max-w-2xl mx-auto h-full flex flex-col justify-center text-center animate-in fade-in slide-in-from-right-8 duration-700 w-full">
             
             <div class="relative mx-auto w-24 h-24 sm:w-32 sm:h-32 mb-6 sm:mb-8 flex items-center justify-center">
@@ -435,9 +499,9 @@
         }
 
         <!-- ============================================== -->
-        <!-- STEP 6: FINISH (LOADING) -->
+        <!-- STEP 7: FINISH (LOADING) -->
         <!-- ============================================== -->
-        @if (currentStep() === 6) {
+        @if (currentStep() === 7) {
           <div class="max-w-md mx-auto h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
             
             <!-- Elegant Loading Animation -->
@@ -473,7 +537,7 @@
       </div>
       
       <!-- Footer Navigation (Hidden on loading) -->
-      @if (currentStep() < 6) {
+      @if (currentStep() < 7) {
         <div class="p-4 sm:p-6 lg:p-8 border-t border-strong bg-surface/30 backdrop-blur-md flex items-center justify-between shrink-0">
           <button type="button" (click)="prevStep()" [disabled]="currentStep() === 0"
                   class="px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base text-muted hover:text-title hover:bg-surface-elevated transition-all disabled:opacity-0 active:scale-95">
@@ -482,7 +546,7 @@
           
           <button type="button" (click)="nextStep()" [disabled]="!isStepValid()"
                   class="group flex items-center gap-2 sm:gap-3 px-6 py-3 sm:px-10 sm:py-4 rounded-xl sm:rounded-2xl font-black text-white text-sm sm:text-base bg-brand hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-xl shadow-brand/20">
-            @if (currentStep() === 5) {
+            @if (currentStep() === 6) {
                Finalizar
             } @else {
                Avançar
@@ -529,14 +593,18 @@
                  <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Nós estruturamos suas praças e salão para você focar no que importa.</p>
              }
              @if (currentStep() === 4) {
+                 <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Cardápio sob medida.</h3>
+                 <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Cadastre seus pratos com fotos, acompanhamentos e fichas técnicas no sistema.</p>
+             }
+             @if (currentStep() === 5) {
                  <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Gerenciamento & Controle.</h3>
                  <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Seu perfil de Gerente com todas as permissões liberadas para administrar o sistema.</p>
              }
-             @if (currentStep() === 5) {
+             @if (currentStep() === 6) {
                  <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Integrado ao mundo.</h3>
                  <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Receba e despache pedidos do iFood em uma única tela fluida.</p>
              }
-             @if (currentStep() === 6) {
+             @if (currentStep() === 7) {
                  <h3 class="text-lg lg:text-3xl font-bold drop-shadow-md">Tudo pronto!</h3>
                  <p class="hidden sm:block text-white/80 font-medium text-sm lg:text-base">Iniciando os motores do ChefOS. O futuro do seu restaurante começa agora.</p>
              }
