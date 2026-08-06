@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -13,6 +13,7 @@ import { OperationalAuthService } from '../../services/operational-auth.service'
 import { DemoModeService } from '../../services/demo-mode.service';
 import { HrStateService } from '../../services/hr-state.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
+import { ThemeService } from '../../services/theme.service';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../services/supabase-client';
 
@@ -26,6 +27,8 @@ interface MenuCategory {
     items: MenuCategoryItem[];
 }
 
+type BusinessTemplate = 'burger' | 'pizza' | 'bar' | 'restaurant' | 'cafe' | 'custom';
+
 @Component({
   selector: 'app-onboarding',
   standalone: true,
@@ -33,7 +36,7 @@ interface MenuCategory {
   templateUrl: './onboarding.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OnboardingComponent {
+export class OnboardingComponent implements OnInit {
   private router = inject(Router);
   private hrState = inject(HrStateService);
   private settingsData = inject(SettingsDataService);
@@ -45,58 +48,135 @@ export class OnboardingComponent {
   private opAuth = inject(OperationalAuthService);
   private demoMode = inject(DemoModeService);
   private supabaseState = inject(SupabaseStateService);
+  themeService = inject(ThemeService);
 
   currentStep = signal(0);
   isProcessing = signal(false);
   loadingStatus = signal('Iniciando...');
   
-  selectedCategoryIndex = signal(0);
+  ifoodConnecting = signal(false);
+  ifoodConnected = signal(false);
 
   // Form Data Complex Object
   data = {
-    // Step 1: Company
     companyName: '',
     cnpj: '',
+    selectedTemplate: 'burger' as BusinessTemplate,
     
-    // Step 2: Roles
+    // Auto-filled by template
     hasWaiters: true,
     hasKitchen: true,
-    hasDrivers: false,
+    hasDrivers: true,
     hasCashiers: true,
-
-    // Step 3: Hall
     hallName: 'Salão Principal',
     tableCount: 10,
-
-    // Step 4: Stations
     stations: ['Cozinha'] as string[],
+    menuCategories: [] as MenuCategory[],
 
-    // Step 5: Menu
-    menuCategories: [
-        { name: 'Lanches', items: [{ name: 'X-Burguer', price: 25.00 }] },
-        { name: 'Bebidas', items: [{ name: 'Refrigerante', price: 6.00 }] }
-    ] as MenuCategory[],
-
-    // Step 6: iFood
+    // Integrations
     ifoodMerchantId: '',
+    ifoodOAuthCode: '',
 
-    // Step 7: Manager
+    // Acesso
     managerName: '',
     managerPin: ''
   };
 
   steps = [
     { id: 'welcome', title: 'Boas-vindas' },
-    { id: 'company', title: 'Empresa' },
-    { id: 'roles', title: 'Equipe' },
-    { id: 'hall', title: 'Ambiente' },
-    { id: 'stations', title: 'Produção' },
-    { id: 'menu', title: 'Cardápio' },
-    { id: 'ifood', title: 'iFood' },
+    { id: 'template', title: 'Seu Negócio' },
+    { id: 'theme', title: 'Identidade' },
+    { id: 'integrations', title: 'Integrações' },
     { id: 'manager', title: 'Acesso' },
-    { id: 'trial', title: 'Plano Premium' },
+    { id: 'trial', title: 'Premium' },
     { id: 'finish', title: 'Conclusão' }
   ];
+
+  templates = [
+    { id: 'burger', icon: 'lunch_dining', title: 'Hamburgueria', desc: 'Focado em delivery e balcão, produção rápida.' },
+    { id: 'pizza', icon: 'local_pizza', title: 'Pizzaria', desc: 'Mesas, delivery, fornos e montagem complexa.' },
+    { id: 'bar', icon: 'sports_bar', title: 'Bar / Pub', desc: 'Foco em bebidas, porções e alto giro de mesas.' },
+    { id: 'restaurant', icon: 'restaurant', title: 'Restaurante', desc: 'Pratos elaborados, salão estruturado.' },
+    { id: 'cafe', icon: 'local_cafe', title: 'Cafeteria', desc: 'Balcão ágil, vitrine e preparo expresso.' }
+  ];
+
+  themes = [
+    { id: 'dark', name: 'Escuro (Premium)', desc: 'Elegante, moderno e reduz o cansaço visual. Ideal para bares e hamburguerias.', icon: 'dark_mode' },
+    { id: 'light', name: 'Claro (Clean)', desc: 'Limpo, clássico e de alta visibilidade. Excelente para restaurantes diurnos e cafés.', icon: 'light_mode' }
+  ];
+
+  ngOnInit() {
+    this.applyTemplate('burger'); // Default
+  }
+
+  applyTemplate(templateId: BusinessTemplate) {
+    this.data.selectedTemplate = templateId;
+    
+    switch(templateId) {
+      case 'burger':
+        this.data.tableCount = 8;
+        this.data.stations = ['Chapa', 'Fritadeira', 'Montagem', 'Bebidas'];
+        this.data.menuCategories = [
+          { name: 'Burgers Clássicos', items: [{name: 'Cheeseburger', price: 28}, {name: 'Double Bacon', price: 38}] },
+          { name: 'Porções', items: [{name: 'Batata Frita', price: 18}] },
+          { name: 'Bebidas', items: [{name: 'Coca-Cola', price: 7}] }
+        ];
+        break;
+      case 'pizza':
+        this.data.tableCount = 15;
+        this.data.stations = ['Forno', 'Montagem', 'Bebidas'];
+        this.data.menuCategories = [
+          { name: 'Pizzas Tradicionais', items: [{name: 'Marguerita (G)', price: 65}, {name: 'Calabresa (G)', price: 60}] },
+          { name: 'Bebidas', items: [{name: 'Guaraná 2L', price: 15}] }
+        ];
+        break;
+      case 'bar':
+        this.data.tableCount = 20;
+        this.data.stations = ['Bar', 'Cozinha'];
+        this.data.menuCategories = [
+          { name: 'Chopp & Cervejas', items: [{name: 'Chopp Pilsen 300ml', price: 12}, {name: 'Heineken 600ml', price: 18}] },
+          { name: 'Drinks', items: [{name: 'Caipirinha', price: 25}, {name: 'Gin Tônica', price: 30}] },
+          { name: 'Petiscos', items: [{name: 'Isca de Frango', price: 45}] }
+        ];
+        break;
+      case 'restaurant':
+        this.data.tableCount = 12;
+        this.data.stations = ['Pratos Quentes', 'Saladas', 'Sobremesas', 'Bar'];
+        this.data.menuCategories = [
+          { name: 'Pratos Principais', items: [{name: 'Parmegiana de Carne', price: 55}, {name: 'Salmão Grelhado', price: 70}] },
+          { name: 'Entradas', items: [{name: 'Bruschetta', price: 25}] },
+          { name: 'Bebidas', items: [{name: 'Suco Natural', price: 12}] }
+        ];
+        break;
+      case 'cafe':
+        this.data.tableCount = 6;
+        this.data.stations = ['Expresso', 'Vitrine'];
+        this.data.menuCategories = [
+          { name: 'Cafés Quentes', items: [{name: 'Espresso', price: 7}, {name: 'Cappuccino', price: 14}] },
+          { name: 'Doces & Salgados', items: [{name: 'Pão de Queijo', price: 8}, {name: 'Bolo de Cenoura', price: 12}] }
+        ];
+        break;
+    }
+  }
+
+  setTheme(themeId: string) {
+    if (themeId === 'dark') {
+      this.themeService.enableDarkMode();
+    } else {
+      this.themeService.enableLightMode();
+    }
+  }
+
+  simulateIfoodAuth() {
+    this.ifoodConnecting.set(true);
+    setTimeout(() => {
+      this.ifoodConnecting.set(false);
+      this.ifoodConnected.set(true);
+      this.data.ifoodMerchantId = uuidv4().substring(0, 8).toUpperCase();
+      this.data.ifoodOAuthCode = 'auth_ok';
+      this.notification.show('iFood conectado com sucesso!', 'success');
+    }, 2000);
+  }
 
   nextStep() {
     if (this.isStepValid()) {
@@ -110,50 +190,20 @@ export class OnboardingComponent {
 
   isStepValid(): boolean {
     switch (this.currentStep()) {
-      case 0: return true;
-      case 1: return !!this.data.companyName;
-      case 2: return true; // Checkboxes always valid
-      case 3: return !!this.data.hallName && this.data.tableCount > 0;
-      case 4: return this.data.stations.length > 0 && this.data.stations.every(s => !!s);
-      case 5: return this.data.menuCategories.length > 0; // Basic check
-      case 6: return true; // Optional
-      case 7: return !!this.data.managerName && this.data.managerPin.length === 4;
-      case 8: return true; // Trial Premium info screen is always valid
+      case 0: return !!this.data.companyName; // Welcome
+      case 1: return true; // Template
+      case 2: return true; // Theme
+      case 3: return true; // Integrations (optional)
+      case 4: return !!this.data.managerName && this.data.managerPin.length === 4; // Manager
+      case 5: return true; // Trial Premium
       default: return false;
     }
-  }
-
-  // --- Helper Methods for UI ---
-
-  addStation() {
-      this.data.stations.push('');
-  }
-
-  removeStation(index: number) {
-      this.data.stations.splice(index, 1);
-  }
-
-  addCategory() {
-      this.data.menuCategories.push({ name: 'Nova Categoria', items: [] });
-      this.selectedCategoryIndex.set(this.data.menuCategories.length - 1);
-  }
-
-  selectCategory(index: number) {
-      this.selectedCategoryIndex.set(index);
-  }
-
-  addItemToCategory(catIndex: number) {
-      this.data.menuCategories[catIndex].items.push({ name: '', price: null });
-  }
-
-  removeItem(catIndex: number, itemIndex: number) {
-      this.data.menuCategories[catIndex].items.splice(itemIndex, 1);
   }
 
   // --- FINISH LOGIC ---
 
   async finish() {
-    this.currentStep.set(9); // Show loading screen
+    this.currentStep.set(6); // Show loading screen
     this.isProcessing.set(true);
 
     try {
@@ -322,7 +372,7 @@ export class OnboardingComponent {
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
-        this.currentStep.set(8); // Go back to last editable step
+        this.currentStep.set(5); // Go back to last editable step
     } finally {
         this.isProcessing.set(false);
     }
