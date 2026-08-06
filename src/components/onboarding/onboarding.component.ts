@@ -74,19 +74,29 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     { id: 'finish', title: 'Conclusão' }
   ];
 
+  stepImages = [
+    'https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1974&auto=format&fit=crop', // Step 0: Identity
+    'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1974&auto=format&fit=crop', // Step 1: Model
+    'https://images.unsplash.com/photo-1578474846511-04ba529f0b88?q=80&w=1974&auto=format&fit=crop', // Step 2: Theme
+    'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?q=80&w=2070&auto=format&fit=crop', // Step 3: Structure
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=1981&auto=format&fit=crop', // Step 4: iFood
+    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1974&auto=format&fit=crop'  // Step 5: Finish
+  ];
+
   templates = [
-    { id: 'burger', icon: 'lunch_dining', title: 'Hamburgueria', desc: 'Focado em delivery e balcão, produção rápida.', theme: 'spice' },
-    { id: 'pizza', icon: 'local_pizza', title: 'Pizzaria', desc: 'Mesas, delivery, fornos e montagem complexa.', theme: 'midnight' },
-    { id: 'bar', icon: 'sports_bar', title: 'Bar / Pub', desc: 'Foco em bebidas, porções e alto giro de mesas.', theme: 'midnight' },
-    { id: 'cafe', icon: 'local_cafe', title: 'Café / Padaria', desc: 'Balcão ágil, vitrine e preparo expresso.', theme: 'pearl' },
-    { id: 'restaurant', icon: 'restaurant', title: 'Restaurante Geral', desc: 'Pratos elaborados, salão estruturado.', theme: 'slate' }
+    { id: 'burger', icon: 'lunch_dining', title: 'Hamburgueria', desc: 'Focado em delivery e balcão, produção rápida.', theme: 'oaxaca' },
+    { id: 'pizza', icon: 'local_pizza', title: 'Pizzaria', desc: 'Mesas, delivery, fornos e montagem complexa.', theme: 'napoli' },
+    { id: 'bar', icon: 'sports_bar', title: 'Bar / Pub', desc: 'Foco em bebidas, porções e alto giro de mesas.', theme: 'dark' },
+    { id: 'cafe', icon: 'local_cafe', title: 'Café / Padaria', desc: 'Balcão ágil, vitrine e preparo expresso.', theme: 'light' },
+    { id: 'restaurant', icon: 'restaurant', title: 'Restaurante Geral', desc: 'Pratos elaborados, salão estruturado.', theme: 'kyoto' }
   ];
 
   themes = [
-    { id: 'midnight', name: 'Midnight Onyx', desc: 'Dark mode luxuoso - ótimo para bares e pizzarias.', class: 'theme-midnight' },
-    { id: 'pearl', name: 'Minimalist Pearl', desc: 'Claro e clean - perfeito para cafés.', class: 'theme-pearl' },
-    { id: 'spice', name: 'Vibrant Spice', desc: 'Cores quentes e chamativas - ideal para fast-food.', class: 'theme-spice' },
-    { id: 'slate', name: 'Classic Slate', desc: 'Cinza e azul neutro - clássico e corporativo.', class: 'theme-slate' }
+    { id: 'light', name: 'Claro (Padrão)', desc: 'Branco com detalhes vivos.', class: 'theme-light' },
+    { id: 'dark', name: 'Escuro', desc: 'Preto luxuoso e elegante.', class: 'theme-dark' },
+    { id: 'napoli', name: 'Nápoles (Rosé)', desc: 'Tons de vermelho clássico.', class: 'theme-napoli' },
+    { id: 'kyoto', name: 'Kyoto (Matcha)', desc: 'Tons esverdeados de chá.', class: 'theme-kyoto' },
+    { id: 'oaxaca', name: 'Oaxaca (Terracotta)', desc: 'Ambar e temperos quentes.', class: 'theme-oaxaca' }
   ];
 
   loadingTexts = [
@@ -291,12 +301,13 @@ export class OnboardingComponent implements OnInit, OnDestroy {
           const tables = [];
           for (let i = 1; i <= this.data.tableCount; i++) {
               tables.push({
+                 id: uuidv4(),
                  hall_id: hall.data.id,
                  number: i,
                  name: `Mesa ${i}`,
                  is_active: true,
-                 x_position: ((i - 1) % 5) * 150 + 50,
-                 y_position: Math.floor((i - 1) / 5) * 150 + 50
+                 x: ((i - 1) % 5) * 150 + 50,
+                 y: Math.floor((i - 1) / 5) * 150 + 50
               });
           }
           await this.posData.upsertTables(tables);

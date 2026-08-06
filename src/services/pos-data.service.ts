@@ -1105,8 +1105,7 @@ export class PosDataService {
       if (id?.startsWith("temp-")) {
         id = id.replace("temp-", "");
       }
-      return {
-          id,
+      const payload: any = {
           user_id: t.user_id || fallbackUserId,
           number: t.number,
           hall_id: t.hall_id,
@@ -1120,6 +1119,10 @@ export class PosDataService {
           created_at: t.created_at || new Date().toISOString(),
           updated_at: new Date().toISOString()
       };
+      if (id) {
+          payload.id = id;
+      }
+      return payload;
     });
     const { error } = await supabase.from("tables").upsert(tablesToUpsert);
     if (error) console.error("Error upserting tables:", error);

@@ -8,34 +8,46 @@
     animation: fluid-blob 10s ease-in-out infinite;
 }
 
-/* Custom Themes purely for the mock preview (the main app uses tailwind variables, but we simulate it in the card) */
-.theme-preview-midnight {
-    background-color: #0F1115;
-    color: #FFFFFF;
+/* Custom Themes purely for the mock preview */
+.theme-preview-light {
+    background-color: #f4f4f5;
+    color: #09090b;
 }
-.theme-preview-midnight .tp-card { background-color: #1C1F26; border-color: rgba(255,255,255,0.05); }
-.theme-preview-midnight .tp-accent { background-color: #FF6B00; }
+.theme-preview-light .tp-card { background-color: #ffffff; border-color: #e4e4e7; }
+.theme-preview-light .tp-accent { background-color: #ea580c; color: white; }
+.theme-preview-light .tp-accent-text { color: #ea580c; }
 
-.theme-preview-pearl {
-    background-color: #F8F9FA;
-    color: #1A1D20;
+.theme-preview-dark {
+    background-color: #09090b;
+    color: #ffffff;
 }
-.theme-preview-pearl .tp-card { background-color: #FFFFFF; border-color: rgba(0,0,0,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-.theme-preview-pearl .tp-accent { background-color: #000000; }
+.theme-preview-dark .tp-card { background-color: #18181b; border-color: #27272a; }
+.theme-preview-dark .tp-accent { background-color: #f97316; color: white; }
+.theme-preview-dark .tp-accent-text { color: #f97316; }
 
-.theme-preview-spice {
-    background-color: #FFF3E0;
-    color: #3E2723;
+.theme-preview-napoli {
+    background-color: #fff1f2;
+    color: #4c0519;
 }
-.theme-preview-spice .tp-card { background-color: #FFFFFF; border-color: #FFE0B2; }
-.theme-preview-spice .tp-accent { background-color: #E64A19; }
+.theme-preview-napoli .tp-card { background-color: #ffffff; border-color: #ffe4e6; }
+.theme-preview-napoli .tp-accent { background-color: #e11d48; color: white; }
+.theme-preview-napoli .tp-accent-text { color: #e11d48; }
 
-.theme-preview-slate {
-    background-color: #E2E8F0;
-    color: #1E293B;
+.theme-preview-kyoto {
+    background-color: #f0fdf4;
+    color: #052e16;
 }
-.theme-preview-slate .tp-card { background-color: #F8FAFC; border-color: #CBD5E1; }
-.theme-preview-slate .tp-accent { background-color: #3B82F6; }
+.theme-preview-kyoto .tp-card { background-color: #ffffff; border-color: #dcfce7; }
+.theme-preview-kyoto .tp-accent { background-color: #16a34a; color: white; }
+.theme-preview-kyoto .tp-accent-text { color: #16a34a; }
+
+.theme-preview-oaxaca {
+    background-color: #fffbeb;
+    color: #451a03;
+}
+.theme-preview-oaxaca .tp-card { background-color: #ffffff; border-color: #fef3c7; }
+.theme-preview-oaxaca .tp-accent { background-color: #d97706; color: white; }
+.theme-preview-oaxaca .tp-accent-text { color: #d97706; }
 
 /* Phone Mockup */
 .mockup-phone {
