@@ -207,6 +207,7 @@ export interface Employee {
   name: string;
   pin: string;
   role_id: string | null;
+  is_active?: boolean;
   created_at: string;
   user_id: string;
   current_clock_in_id: string | null;

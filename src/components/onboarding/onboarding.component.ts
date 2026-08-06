@@ -9,6 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { DemoModeService } from '../../services/demo-mode.service';
 import { HrStateService } from '../../services/hr-state.service';
+import { SubscriptionStateService } from '../../services/subscription-state.service';
 import { SupabaseStateService } from '../../services/supabase-state.service';
 import { ThemeService } from '../../services/theme.service';
 import { IfoodDataService } from '../../services/ifood-data.service';
@@ -38,6 +39,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private opAuth = inject(OperationalAuthService);
   private demoMode = inject(DemoModeService);
   private supabaseState = inject(SupabaseStateService);
+  private subscriptionState = inject(SubscriptionStateService);
   private posData = inject(PosDataService);
   themeService = inject(ThemeService);
   ifoodData = inject(IfoodDataService);
@@ -366,10 +368,66 @@ export class OnboardingComponent implements OnInit, OnDestroy {
           }
       }
 
-      // Simulate network delay for effect
-      await new Promise(r => setTimeout(r, 4500));
+      // 6. Setup Default Roles & Default Manager Employee with ALL permissions
+      let gerenteRole = this.hrState.roles().find(r => r.name.toLowerCase().includes('gerente') || r.name.toLowerCase().includes('admin'));
+      if (!gerenteRole) {
+        const { data: dbRoles } = await supabase.from('roles').select('*').eq('user_id', activeUnitId);
+        gerenteRole = dbRoles?.find((r: any) => r.name.toLowerCase().includes('gerente') || r.name.toLowerCase().includes('admin'));
+      }
+      if (!gerenteRole) {
+        const roleRes = await this.settingsData.addRole('Gerente');
+        if (roleRes.success && roleRes.data) {
+          gerenteRole = roleRes.data;
+        }
+      }
 
-      this.router.navigate(['/pos']);
+      // CRITICAL: Grant ALL permissions to the Gerente role
+      if (gerenteRole?.id) {
+        await this.settingsData.grantAllPermissionsToRole(gerenteRole.id);
+      }
+
+      // Add default secondary roles if missing
+      const defaultRoleNames = ['Caixa', 'Garçom', 'Cozinha'];
+      for (const rName of defaultRoleNames) {
+        const existsLocally = this.hrState.roles().some(r => r.name === rName);
+        if (!existsLocally) {
+          const { data: existingRoleInDb } = await supabase.from('roles').select('id').eq('user_id', activeUnitId).eq('name', rName).maybeSingle();
+          if (!existingRoleInDb) {
+            await this.settingsData.addRole(rName);
+          }
+        }
+      }
+
+      // Check or create default manager employee
+      const { data: existingEmployees } = await supabase.from('employees').select('*').eq('user_id', activeUnitId);
+      let activeEmp = existingEmployees?.find((e: any) => e.role_id === gerenteRole?.id || e.name === 'Gerente Geral') || existingEmployees?.[0];
+
+      if (!activeEmp) {
+        const empRes = await this.settingsData.addEmployee({
+          name: 'Gerente Geral',
+          pin: '1234',
+          role_id: gerenteRole?.id || null
+        });
+        if (empRes.success && empRes.data) {
+          activeEmp = empRes.data;
+        }
+      }
+
+      // Reload main app data & permissions so state is 100% synchronized
+      await this.supabaseState.loadCoreData(activeUnitId);
+      await this.supabaseState.loadEssentialData(activeUnitId);
+      await this.subscriptionState.loadSubscriptionForUnit(activeUnitId);
+
+      // Automatically login the manager operator
+      const freshManager = this.hrState.employees().find(e => e.id === activeEmp?.id) || activeEmp;
+      if (freshManager) {
+        this.opAuth.login(freshManager);
+      }
+
+      // Brief pause for UI transition
+      await new Promise(r => setTimeout(r, 1500));
+
+      this.router.navigate(['/dashboard']);
     } catch (e: any) {
         console.error('Onboarding Error:', e);
         this.notification.show(`Erro na configuração: ${e.message}`, 'error');
