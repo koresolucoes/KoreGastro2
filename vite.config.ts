@@ -181,15 +181,6 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       target: 'esnext',
       rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('@angular')) return 'vendor-angular';
-              if (id.includes('@supabase')) return 'vendor-supabase';
-              return 'vendor';
-            }
-          }
-        },
         onwarn(warning, warn) {
           if (warning.message && warning.message.includes('sourcemap')) return;
           if (warning.code === 'SOURCEMAP_ERROR') return;
