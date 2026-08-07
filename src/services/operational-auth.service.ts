@@ -242,7 +242,7 @@ export class OperationalAuthService {
     return R * c;
   }
 
-  async clockIn(employee: Employee): Promise<{ success: boolean; error: any }> {
+  async clockIn(employee: Employee): Promise<{ success: boolean; error: unknown }> {
     const profile = this.settingsState.companyProfile();
     const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius && profile.time_clock_radius > 0);
 
@@ -257,7 +257,7 @@ export class OperationalAuthService {
              this.notificationService.show('Você está muito longe do restaurante para bater o ponto.', 'error');
              return { success: false, error: new Error('Distância inválida.') };
         }
-      } catch (locationError: any) {
+      } catch (locationError: unknown) {
         this.notificationService.show(locationError.message, 'error', 6000);
         return { success: false, error: locationError };
       }
@@ -317,7 +317,7 @@ export class OperationalAuthService {
   }
 
 
-  async clockOut(): Promise<{ success: boolean; error: any }> {
+  async clockOut(): Promise<{ success: boolean; error: unknown }> {
       const employee = this.activeEmployee();
       if (!employee || !employee.current_clock_in_id) {
           // If for some reason they are logged in without a clock-in record, just log them out.

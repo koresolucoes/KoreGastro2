@@ -6,14 +6,14 @@ import { triggerWebhook } from '../webhook-emitter.js';
 export default withAuth(async function handler(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
-        return res.status(405).json({ error: { message: `Method ${req.method} Not Allowed` } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 
     try {
         const { orderData, items } = req.body;
 
         if (!orderData || !items || !Array.isArray(items)) {
-            return res.status(400).json({ error: { message: 'Invalid payload: requires orderData and items array' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload: requires orderData and items array' });
         }
 
         const orderId = uuidv4();
@@ -55,6 +55,6 @@ export default withAuth(async function handler(req: VercelRequest, res: VercelRe
 
     } catch (error: any) {
         console.error('[Menu Checkout API Error]', error);
-        return res.status(500).json({ error: { message: 'Internal Server Error', details: error.message } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: 'Internal Server Error' });
     }
 });

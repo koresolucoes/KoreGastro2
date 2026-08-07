@@ -273,7 +273,7 @@ export class DeliveryComponent implements OnInit {
   }
   
   getOrderTotal(order: Order): number {
-    const itemsTotal = order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    const itemsTotal = order.order_items.filter((i: any) => !(i.notes?.includes('[AUX_PREP_IDX:') && !i.notes?.includes('[AUX_PREP_IDX:0]'))).reduce((sum: number, item: any) => Math.round(sum * 100 + item.price * 100 * item.quantity) / 100, 0);
     const deliveryCost = order.delivery_cost ?? 0;
     return itemsTotal + deliveryCost;
   }

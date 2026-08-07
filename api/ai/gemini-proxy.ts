@@ -7,7 +7,7 @@ export const maxDuration = 60;
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', ['POST']);
-    return response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;

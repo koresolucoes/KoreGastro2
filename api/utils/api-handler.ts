@@ -50,13 +50,13 @@ export function withAuth(handler: ApiHandler) {
                     traceId,
                     restaurantId
                 });
-                return res.status(401).json({ error: { message: 'Authorization header is missing or invalid.' }, traceId });
+                return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Authorization header is missing or invalid.' });
             }
             
             const providedApiKey = authHeader.split(' ')[1];
             
             if (!restaurantId || restaurantId === 'unknown') {
-                return res.status(400).json({ error: { message: '`restaurantId` is required in query or body.' }, traceId });
+                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required in query or body.' });
             }
 
             const { data: profile, error: profileError } = await supabase
@@ -72,7 +72,7 @@ export function withAuth(handler: ApiHandler) {
                     traceId,
                     restaurantId
                 });
-                return res.status(403).json({ error: { message: 'Invalid `restaurantId` or API key not configured.' }, traceId });
+                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid `restaurantId` or API key not configured.' });
             }
 
             if (providedApiKey !== profile.external_api_key) {
@@ -82,10 +82,27 @@ export function withAuth(handler: ApiHandler) {
                     traceId,
                     restaurantId
                 });
-                return res.status(403).json({ error: { message: 'Invalid API key.' }, traceId });
+                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid API key.' });
             }
 
-            // 4. Execute the actual handler
+            // 4. Check Admin routes
+            if (req.url && req.url.includes('/admin/')) {
+                const { data: userData } = await supabase.auth.admin.getUserById(restaurantId);
+                if (userData && userData.user && userData.user.email) {
+                    const { data: adminData } = await supabase
+                        .from('system_admins')
+                        .select('email')
+                        .eq('email', userData.user.email)
+                        .maybeSingle();
+                    if (!adminData) {
+                        return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Forbidden: System Admin access required.' });
+                    }
+                } else {
+                    return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Forbidden: Could not verify system admin status.' });
+                }
+            }
+
+            // 5. Execute the actual handler
             await handler(req, res, restaurantId);
 
             const latencyMs = Date.now() - startTime;
@@ -113,13 +130,13 @@ export function withAuth(handler: ApiHandler) {
             
             // Mask Supabase specific errors
             if (message.includes('PGRST116')) {
-                return res.status(404).json({ error: { message: 'Resource not found.', traceId } });
+                return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Resource not found.' });
             }
             if (message.includes('duplicate key value')) {
-                return res.status(409).json({ error: { message: 'Resource already exists (Conflict).', traceId } });
+                return res.status(409).json({ type: "about:blank", title: "Conflict", status: 409, detail: 'Resource already exists (Conflict).' });
             }
 
-            return res.status(500).json({ error: { message: 'Internal Server Error', traceId } });
+            return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: 'Internal Server Error' });
         }
     };
 }

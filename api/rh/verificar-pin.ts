@@ -40,7 +40,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     if (request.method !== 'POST') {
         response.setHeader('Allow', ['POST']);
-        return response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 
     try {
@@ -51,7 +51,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
         const { employeeId, pin } = request.body;
         if (!employeeId || !pin) {
-            return response.status(400).json({ error: { message: '`employeeId` and `pin` are required.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` and `pin` are required.' });
         }
 
         const { data: employee, error: empError } = await supabase
@@ -76,6 +76,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     } catch (error: any) {
         console.error('[API /rh/verificar-pin] Fatal error:', error);
-        return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }

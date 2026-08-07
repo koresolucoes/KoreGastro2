@@ -649,7 +649,7 @@ export class OrderPanelComponent implements OnInit {
             ),
         )
         .reduce(
-          (sum: number, item: any) => sum + item.price * item.quantity,
+          (sum: number, item: any) => Math.round(sum * 100 + item.price * 100 * item.quantity) / 100,
           0,
         );
       group.originalTotalPrice = group.items
@@ -661,7 +661,7 @@ export class OrderPanelComponent implements OnInit {
             ),
         )
         .reduce(
-          (sum: number, item: any) => sum + item.original_price * item.quantity,
+          (sum: number, item: any) => Math.round(sum * 100 + item.original_price * 100 * item.quantity) / 100,
           0,
         );
       group.hasDiscount = group.items.some((i) => i.discount_type);
@@ -682,7 +682,7 @@ export class OrderPanelComponent implements OnInit {
             ),
         )
         .reduce(
-          (sum: number, item: any) => sum + item.price * item.quantity,
+          (sum: number, item: any) => Math.round(sum * 100 + item.price * 100 * item.quantity) / 100,
           0,
         ) ?? 0,
   );

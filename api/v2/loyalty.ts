@@ -15,7 +15,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
             break;
         default:
             response.setHeader('Allow', ['GET', 'POST', 'PATCH']);
-            response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+            res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 });
 
@@ -74,7 +74,7 @@ const postLoyaltySchema = z.object({
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const parsed = postLoyaltySchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
 
     const { name, description, points_cost, reward_type, reward_value, is_active } = parsed.data;
@@ -89,7 +89,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
             .single();
         
         if (recipeError || !recipe) {
-            return res.status(404).json({ error: { message: `Recipe with external_code "${reward_value}" not found.` } });
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Recipe with external_code "${reward_value}" not found.` });
         }
         finalRewardValue = recipe.id;
     }
@@ -128,12 +128,12 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
     const { id } = req.query;
 
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: 'A reward `id` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A reward `id` is required in the query parameters.' });
     }
 
     const parsed = patchLoyaltySchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
 
     const updateData = parsed.data;
@@ -148,7 +148,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
             .single();
         
         if (recipeError || !recipe) {
-            return res.status(404).json({ error: { message: `Recipe with external_code "${updateData.reward_value}" not found.` } });
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Recipe with external_code "${updateData.reward_value}" not found.` });
         }
         updatePayload.reward_value = recipe.id;
     }
@@ -162,7 +162,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         .single();
 
     if (error && error.code === 'PGRST116') {
-        return res.status(404).json({ error: { message: `Reward with id "${id}" not found.` } });
+        return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Reward with id "${id}" not found.` });
     }
     if (error) throw error;
     

@@ -45,7 +45,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     try {
         const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
         if (!restaurantId) {
-            return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
         }
 
         const auth = await authenticateUser(request, restaurantId);
@@ -62,18 +62,18 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 break;
             default:
                 response.setHeader('Allow', ['GET', 'POST']);
-                response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
         }
     } catch (error: any) {
         console.error('[API /rh/escalas] Fatal error:', error);
-        return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { data_inicio, data_fim } = req.query;
     if (!data_inicio || !data_fim) {
-        return res.status(400).json({ error: { message: '`data_inicio` and `data_fim` are required.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`data_inicio` and `data_fim` are required.' });
     }
 
     const { data, error } = await supabase
@@ -102,5 +102,5 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
         return res.status(200).json({ success: true, message: `Schedule ${id} publish state set to ${publish}.` });
     }
     
-    return res.status(400).json({ error: { message: 'Invalid request for POST method.' } });
+    return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request for POST method.' });
 }

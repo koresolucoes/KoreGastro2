@@ -6,6 +6,20 @@ import { v4 as uuidv4 } from 'uuid';
 // --- LOGGING ---
 
 export async function logWebhookEvent(supabase: SupabaseClient, payload: any, orderId: string | null) {
+  if (payload.id) {
+    // Check if event already exists to prevent duplicate processing
+    const { data: existingLog } = await supabase
+      .from('ifood_webhook_logs')
+      .select('id, processing_status')
+      .eq('raw_payload->>id', payload.id)
+      .maybeSingle();
+      
+    if (existingLog && existingLog.processing_status === 'PROCESSED') {
+      console.log(`[Webhook] Event ${payload.id} already processed. Skipping.`);
+      return { id: existingLog.id, duplicate: true };
+    }
+  }
+
   const { data, error } = await supabase
     .from('ifood_webhook_logs')
     .insert({
@@ -21,7 +35,7 @@ export async function logWebhookEvent(supabase: SupabaseClient, payload: any, or
   if (error) {
     console.error("Critical: Failed to log webhook payload:", error);
   }
-  return data?.id || null;
+  return { id: data?.id || null, duplicate: false };
 }
 
 export async function updateLogStatus(supabase: SupabaseClient, logId: string, status: string, errorMessage?: string, payload?: any, userId?: string) {
@@ -66,22 +80,29 @@ async function getOrCreateCustomer(supabase: SupabaseClient, userId: string, ifo
   let existingCustomer: { id: string, cpf: string | null, phone: string | null } | null = null;
   let updates: Partial<Customer> = {};
 
-  // Strategy 1: Find by CPF (most reliable)
   if (cpf) {
-    const { data } = await supabase.from('customers').select('id, cpf, phone').eq('user_id', userId).eq('cpf', cpf).maybeSingle();
-    existingCustomer = data;
-    if (existingCustomer && !existingCustomer.phone && phone) {
-      updates.phone = phone; // Update phone if it was missing
-    }
+    const { data: upsertedCpf, error: errorCpf } = await supabase
+      .from('customers')
+      .upsert({ user_id: userId, name: name, phone: phone, cpf: cpf }, { onConflict: 'user_id,cpf', ignoreDuplicates: false })
+      .select('id')
+      .maybeSingle();
+      
+    if (!errorCpf && upsertedCpf) return upsertedCpf.id;
   }
-
-  // Strategy 2: Find by Phone (if not found by CPF)
-  if (!existingCustomer && phone) {
-    const { data } = await supabase.from('customers').select('id, cpf, phone').eq('user_id', userId).eq('phone', phone).maybeSingle();
-    existingCustomer = data;
-    if (existingCustomer && !existingCustomer.cpf && cpf) {
-      updates.cpf = cpf; // Update CPF if it was missing
-    }
+  
+  if (phone) {
+    const { data: upsertedPhone, error: errorPhone } = await supabase
+      .from('customers')
+      .upsert({ user_id: userId, name: name, phone: phone, cpf: cpf }, { onConflict: 'user_id,phone', ignoreDuplicates: false })
+      .select('id')
+      .maybeSingle();
+      
+    if (!errorPhone && upsertedPhone) return upsertedPhone.id;
+  }
+  
+  // Fallback if no cpf/phone or both upserts failed (shouldn't happen with proper unique constraints)
+  if (cpf || phone) {
+      console.warn(`Upsert failed or returned null for ${name}. Falling back to select.`);
   }
   
   // Strategy 3: Find by Name (least reliable, only for customers likely from iFood without phone/cpf)
@@ -113,21 +134,8 @@ async function getOrCreateCustomer(supabase: SupabaseClient, userId: string, ifo
     .insert({ user_id: userId, name: name, phone: phone, cpf: cpf })
     .select('id')
     .single();
-  
+    
   if (error) {
-    // Handle potential unique constraint violation if a race condition occurs
-    if (error.code === '23505') { // unique_violation
-        console.warn(`Attempted to create a duplicate customer for ${name}, likely due to a race condition. Refetching...`);
-        // Refetch to be safe.
-        if (cpf) {
-             const { data } = await supabase.from('customers').select('id').eq('user_id', userId).eq('cpf', cpf).maybeSingle();
-             if (data) return data.id;
-        }
-        if (phone) {
-            const { data } = await supabase.from('customers').select('id').eq('user_id', userId).eq('phone', phone).maybeSingle();
-            if (data) return data.id;
-        }
-    }
     console.error("Error creating customer:", error);
     return null;
   }
@@ -385,25 +393,26 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
     .filter(Boolean)
     .join(', ') || 'iFood';
 
-  // Create a transaction record only if total is greater than 0
   if (total > 0) {
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .insert({
-        description: `Receita Pedido #${order.id.slice(0, 8)} (${paymentMethods})`,
-        type: 'Receita',
-        amount: total,
-        user_id: order.user_id,
-        date: new Date().toISOString()
-      });
-    
-    if (transactionError) {
-      console.error(`[concludeOrderInDb] Failed to insert transaction for order ${order.id}:`, transactionError);
-    }
-  }
+    const paymentsPayload = [{ method: paymentMethods, amount: total }];
+    const { error: rpcError } = await supabase.rpc('finalize_order_transaction', {
+      p_order_id: order.id,
+      p_user_id: order.user_id,
+      p_table_id: null,
+      p_payments: paymentsPayload,
+      p_closed_by_employee_id: null,
+      p_tip_amount: 0
+    });
 
-  // Finally, update the order status
-  await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+    if (rpcError) {
+      console.error(`[concludeOrderInDb] Failed to finalize order transaction for order ${order.id}:`, rpcError);
+      // Fallback
+      await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+    }
+  } else {
+    // Finally, update the order status
+    await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+  }
 }
 
 export async function cancelOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {

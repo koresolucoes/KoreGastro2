@@ -9,7 +9,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
         await handleGet(request, response, restaurantId);
     } else {
         response.setHeader('Allow', ['GET']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 });
 
@@ -17,18 +17,23 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     const { action, startDate, endDate } = req.query;
 
     if (!startDate || typeof startDate !== 'string' || !endDate || typeof endDate !== 'string') {
-        return res.status(400).json({ error: { message: '`startDate` and `endDate` (YYYY-MM-DD or ISO string) query parameters are required.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`startDate` and `endDate` (YYYY-MM-DD or ISO string) query parameters are required.' });
     }
 
-    const start = new Date(startDate);
+    const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
+    const start = new Date(Date.UTC(sYear, sMonth - 1, sDay, 0, 0, 0, 0));
+    
     let endStr = endDate;
+    let end;
     if (endDate.length === 10) {
-        endStr = `${endDate}T23:59:59.999Z`;
+        const [eYear, eMonth, eDay] = endDate.split('-').map(Number);
+        end = new Date(Date.UTC(eYear, eMonth - 1, eDay, 23, 59, 59, 999));
+    } else {
+        end = new Date(endDate);
     }
-    const end = new Date(endStr);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        return res.status(400).json({ error: { message: 'Invalid date format.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid date format.' });
     }
 
     if (action === 'sales') {
@@ -126,5 +131,5 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
         return res.status(200).json(result);
     }
 
-    return res.status(400).json({ error: { message: 'Invalid `action` query parameter. Use `sales` or `item_performance`.' } });
+    return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid `action` query parameter. Use `sales` or `item_performance`.' });
 }

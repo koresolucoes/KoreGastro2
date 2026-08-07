@@ -31,7 +31,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
         break;
       default:
         response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 });
 
@@ -41,20 +41,25 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
   if (id && typeof id === 'string') {
     const { data, error } = await supabase.from('customers').select(PUBLIC_CUSTOMER_COLUMNS).eq('user_id', restaurantId).eq('id', id).single();
     if (error) {
-      if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Customer with id "${id}" not found.` } });
+      if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Customer with id "${id}" not found.` });
       throw error;
     }
     return res.status(200).json(data);
   }
 
+  const limit = parseInt(req.query.limit as string) || 50;
+  const cursor = req.query.cursor as string;
+
+  let query = supabase.from('customers').select(PUBLIC_CUSTOMER_COLUMNS).eq('user_id', restaurantId).is('deleted_at', null);
+
   if (search && typeof search === 'string') {
     const searchTerm = `%${search}%`;
-    const { data, error } = await supabase.from('customers').select(PUBLIC_CUSTOMER_COLUMNS).eq('user_id', restaurantId).or(`name.ilike.${searchTerm},phone.ilike.${searchTerm},cpf.ilike.${searchTerm},email.ilike.${searchTerm}`);
-    if (error) throw error;
-    return res.status(200).json(data || []);
+    query = query.or(`name.ilike.${searchTerm},phone.ilike.${searchTerm},cpf.ilike.${searchTerm},email.ilike.${searchTerm}`);
   }
 
-  const { data, error } = await supabase.from('customers').select(PUBLIC_CUSTOMER_COLUMNS).eq('user_id', restaurantId).order('name', { ascending: true });
+  if (cursor) query = query.gt('name', cursor);
+  const { data, error } = await query.order('name', { ascending: true }).limit(limit);
+  
   if (error) throw error;
   return res.status(200).json(data || []);
 }
@@ -75,21 +80,32 @@ const postCustomerSchema = z.object({
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
   const parsed = postCustomerSchema.safeParse(req.body);
   if (!parsed.success) {
-      return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
   }
   const body = parsed.data;
 
-  const orConditions = [body.cpf && `cpf.eq.${body.cpf}`, body.phone && `phone.eq.${body.phone}`].filter(Boolean);
-  if (orConditions.length > 0) {
-    const { data: existing, error } = await supabase.from('customers').select('id').eq('user_id', restaurantId).or(orConditions.join(',')).limit(1);
-    if (error) throw error;
-    if (existing && existing.length > 0) return res.status(409).json({ error: { message: 'A customer with this CPF or phone number already exists.' } });
+  if (body.cpf || body.phone) {
+    let existingCpf = null;
+    let existingPhone = null;
+    
+    if (body.cpf) {
+        const res = await supabase.from('customers').select('id').eq('user_id', restaurantId).eq('cpf', body.cpf).limit(1).maybeSingle();
+        existingCpf = res.data;
+    }
+    if (body.phone) {
+        const res = await supabase.from('customers').select('id').eq('user_id', restaurantId).eq('phone', body.phone).limit(1).maybeSingle();
+        existingPhone = res.data;
+    }
+
+    if (existingCpf || existingPhone) {
+        return res.status(409).json({ type: "about:blank", title: "Conflict", status: 409, detail: 'A customer with this CPF or phone number already exists.' });
+    }
   }
 
   let password_hash: string | null = null;
   if (body.password) {
       if (typeof body.password !== 'string' || body.password.length < 6) {
-          return res.status(400).json({ error: { message: 'Password must be a string of at least 6 characters.' } });
+          return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Password must be a string of at least 6 characters.' });
       }
       password_hash = createHash('sha256').update(body.password).digest('hex');
   }
@@ -129,12 +145,12 @@ const patchCustomerSchema = z.object({
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: 'A customer `id` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A customer `id` is required in the query parameters.' });
     }
 
     const parsed = patchCustomerSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
     const { loyalty_points_change, description, password, ...otherFields } = parsed.data;
 
@@ -164,15 +180,15 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         return res.status(200).json(data);
     }
     
-    return res.status(400).json({ error: { message: 'No valid update fields provided.' } });
+    return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'No valid update fields provided.' });
 }
 
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: 'A customer `id` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A customer `id` is required in the query parameters.' });
     }
-    const { error } = await supabase.from('customers').delete().eq('id', id).eq('user_id', restaurantId);
+    const { error } = await supabase.from('customers').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('user_id', restaurantId);
     if (error) throw error;
     return res.status(204).end();
 }
@@ -180,11 +196,11 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
 async function handleLogin(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { identifier, password } = req.body;
     if (!identifier || !password) {
-        return res.status(400).json({ error: { message: '`identifier` (email, phone, or cpf) and `password` are required.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`identifier` (email, phone, or cpf) and `password` are required.' });
     }
     const { data, error } = await supabase.from('customers').select('id, password_hash').eq('user_id', restaurantId).or(`email.eq.${identifier},phone.eq.${identifier},cpf.eq.${identifier}`).maybeSingle();
     if (error || !data || !data.password_hash) {
-        return res.status(401).json({ error: { message: 'Invalid credentials.' } });
+        return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Invalid credentials.' });
     }
     const passwordHash = createHash('sha256').update(password).digest('hex');
     try {
@@ -194,5 +210,5 @@ async function handleLogin(req: VercelRequest, res: VercelResponse, restaurantId
             return res.status(200).json(publicData);
         }
     } catch (e) { /* timingSafeEqual throws on different lengths */ }
-    return res.status(401).json({ error: { message: 'Invalid credentials.' } });
+    return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Invalid credentials.' });
 }

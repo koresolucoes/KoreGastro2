@@ -26,7 +26,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
         break;
       default:
         response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 });
 
@@ -53,7 +53,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
         .eq('id', id)
         .single();
       if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Hall with id "${id}" not found.` }});
+        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Hall with id "${id}" not found.` });
         throw error;
       }
       return res.status(200).json(data);
@@ -61,11 +61,14 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
   }
 
   // Get all halls for the restaurant
-  const { data, error } = await supabase
-    .from('halls')
-    .select('*')
-    .eq('user_id', restaurantId)
-    .order('created_at', { ascending: true });
+  const limit = parseInt(req.query.limit as string) || 50;
+  const cursor = req.query.cursor as string;
+
+  let query = supabase.from('halls').select('*').eq('user_id', restaurantId).is('deleted_at', null);
+  
+  if (cursor) query = query.gt('created_at', cursor);
+
+  const { data, error } = await query.order('created_at', { ascending: true }).limit(limit);
   
   if (error) throw error;
   return res.status(200).json(data || []);
@@ -75,7 +78,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
   const parsedBody = hallSchema.safeParse(req.body);
   if (!parsedBody.success) {
-      return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
   }
 
   const { name } = parsedBody.data;
@@ -95,12 +98,12 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
     const { id } = req.query;
 
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: 'A hall `id` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A hall `id` is required in the query parameters.' });
     }
 
     const parsedBody = hallSchema.safeParse(req.body);
     if (!parsedBody.success) {
-        return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
     }
 
     const { name } = parsedBody.data;
@@ -114,7 +117,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         .single();
     
     if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Hall with id "${id}" not found.` } });
+        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Hall with id "${id}" not found.` });
         throw error;
     }
     return res.status(200).json(updatedHall);
@@ -124,13 +127,13 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: 'A hall `id` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A hall `id` is required in the query parameters.' });
     }
     
     // First, delete all tables within this hall
     const { error: tablesError } = await supabase
         .from('tables')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('hall_id', id)
         .eq('user_id', restaurantId);
     
@@ -142,7 +145,7 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
     // Then, delete the hall itself
     const { error } = await supabase
         .from('halls')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id)
         .eq('user_id', restaurantId);
 

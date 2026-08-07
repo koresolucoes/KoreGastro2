@@ -4,7 +4,7 @@ import { withAuth, supabase } from '../utils/api-handler.js';
 export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     if (request.method !== 'GET') {
         response.setHeader('Allow', ['GET']);
-        return response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 
     const { id } = request.query;
@@ -12,7 +12,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
     if (id && typeof id === 'string') {
         const { data, error } = await supabase.from('recipes').select('*').eq('user_id', restaurantId).eq('id', id).single();
         if (error) {
-            if (error.code === 'PGRST116') return response.status(404).json({ error: { message: `Recipe with id "${id}" not found.` } });
+            if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Recipe with id "${id}" not found.` });
             throw error;
         }
         return response.status(200).json(data);

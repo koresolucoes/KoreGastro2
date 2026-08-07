@@ -74,12 +74,19 @@ export default async function handler(request: VercelRequest, response: VercelRe
     payload = JSON.parse(rawBody.toString('utf-8'));
     // Use the helper for logging, as it's not critical path for API calls
     const orderIdForLogging = getOrderIdFromPayload(payload);
-    logId = await logWebhookEvent(supabase, payload, orderIdForLogging);
+    const logResult = await logWebhookEvent(supabase, payload, orderIdForLogging);
+    logId = logResult.id;
+
+    if (logResult.duplicate) {
+      // Event already processed, just acknowledge it to iFood so they stop sending it
+      return response.status(200).send();
+    }
 
     const signature = request.headers['x-ifood-signature'] as string;
     if (signature && !verifySignature(signature, rawBody, ifoodSecret)) {
-      console.warn('[Webhook] Invalid signature received, but processing anyway for distributed flow. Expected:', signature);
-      if (logId) await updateLogStatus(supabase, logId, 'WARNING_INVALID_SIGNATURE');
+      console.error('[Webhook] Invalid signature received. Returning 401 Unauthorized.');
+      if (logId) await updateLogStatus(supabase, logId, 'ERROR_INVALID_SIGNATURE');
+      return response.status(401).send({ error: 'Invalid signature.' });
     } else if (!signature) {
        console.log('[Webhook] No signature received.');
     }

@@ -124,7 +124,7 @@ export class TableLayoutComponent implements OnInit, OnDestroy {
   getTableTotal(table: Table): number {
     const order = this.getTableOrder(table);
     if (!order) return 0;
-    return order.order_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return order.order_items.reduce((sum, item) => Math.round(sum * 100 + item.price * 100 * item.quantity) / 100, 0);
   }
 
 

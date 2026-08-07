@@ -67,11 +67,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
         break;
       default:
         response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
   } catch (error: any) {
     console.error('[API /rh/funcionarios] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+    return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
   }
 }
 
@@ -84,7 +84,11 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
         return res.status(200).json(data);
     }
 
-    const { data, error } = await supabase.from('employees').select('*, roles(name)').eq('user_id', restaurantId).order('name');
+    const limit = parseInt(req.query.limit as string) || 50;
+    const cursor = req.query.cursor as string;
+    let query = supabase.from('employees').select('*, roles(name)').eq('user_id', restaurantId).is('deleted_at', null);
+    if (cursor) query = query.gt('name', cursor);
+    const { data, error } = await query.order('name').limit(limit);
     if (error) throw error;
     return res.status(200).json(data || []);
 }
@@ -93,7 +97,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
     const employeeData: Partial<Employee> = req.body;
     
     if (!employeeData.name || !employeeData.pin || !employeeData.role_id) {
-        return res.status(400).json({ error: { message: '`name`, `pin`, and `role_id` are required fields.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`name` });
     }
 
     const { data, error } = await supabase
@@ -109,7 +113,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: '`id` query parameter is required for PATCH.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`id` query parameter is required for PATCH.' });
     }
     
     const updateData: Partial<Employee> = req.body;
@@ -131,12 +135,12 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: '`id` query parameter is required for DELETE.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`id` query parameter is required for DELETE.' });
     }
     
     const { error } = await supabase
         .from('employees')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id)
         .eq('user_id', restaurantId);
         

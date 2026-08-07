@@ -23,21 +23,21 @@ export default async function handler(request: VercelRequest, response: VercelRe
   
   if (request.method !== 'POST') {
     response.setHeader('Allow', ['POST']);
-    return response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
   }
 
   try {
     // 1. Authentication
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return response.status(401).json({ error: { message: 'Authorization header is missing or invalid.' } });
+      return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Authorization header is missing or invalid.' });
     }
     const providedApiKey = authHeader.split(' ')[1];
 
     const restaurantId = request.body.restaurantId as string;
 
     if (!restaurantId) {
-      return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -47,18 +47,18 @@ export default async function handler(request: VercelRequest, response: VercelRe
       .single();
 
     if (profileError || !profile || !profile.external_api_key) {
-      return response.status(403).json({ error: { message: 'Invalid `restaurantId` or API key not configured.' } });
+      return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid `restaurantId` or API key not configured.' });
     }
 
     if (providedApiKey !== profile.external_api_key) {
-      return response.status(403).json({ error: { message: 'Invalid API key.' } });
+      return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid API key.' });
     }
 
     // 2. Main Logic
     const { driverId, latitude, longitude } = request.body;
     
     if (!driverId || typeof latitude !== 'number' || typeof longitude !== 'number') {
-        return response.status(400).json({ error: { message: '`driverId` (string), `latitude` (number), and `longitude` (number) are required.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`driverId` (string), `latitude` (number), and `longitude` (number) are required.' });
     }
 
     const { error: updateError } = await supabase
@@ -74,7 +74,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if (updateError) {
         // Log the error but don't expose too many details to the client
         console.error(`[API /delivery-location] Error updating driver ${driverId}:`, updateError);
-        return response.status(500).json({ error: { message: 'Failed to update driver location.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: 'Failed to update driver location.' });
     }
 
     // Successfully updated, no body needed
@@ -82,6 +82,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
   } catch (error: any) {
     console.error('[API /delivery-location] Fatal error:', error);
-    return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+    return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
   }
 }

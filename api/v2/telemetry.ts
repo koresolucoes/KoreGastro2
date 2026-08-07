@@ -11,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: { message: 'Method Not Allowed' } });
+    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: 'Method Not Allowed' });
   }
 
   try {
@@ -36,6 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(202).json({ status: 'accepted', traceId });
   } catch (error: any) {
     Logger.error('Failed to process telemetry payload', error);
-    return res.status(500).json({ error: { message: 'Failed to record telemetry' } });
+    return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: 'Failed to record telemetry' });
   }
 }

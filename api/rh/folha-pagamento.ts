@@ -60,13 +60,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (request.method !== 'GET') {
         response.setHeader('Allow', ['GET']);
-        return response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 
     try {
         const restaurantId = request.query.restaurantId as string;
         if (!restaurantId) {
-            return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
         }
 
         const auth = await authenticateUser(request, restaurantId);
@@ -77,7 +77,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         const { action, mes, ano } = request.query;
 
         if (action !== 'resumo' || !mes || !ano) {
-            return response.status(400).json({ error: { message: '`action=resumo`, `mes`, and `ano` are required query parameters.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`action=resumo` });
         }
         
         const yearNum = parseInt(ano as string);
@@ -201,6 +201,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     } catch (error: any) {
         console.error('[API /rh/folha-pagamento] Fatal error:', error);
-        return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }

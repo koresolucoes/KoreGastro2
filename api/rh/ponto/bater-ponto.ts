@@ -81,7 +81,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     if (request.method !== 'POST') {
         response.setHeader('Allow', ['POST']);
-        return response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 
     try {
@@ -92,7 +92,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
         const { employeeId, pin, latitude, longitude } = request.body;
         if (!employeeId || !pin) {
-            return response.status(400).json({ error: { message: '`employeeId` and `pin` are required.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` and `pin` are required.' });
         }
 
         const { data: employee, error: empError } = await supabase
@@ -102,10 +102,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
             .single();
         
         if (empError || !employee) {
-            return response.status(404).json({ error: { message: 'Employee not found.' } });
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Employee not found.' });
         }
         if (employee.pin !== pin) {
-            return response.status(403).json({ error: { message: 'Invalid PIN.' } });
+            return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid PIN.' });
         }
         
         // --- Geolocation validation logic ---
@@ -120,11 +120,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
         // Check only if the restaurant has configured the location check
         if (profile.latitude && profile.longitude && profile.time_clock_radius) {
             if (latitude === undefined || longitude === undefined) {
-                return response.status(400).json({ error: { message: 'Localização do funcionário não fornecida.' } });
+                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Localização do funcionário não fornecida.' });
             }
             const distance = getDistance(latitude, longitude, profile.latitude, profile.longitude);
             if (distance > profile.time_clock_radius) {
-                return response.status(403).json({ error: { message: 'Você está muito longe do restaurante para bater o ponto.' } });
+                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Você está muito longe do restaurante para bater o ponto.' });
             }
         }
         // If location is not configured on profile, the check is skipped. 
@@ -166,7 +166,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             if (entryError || !activeEntry) {
                 // This case can happen if the `current_clock_in_id` is stale. Let's fix it and ask the user to try again.
                 await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
-                return response.status(409).json({ error: { message: 'Shift data out of sync. Please try again.' } });
+                return res.status(409).json({ type: "about:blank", title: "Conflict", status: 409, detail: 'Shift data out of sync. Please try again.' });
             }
 
             const currentSignatures = activeEntry.signatures || {};
@@ -191,6 +191,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
         }
     } catch (error: any) {
         console.error('[API /rh/ponto/bater-ponto] Fatal error:', error);
-        return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }

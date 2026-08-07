@@ -46,7 +46,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     try {
         const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
         if (!restaurantId) {
-            return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
         }
 
         const auth = await authenticateUser(request, restaurantId);
@@ -66,25 +66,25 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 break;
             default:
                 response.setHeader('Allow', ['GET', 'POST', 'PATCH']);
-                response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
         }
     } catch (error: any) {
         console.error('[API /rh/ponto] Fatal error:', error);
-        return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { data_inicio, data_fim, employeeId } = req.query;
     if (!data_inicio || !data_fim) {
-        return res.status(400).json({ error: { message: '`data_inicio` and `data_fim` are required.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`data_inicio` and `data_fim` are required.' });
     }
     
     let query = supabase.from('time_clock_entries')
         .select('*')
         .eq('user_id', restaurantId)
-        .gte('clock_in_time', new Date(data_inicio as string).toISOString())
-        .lte('clock_in_time', new Date(data_fim as string + 'T23:59:59').toISOString());
+        .gte('clock_in_time', new Date((data_inicio as string) + 'T00:00:00').toISOString())
+        .lte('clock_in_time', new Date((data_fim as string) + 'T23:59:59').toISOString());
         
     if (employeeId) {
         query = query.eq('employee_id', employeeId as string);
@@ -99,7 +99,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
     // This handler is now only for creating manual time entries (admin action).
     const entryData: Partial<TimeClockEntry> = req.body;
     if (!entryData.employee_id || !entryData.clock_in_time) {
-        return res.status(400).json({ error: { message: '`employee_id` and `clock_in_time` are required.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employee_id` and `clock_in_time` are required.' });
     }
     const { data, error } = await supabase.from('time_clock_entries').insert({ ...entryData, user_id: restaurantId }).select().single();
     if (error) throw error;
@@ -109,7 +109,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: { message: '`id` query parameter is required for PATCH.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`id` query parameter is required for PATCH.' });
     }
     
     const updateData: Partial<TimeClockEntry> = req.body;

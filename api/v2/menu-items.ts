@@ -21,7 +21,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
         break;
       default:
         response.setHeader('Allow', ['GET', 'PATCH']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 });
 
@@ -31,7 +31,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     if (itemId && typeof itemId === 'string') {
         const { data, error } = await supabase.from('recipes').select('*, categories(name)').eq('store_id', restaurantId).eq('id', itemId).single();
         if (error) {
-            if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Menu item with id "${itemId}" not found.` } });
+            if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Menu item with id "${itemId}" not found.` });
             throw error;
         }
         return res.status(200).json(data);
@@ -58,19 +58,19 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { itemId } = req.query;
     if (!itemId || typeof itemId !== 'string') {
-        return res.status(400).json({ error: { message: 'A menu item `itemId` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A menu item `itemId` is required in the query parameters.' });
     }
     
     const parsedBody = menuItemPatchSchema.safeParse(req.body);
     if (!parsedBody.success) {
-        return res.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
     }
 
     const updatePayload = parsedBody.data;
 
     const { data, error } = await supabase.from('recipes').update(updatePayload).eq('id', itemId).eq('store_id', restaurantId).select().single();
     if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Menu item with id "${itemId}" not found.` } });
+        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Menu item with id "${itemId}" not found.` });
         throw error;
     }
     return res.status(200).json(data);

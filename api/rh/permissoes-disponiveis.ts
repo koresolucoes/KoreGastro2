@@ -34,7 +34,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     
     if (request.method !== 'GET') {
         response.setHeader('Allow', ['GET']);
-        return response.status(405).json({ error: { message: 'Method Not Allowed' } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: 'Method Not Allowed' });
     }
 
     try {
@@ -47,6 +47,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     } catch (error: any) {
         console.error('[API /rh/permissoes-disponiveis] Fatal error:', error);
-        return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }

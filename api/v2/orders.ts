@@ -46,7 +46,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
         break;
       default:
         response.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 });
 
@@ -56,7 +56,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     if (orderId && typeof orderId === 'string') {
         const { data, error } = await supabase.from('orders').select('*, customers(*), order_items(*)').eq('id', orderId).eq('user_id', restaurantId).single();
         if (error) {
-            if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Order with id "${orderId}" not found.` } });
+            if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Order with id "${orderId}" not found.` });
             throw error;
         }
         return res.status(200).json(data);
@@ -67,7 +67,12 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     if (tableNumber) query = query.eq('table_number', tableNumber as string);
     if (customerId) query = query.eq('customer_id', customerId as string);
 
-    const { data, error } = await query.order('timestamp', { ascending: false });
+    query = query.is('deleted_at', null);
+
+    const limit = parseInt(req.query.limit as string) || 50;
+    if (req.query.cursor) query = query.lt('timestamp', req.query.cursor as string);
+
+    const { data, error } = await query.order('timestamp', { ascending: false }).limit(limit);
     if (error) throw error;
     return res.status(200).json(data || []);
 }
@@ -85,19 +90,27 @@ const postOrderSchema = z.object({
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const parsed = postOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
     const { tableNumber, customerId, items } = parsed.data;
 
-    const { data: finalOrder, error } = await supabase.rpc('create_order_with_items', {
+    const idempotencyKey = (req.headers['x-idempotency-key'] as string) || (req.headers['idempotency-key'] as string);
+
+    const rpcPayload: any = {
         p_restaurant_id: restaurantId,
         p_order_data: { tableNumber, customerId },
         p_items: items
-    });
+    };
+
+    if (idempotencyKey) {
+        rpcPayload.p_idempotency_key = idempotencyKey;
+    }
+
+    const { data: finalOrder, error } = await supabase.rpc('create_order_with_items', rpcPayload);
 
     if (error) {
         if (error.message.includes('not found')) {
-            return res.status(404).json({ error: { message: error.message } });
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: error.message });
         }
         throw error;
     }
@@ -109,11 +122,11 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { orderId } = req.query;
     if (!orderId || typeof orderId !== 'string') {
-        return res.status(400).json({ error: { message: 'An `orderId` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'An `orderId` is required in the query parameters.' });
     }
-    const { data, error } = await supabase.from('orders').update({ status: 'CANCELLED', completed_at: new Date().toISOString() }).eq('id', orderId).eq('user_id', restaurantId).eq('status', 'OPEN').select().single();
+    const { data, error } = await supabase.from('orders').update({ status: 'CANCELLED', deleted_at: new Date().toISOString(), completed_at: new Date().toISOString() }).eq('id', orderId).eq('user_id', restaurantId).eq('status', 'OPEN').select().single();
     if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
+        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Open order with id "${orderId}" not found.` });
         throw error;
     }
     await triggerWebhook(restaurantId, 'order.updated', data).catch(console.error);
@@ -136,7 +149,7 @@ async function handleGetSummary(req: VercelRequest, res: VercelResponse, restaur
     
     if (error) {
         if (error.code === 'PGRST116') {
-            return res.status(404).json({ error: { message: `Order with id "${orderId}" not found.` } });
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Order with id "${orderId}" not found.` });
         }
         throw error;
     }
@@ -181,12 +194,12 @@ const addItemsSchema = z.object({
 async function handleAddItems(req: VercelRequest, res: VercelResponse, restaurantId: string, orderId: string) {
     const parsed = addItemsSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
     const { items } = parsed.data;
     
     const { data: order, error: orderError } = await supabase.from('orders').select('id').eq('id', orderId).eq('status', 'OPEN').single();
-    if (orderError) return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
+    if (orderError) return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Open order with id "${orderId}" not found.` });
     
     try {
         const orderItemsToInsert = await buildOrderItems(restaurantId, orderId, items);
@@ -197,7 +210,7 @@ async function handleAddItems(req: VercelRequest, res: VercelResponse, restauran
         return res.status(200).json(insertedItems);
     } catch (error: any) {
         if (error.message.includes('not found')) {
-            return res.status(404).json({ error: { message: error.message } });
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: error.message });
         }
         throw error;
     }
@@ -206,7 +219,7 @@ async function handleAddItems(req: VercelRequest, res: VercelResponse, restauran
 async function handleRequestPayment(req: VercelRequest, res: VercelResponse, restaurantId: string, orderId: string) {
     const { data: order, error: orderError } = await supabase.from('orders').select('table_number').eq('id', orderId).eq('user_id', restaurantId).single();
     if (orderError || !order || order.table_number <= 0) {
-        return res.status(404).json({ error: { message: `Dine-in order with id "${orderId}" not found.` } });
+        return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Dine-in order with id "${orderId}" not found.` });
     }
     
     const { error: tableError } = await supabase.from('tables').update({ status: 'PAGANDO' }).eq('user_id', restaurantId).eq('number', order.table_number);

@@ -21,28 +21,37 @@ const requestBodySchema = z.object({
 export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', ['POST']);
-    return response.status(405).json({ error: { message: 'Method Not Allowed' } });
+    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: 'Method Not Allowed' });
   }
 
   const parsedBody = requestBodySchema.safeParse(request.body);
   if (!parsedBody.success) {
-      return response.status(400).json({ error: { message: 'Invalid request body', details: parsedBody.error.format() } });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
   }
 
   const { orderId, payments, tip } = parsedBody.data;
 
     // 1. Fetch order details for validation
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('id', orderId)
-      .eq('user_id', restaurantId)
-      .eq('status', 'OPEN')
-      .single();
+    const [orderResponse, profileResponse] = await Promise.all([
+      supabase.from('orders').select('*, order_items(*)').eq('id', orderId).eq('user_id', restaurantId).eq('status', 'OPEN').single(),
+      supabase.from('company_profile').select('payment_methods').eq('user_id', restaurantId).single()
+    ]);
+
+    const { data: order, error: orderError } = orderResponse;
+    const { data: profile } = profileResponse;
 
     if (orderError) {
-      if (orderError.code === 'PGRST116') return response.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
+      if (orderError.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Open order with id "${orderId}" not found.` });
       throw orderError;
+    }
+    
+    // Validate payment methods
+    const validMethods = profile?.payment_methods || [];
+    if (validMethods && Array.isArray(validMethods) && validMethods.length > 0) {
+        const invalidPayments = payments.filter(p => !validMethods.includes(p.method));
+        if (invalidPayments.length > 0) {
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Invalid payment methods: ${invalidPayments.map(p => p.method).join(' });
+        }
     }
     
     const orderItems = (order.order_items || []) as OrderItem[];
@@ -50,7 +59,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
     const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
     
     if (totalPaid < orderTotal - 0.01) {
-      return response.status(400).json({ error: { message: `Payment amount is insufficient. Order total is ${orderTotal.toFixed(2)}, but received ${totalPaid.toFixed(2)}.` } });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Payment amount is insufficient. Order total is ${orderTotal.toFixed(2)}, but received ${totalPaid.toFixed(2)}.` });
     }
 
     // 2. Identify Table ID (if applicable)

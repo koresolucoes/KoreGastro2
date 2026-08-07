@@ -19,12 +19,12 @@ const postTriggerSchema = z.object({
 export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     if (request.method !== 'POST') {
         response.setHeader('Allow', ['POST']);
-        return response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 
     const parsed = postTriggerSchema.safeParse(request.body);
     if (!parsed.success) {
-        return response.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
 
     const { event, payload } = parsed.data;

@@ -107,7 +107,7 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
             !i.notes?.includes("[AUX_PREP_IDX:0]")
           ),
       )
-      .reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
+      .reduce((sum: number, item: any) => Math.round(sum * 100 + item.price * 100 * item.quantity) / 100, 0);
   });
 
   globalDiscountAmount = computed(() => {

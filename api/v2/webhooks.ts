@@ -27,7 +27,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
             break;
         default:
             response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-            response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+            res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
     }
 });
 
@@ -50,7 +50,7 @@ const postWebhookSchema = z.object({
 async function handlePost(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     const parsed = postWebhookSchema.safeParse(request.body);
     if (!parsed.success) {
-        return response.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
     const { url, events } = parsed.data;
 
@@ -84,12 +84,12 @@ const patchWebhookSchema = z.object({
 async function handlePatch(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     const { id } = request.query;
     if (!id || typeof id !== 'string') {
-        return response.status(400).json({ error: { message: 'A webhook `id` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A webhook `id` is required in the query parameters.' });
     }
 
     const parsed = patchWebhookSchema.safeParse(request.body);
     if (!parsed.success) {
-        return response.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
 
     const { data, error } = await supabase
@@ -101,7 +101,7 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
         .single();
 
     if (error) {
-        if (error.code === 'PGRST116') return response.status(404).json({ error: { message: `Webhook with id "${id}" not found.` } });
+        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Webhook with id "${id}" not found.` });
         throw error;
     }
 
@@ -111,12 +111,12 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
 async function handleDelete(request: VercelRequest, response: VercelResponse, restaurantId: string) {
     const { id } = request.query;
     if (!id || typeof id !== 'string') {
-        return response.status(400).json({ error: { message: 'A webhook `id` is required in the query parameters.' } });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A webhook `id` is required in the query parameters.' });
     }
 
     const { error } = await supabase
         .from('webhooks')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id)
         .eq('user_id', restaurantId);
 

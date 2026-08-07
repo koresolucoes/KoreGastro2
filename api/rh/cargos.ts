@@ -51,7 +51,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         // 1. Obter ID da loja
         const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
         if (!restaurantId) {
-            return response.status(400).json({ error: { message: '`restaurantId` is required.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
         }
 
         // 2. Autenticação Segura
@@ -69,11 +69,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 break;
             default:
                 response.setHeader('Allow', ['GET', 'PUT']);
-                response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
         }
     } catch (error: any) {
         console.error('[API /rh/cargos] Fatal error:', error);
-        return response.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }
 
@@ -119,5 +119,5 @@ async function handlePut(req: VercelRequest, res: VercelResponse, restaurantId: 
         return res.status(200).json({ success: true, message: "Permissions updated." });
     }
     
-    return res.status(400).json({ error: { message: 'Invalid request for PUT method.' } });
+    return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request for PUT method.' });
 }

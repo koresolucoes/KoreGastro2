@@ -231,16 +231,6 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     if (this.isStepValid()) {
       const next = this.currentStep() + 1;
       this.currentStep.set(next);
-      if (next === 6) {
-        this.finish();
-      }
-    }
-  }
-
-  nextStep() {
-    if (this.isStepValid()) {
-      const next = this.currentStep() + 1;
-      this.currentStep.set(next);
       if (next === 7) {
         this.finish();
       }

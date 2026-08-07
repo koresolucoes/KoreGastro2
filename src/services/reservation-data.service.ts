@@ -77,11 +77,9 @@ export class ReservationDataService {
   }
 
   async getReservationsForDay(userId: string, date: string): Promise<Reservation[]> {
-    const startOfDay = new Date(date);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(date);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    const [year, month, day] = date.split('-').map(Number);
+    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
     const { data, error } = await supabase
       .from('reservations')

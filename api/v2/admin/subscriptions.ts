@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { userId, status, planId, currentPeriodEnd } = req.body;
 
     if (!userId || !status) {
-      return res.status(400).json({ error: 'Missing required fields: userId, status' });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Missing required fields: userId });
     }
 
     // Check if subscription exists

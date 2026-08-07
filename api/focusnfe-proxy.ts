@@ -23,19 +23,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(204).end();
     }
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: { message: 'Method Not Allowed' } });
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: 'Method Not Allowed' });
     }
 
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: { message: 'Authorization header is missing.' } });
+            return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Authorization header is missing.' });
         }
         const providedApiKey = authHeader.split(' ')[1];
 
         const { restaurantId, action, payload } = req.body;
         if (!restaurantId || !action) {
-            return res.status(400).json({ error: { message: '`restaurantId` and `action` are required.' } });
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` and `action` are required.' });
         }
 
         const { data: profile, error: profileError } = await supabase
@@ -45,10 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
             
         if (profileError || !profile || !profile.external_api_key) {
-            return res.status(403).json({ error: { message: 'Invalid `restaurantId` or API key not configured.' } });
+            return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid `restaurantId` or API key not configured.' });
         }
         if (providedApiKey !== profile.external_api_key) {
-            return res.status(403).json({ error: { message: 'Invalid API key.' } });
+            return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid API key.' });
         }
 
         switch (action as FocusNFeAction) {
@@ -65,12 +65,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 await handleConsultarCnpj(res, profile.focusnfe_token, payload);
                 break;
             default:
-                return res.status(400).json({ error: { message: `Unknown action: ${action}` } });
+                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Unknown action: ${action}` });
         }
 
     } catch (error: any) {
         console.error(`[API /focusnfe-proxy] Fatal error on action '${req.body.action}':`, error);
-        return res.status(500).json({ error: { message: error.message || 'An internal server error occurred.' } });
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
 }
 
