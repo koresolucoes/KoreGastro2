@@ -526,6 +526,78 @@ export class RecipeDataService {
           }
       }
 
+      // 8. Clone additional relations: promotion_recipes, store_custom_prices, recipe_sub_recipes, ifood_option_groups
+      if (sourceRecipes && sourceRecipes.length > 0) {
+          const { data: promoRecipes } = await supabase.from('promotion_recipes').select('*').in('recipe_id', sourceRecipes.map(r => r.id));
+          if (promoRecipes && promoRecipes.length > 0) {
+              const toInsert = promoRecipes.map(pr => ({
+                  promotion_id: pr.promotion_id,
+                  recipe_id: recipeIdMap.get(pr.recipe_id),
+                  promotional_price: pr.promotional_price,
+                  user_id: targetStoreId
+              })).filter(x => x.recipe_id);
+              if (toInsert.length > 0) await supabase.from('promotion_recipes').insert(toInsert);
+          }
+          
+          const { data: customPrices } = await supabase.from('store_custom_prices').select('*').in('recipe_id', sourceRecipes.map(r => r.id));
+          if (customPrices && customPrices.length > 0) {
+              const toInsert = customPrices.map(cp => ({
+                  recipe_id: recipeIdMap.get(cp.recipe_id),
+                  store_id: targetStoreId,
+                  price: cp.price,
+                  is_available: cp.is_available,
+                  user_id: targetStoreId
+              })).filter(x => x.recipe_id);
+              if (toInsert.length > 0) await supabase.from('store_custom_prices').upsert(toInsert, { onConflict: 'recipe_id, store_id' });
+          }
+
+          const { data: subRecipes } = await supabase.from('recipe_sub_recipes').select('*').in('parent_recipe_id', sourceRecipes.map(r => r.id));
+          if (subRecipes && subRecipes.length > 0) {
+              const toInsert = subRecipes.map(sr => ({
+                  parent_recipe_id: recipeIdMap.get(sr.parent_recipe_id),
+                  child_recipe_id: recipeIdMap.get(sr.child_recipe_id),
+                  quantity: sr.quantity,
+                  user_id: targetStoreId
+              })).filter(x => x.parent_recipe_id && x.child_recipe_id);
+              if (toInsert.length > 0) await supabase.from('recipe_sub_recipes').insert(toInsert);
+          }
+
+          const { data: ifoodGroups } = await supabase.from('ifood_option_groups').select('*').in('recipe_id', sourceRecipes.map(r => r.id));
+          if (ifoodGroups && ifoodGroups.length > 0) {
+              const toInsert = ifoodGroups.map(ig => ({
+                  recipe_id: recipeIdMap.get(ig.recipe_id),
+                  external_code: ig.external_code,
+                  name: ig.name,
+                  min: ig.min,
+                  max: ig.max,
+                  display_order: ig.display_order,
+                  user_id: targetStoreId
+              })).filter(x => x.recipe_id);
+              if (toInsert.length > 0) {
+                 const { data: insertedGroups, error } = await supabase.from('ifood_option_groups').insert(toInsert).select();
+                 if (!error && insertedGroups && insertedGroups.length > 0) {
+                     const groupIdMap = new Map<string, string>();
+                     insertedGroups.forEach((ng: any, idx: number) => {
+                         groupIdMap.set(ifoodGroups[idx].id, ng.id);
+                     });
+                     
+                     const { data: ifoodOptions } = await supabase.from('ifood_options').select('*').in('group_id', ifoodGroups.map(g => g.id));
+                     if (ifoodOptions && ifoodOptions.length > 0) {
+                         const optionsToInsert = ifoodOptions.map(io => ({
+                             group_id: groupIdMap.get(io.group_id),
+                             external_code: io.external_code,
+                             name: io.name,
+                             price: io.price,
+                             recipe_id: io.recipe_id ? recipeIdMap.get(io.recipe_id) : null,
+                             user_id: targetStoreId
+                         })).filter(x => x.group_id);
+                         if (optionsToInsert.length > 0) await supabase.from('ifood_options').insert(optionsToInsert);
+                     }
+                 }
+              }
+          }
+      }
+
       return { success: true, error: null };
     } catch (error) {
       console.error('Error cloning menu, executing atomic rollback:', error);

@@ -228,21 +228,23 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
       if (item.externalCode) {
           const existingRecipe = recipesMap.get(item.externalCode);
           if (!existingRecipe) {
-              // Create new recipe
+              // Create new recipe using upsert to handle conflicts
               const { data: newRecipe, error: createError } = await supabase
                   .from('recipes')
-                  .insert({
+                  .upsert({
                       user_id: userId,
                       name: item.name,
                       price: item.unitPrice,
                       external_code: item.externalCode,
                       is_available: true
-                  })
+                  }, { onConflict: 'user_id, external_code' })
                   .select('id, external_code, price')
                   .single();
                   
               if (!createError && newRecipe) {
                   recipesMap.set(item.externalCode, newRecipe);
+              } else if (createError) {
+                  console.error("Error creating recipe via upsert:", createError);
               }
           } else if (existingRecipe.price !== item.unitPrice) {
               // Sync price if different

@@ -180,6 +180,15 @@ export class PosDataService {
       return acc;
     }, new Map());
 
+    // M15: Require at least one preparation per recipe
+    const missingPreps = items.filter(item => !prepsByRecipeId.has(item.recipe.id) || prepsByRecipeId.get(item.recipe.id).length === 0);
+    if (missingPreps.length > 0) {
+        return {
+            success: false,
+            error: { message: `As seguintes receitas não possuem praça (preparação) configurada: ${missingPreps.map(i => i.recipe.name).join(', ')}. Configure-as no cardápio antes de vender.` }
+        };
+    }
+
     const allItemsToInsert = items.flatMap((item) => {
       const recipePreps = prepsByRecipeId.get(item.recipe.id);
       const baseEffectivePrice = this.pricingService.getEffectivePrice(
@@ -222,6 +231,8 @@ export class PosDataService {
           };
         });
       }
+      
+      console.warn(`[KDS Routing] Fallback routing applied for recipe ${item.recipe.name} as it lacks explicitly configured preparations.`);
 
       return [
         {

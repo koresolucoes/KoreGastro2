@@ -28,7 +28,8 @@ export function withAuth(handler: ApiHandler) {
         const traceId = (req.headers['x-request-id'] || req.headers['x-trace-id'] || ('trace_' + Math.random().toString(36).substring(2, 10))) as string;
         
         // 1. CORS & Observability Headers
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        const allowedOrigin = process.env.FRONTEND_URL || 'https://chefos.com.br';
+        res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Trace-ID');
         res.setHeader('X-Trace-ID', traceId);

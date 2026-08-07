@@ -10,6 +10,7 @@ import { WebhookService } from './webhook.service';
 import { InventoryStateService } from './inventory-state.service';
 import { PosStateService } from './pos-state.service';
 import { UnitContextService } from './unit-context.service';
+import { NtpService } from './ntp.service';
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +23,7 @@ export class InventoryDataService {
   private inventoryState = inject(InventoryStateService);
   private posState = inject(PosStateService);
   private unitContextService = inject(UnitContextService);
+  private ntpService = inject(NtpService);
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
@@ -164,7 +166,7 @@ export class InventoryDataService {
           station_id: ingredient.station_id,
           name: 'Entrega',
           display_order: 0,
-          created_at: new Date().toISOString(),
+          created_at: this.ntpService.now().toISOString(),
           user_id: userId!,
       };
       
@@ -253,7 +255,7 @@ export class InventoryDataService {
         const currentVersion = originalIngredient.version || 1;
         
         const { data: updatedData, error: fallbackError } = await supabase.from('ingredients')
-                                          .update({ stock: newStock, updated_at: new Date().toISOString(), version: currentVersion + 1 })
+                                          .update({ stock: newStock, updated_at: this.ntpService.now().toISOString(), version: currentVersion + 1 })
                                           .eq('id', ingredientId)
                                           .eq('user_id', userId)
                                           .eq('version', currentVersion)
@@ -377,7 +379,7 @@ export class InventoryDataService {
                   await supabase.from('station_stocks')
                       .update({ 
                           quantity: newStationQty,
-                          updated_at: new Date().toISOString()
+                          updated_at: this.ntpService.now().toISOString()
                       })
                       .eq('id', stationStock.id);
                   

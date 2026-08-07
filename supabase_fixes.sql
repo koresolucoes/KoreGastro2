@@ -23,3 +23,20 @@ CREATE INDEX IF NOT EXISTS idx_ifood_webhook_logs_event_code_status ON ifood_web
 
 -- M10: Optimistic locking for ingredients
 ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
+-- M11: Missing Foreign Key Restrictions
+ALTER TABLE order_items DROP CONSTRAINT IF EXISTS order_items_recipe_id_fkey;
+ALTER TABLE order_items ADD CONSTRAINT order_items_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE SET NULL;
+
+-- M14: Unique constraint on (user_id, external_code) in recipes
+ALTER TABLE recipes DROP CONSTRAINT IF EXISTS recipes_user_id_external_code_key;
+ALTER TABLE recipes ADD CONSTRAINT recipes_user_id_external_code_key UNIQUE (user_id, external_code);
+-- M16: DLQ for failed webhooks
+CREATE TABLE IF NOT EXISTS webhook_dlq (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID,
+    webhook_url TEXT,
+    event_type TEXT,
+    payload JSONB,
+    last_error TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

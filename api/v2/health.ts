@@ -4,7 +4,6 @@ import { Logger } from '../utils/logger.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
 const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseKey || 'placeholder-key'
@@ -17,11 +16,22 @@ export interface HealthCheckItem {
   details?: Record<string, any>;
 }
 
+async function pingExternalService(url: string, method: string = 'GET'): Promise<{ status: 'ok' | 'error', latency: number }> {
+    const start = Date.now();
+    try {
+        await fetch(url, { method, headers: { 'Accept': 'application/json' } });
+        return { status: 'ok', latency: Date.now() - start };
+    } catch (e) {
+        return { status: 'error', latency: Date.now() - start };
+    }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigin = process.env.FRONTEND_URL || 'https://chefos.com.br';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Trace-ID');
-
+  
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -38,14 +48,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     if (error && !error.message.includes('PGRST116')) {
       checks.database = { 
-        status: 'error', 
-        latencyMs: dbLatency, 
-        message: `Database error: ${error.message}` 
-      };
+         status: 'error', 
+         latencyMs: dbLatency, 
+         message: `Database error: ${error.message}` 
+       };
     } else {
       checks.database = { 
-        status: dbLatency > 1200 ? 'degraded' : 'ok', 
-        latencyMs: dbLatency,
+         status: dbLatency > 1200 ? 'degraded' : 'ok', 
+         latencyMs: dbLatency,
         message: dbLatency > 1200 ? 'High database latency detected (>1200ms)' : 'Database operational'
       };
     }
@@ -85,15 +95,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const missingCoreEnv: string[] = [];
   if (!process.env.SUPABASE_URL && !process.env.VITE_SUPABASE_URL) missingCoreEnv.push('SUPABASE_URL');
   if (!process.env.GEMINI_API_KEY) missingCoreEnv.push('GEMINI_API_KEY');
-
+  
   checks.environment = {
     status: missingCoreEnv.length > 0 ? 'degraded' : 'ok',
     message: missingCoreEnv.length > 0 
-      ? `Missing core variables: ${missingCoreEnv.join(', ')}` 
-      : 'All primary environment secrets present'
+       ? `Missing core variables: ${missingCoreEnv.join(', ')}` 
+       : 'All primary environment secrets present'
   };
 
-  // 5. External Integrations Configuration
+  // 5. External Integrations Connectivity Check
   const integrationsList = {
     mercadoPago: !!process.env.MERCADOPAGO_ACCESS_TOKEN,
     focusNFe: !!process.env.FOCUS_NFE_TOKEN,
@@ -101,18 +111,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     cielo: !!process.env.CIELO_MERCHANT_ID,
     whatsApp: !!(process.env.WHATSAPP_TOKEN || process.env.WHATSAPP_PHONE_ID)
   };
+  
+  const pingPromises = [];
+  if (integrationsList.iFood) {
+      pingPromises.push(pingExternalService('https://merchant-api.ifood.com.br').then(r => ({ name: 'iFood', ...r })));
+  }
+  if (integrationsList.cielo) {
+      pingPromises.push(pingExternalService('https://api.cieloecommerce.cielo.com.br').then(r => ({ name: 'Cielo', ...r })));
+  }
+  
+  const pingResults = await Promise.all(pingPromises);
+  const failedPings = pingResults.filter(p => p.status === 'error');
 
   const configuredCount = Object.values(integrationsList).filter(Boolean).length;
   checks.integrations = {
-    status: 'ok',
-    message: `${configuredCount}/5 external integrations configured`,
-    details: integrationsList
+    status: failedPings.length > 0 ? 'degraded' : 'ok',
+    message: `${configuredCount}/5 external integrations configured. ${failedPings.length} unreachable.`,
+    details: { config: integrationsList, connectivity: pingResults }
   };
 
   const totalLatencyMs = Date.now() - startTime;
+  
   const isError = Object.values(checks).some(c => c.status === 'error');
   const isDegraded = Object.values(checks).some(c => c.status === 'degraded') || totalLatencyMs > 2500;
-
+  
   const overallStatus = isError ? 'unhealthy' : (isDegraded ? 'degraded' : 'healthy');
   const httpStatus = isError ? 503 : (isDegraded ? 207 : 200);
 
@@ -140,4 +162,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return res.status(httpStatus).json(responseBody);
 }
-
