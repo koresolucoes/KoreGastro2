@@ -4,17 +4,17 @@ import { createClient } from '@supabase/supabase-js';
 
 const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  if (request.method !== 'POST') {
-    return response.status(405).send({ error: 'Method Not Allowed' });
+export default async function handler(req: any, res: any) {
+  if (req.method !== 'POST') {
+    return res.status(405).send({ error: 'Method Not Allowed' });
   }
 
   if (!mpAccessToken) {
-    return response.status(500).send({ error: 'MercadoPago access token is missing in .env.' });
+    return res.status(500).send({ error: 'MercadoPago access token is missing in .env.' });
   }
 
   try {
-    const { planId, planName, price, userEmail, userId } = request.body;
+    const { planId, planName, price, userEmail, userId } = req.body;
 
     const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
     const preference = new Preference(client);
@@ -43,9 +43,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
       }
     });
 
-    return response.status(200).send({ id: result.id, init_point: result.init_point });
+    return res.status(200).send({ id: result.id, init_point: result.init_point });
   } catch (error: any) {
     console.error('[MercadoPago API]', error);
-    return response.status(500).send({ error: 'Internal Server Error', details: error.message });
+    return res.status(500).send({ error: 'Internal Server Error', details: error.message });
   }
 }

@@ -7,8 +7,8 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
-async function authenticateUser(request: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
-    const authHeader = request.headers.authorization;
+async function authenticateUser(req: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
@@ -34,39 +34,39 @@ async function authenticateUser(request: VercelRequest, restaurantId: string): P
     return { success: true };
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
 
     try {
-        const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+        const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
         if (!restaurantId) {
             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
         }
 
-        const auth = await authenticateUser(request, restaurantId);
+        const auth = await authenticateUser(req, restaurantId);
         if (!auth.success) {
-            return response.status(auth.status!).json({ error: auth.error });
+            return res.status(auth.status!).json({ error: auth.error });
         }
 
-        switch (request.method) {
+        switch (req.method) {
             case 'GET':
-                await handleGet(request, response, restaurantId);
+                await handleGet(req, res, restaurantId);
                 break;
             case 'POST':
-                await handlePost(request, response, restaurantId);
+                await handlePost(req, res, restaurantId);
                 break;
             case 'PATCH':
-                await handlePatch(request, response, restaurantId);
+                await handlePatch(req, res, restaurantId);
                 break;
             default:
-                response.setHeader('Allow', ['GET', 'POST', 'PATCH']);
-                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+                res.setHeader('Allow', ['GET', 'POST', 'PATCH']);
+                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
         }
     } catch (error: any) {
         console.error('[API /rh/ponto] Fatal error:', error);

@@ -26,7 +26,7 @@ async function pingExternalService(url: string, method: string = 'GET'): Promise
     }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   const allowedOrigin = process.env.FRONTEND_URL || 'https://chefos.com.br';
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -112,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     whatsApp: !!(process.env.WHATSAPP_TOKEN || process.env.WHATSAPP_PHONE_ID)
   };
   
-  const pingPromises = [];
+  const pingPromises: Promise<{ name: string; status: 'ok' | 'error'; latency: number }>[] = [];
   if (integrationsList.iFood) {
       pingPromises.push(pingExternalService('https://merchant-api.ifood.com.br').then(r => ({ name: 'iFood', ...r })));
   }

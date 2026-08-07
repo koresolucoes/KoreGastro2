@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 
@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export default async function (req: Request, res: Response) {
+export default async function (req: VercelRequest, res: VercelResponse) {
   const { code, state } = req.query;
 
   if (!code || !state) {
@@ -28,7 +28,7 @@ export default async function (req: Request, res: Response) {
   const userId = state as string;
 
   try {
-    const response = await fetch('https://api.mercadopago.com/oauth/token', {
+    const fetchRes = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -43,9 +43,9 @@ export default async function (req: Request, res: Response) {
       })
     });
 
-    const data = await response.json();
+    const data = await fetchRes.json();
 
-    if (!response.ok) {
+    if (!fetchRes.ok) {
       console.error('Mercado Pago OAuth error:', data);
       return res.status(400).send(`Error authenticating with Mercado Pago: ${data.message || 'Unknown error'}`);
     }

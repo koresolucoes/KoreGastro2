@@ -18,23 +18,23 @@ const tableSchema = z.object({
 
 const tablePatchSchema = tableSchema.partial();
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    switch (request.method) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+    switch (req.method) {
       case 'GET':
-        await handleGet(request, response, restaurantId);
+        await handleGet(req, res, restaurantId);
         break;
       case 'POST':
-        await handlePost(request, response, restaurantId);
+        await handlePost(req, res, restaurantId);
         break;
       case 'PATCH':
-        await handlePatch(request, response, restaurantId);
+        await handlePatch(req, res, restaurantId);
         break;
       case 'DELETE':
-        await handleDelete(request, response, restaurantId);
+        await handleDelete(req, res, restaurantId);
         break;
       default:
-        response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+        res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 });
 
@@ -65,7 +65,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
   const parsedBody = tableSchema.safeParse(req.body);
   if (!parsedBody.success) {
-      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid req body' });
   }
 
   const { number, hall_id, x, y, width, height, status } = parsedBody.data;
@@ -83,7 +83,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
   
   const parsedBody = tablePatchSchema.safeParse(req.body);
   if (!parsedBody.success) {
-      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid req body' });
   }
 
   const updatePayload = parsedBody.data;

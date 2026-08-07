@@ -51,15 +51,6 @@ export class RecipeDataService {
         const prepsToInsert = preparations.map(p => ({ ...p, recipe_id: recipeId, user_id: userId }));
         
         let { error: prepError } = await supabase.from('recipe_preparations').insert(prepsToInsert);
-        
-        // Fallback gracefully if the 'prep_time_in_minutes' column hasn't been added yet in the backend
-        if (prepError && prepError.message.includes('prep_time_in_minutes')) {
-             console.warn('Column prep_time_in_minutes does not exist yet. Please run the migration script.');
-             const prepsWithoutTime = prepsToInsert.map(({ prep_time_in_minutes, ...rest }) => rest);
-             const { error: retryError } = await supabase.from('recipe_preparations').insert(prepsWithoutTime);
-             prepError = retryError;
-        }
-
         if (prepError) return { success: false, error: prepError };
     }
 

@@ -14,7 +14,7 @@ const focusNFeProducaoUrl = 'https://api.focusnfe.com.br';
 type FocusNFeAction = 'save_settings' | 'emit_nfce' | 'cancel_nfce' | 'consultar_cnpj';
 
 // --- Main Handler ---
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -99,7 +99,7 @@ async function handleSaveSettings(res: VercelResponse, userId: string, cnpj: str
 
         // 1. Get company ID from FocusNFe using CNPJ. This endpoint uses the Production URL.
         const companies = await callFocusNFeApi('GET', `/v2/empresas?cnpj=${cnpj.replace(/[^\d]/g, '')}`, tokenToUse, null, focusNFeProducaoUrl);
-        const company = companies?.[0]; // The response is an array
+        const company = companies?.[0]; // The res is an array
         
         if (!company || !company.id) {
             throw new Error('Empresa não encontrada na FocusNFe. Verifique se o CNPJ está correto e cadastrado no painel da FocusNFe.');
@@ -188,19 +188,19 @@ async function handleEmitNfce(res: VercelResponse, userId: string, cnpj: string 
     
     await supabase.from('orders').update({ nfce_ref: orderId }).eq('id', orderId);
 
-    const response = await callFocusNFeApi('POST', `/v2/nfce?ref=${orderId}`, token, nfcePayload, focusNFeHomologacaoUrl);
+    const fetchRes = await callFocusNFeApi('POST', `/v2/nfce?ref=${orderId}`, token, nfcePayload, focusNFeHomologacaoUrl);
     
     const updatePayload = {
-        nfce_status: response.status,
-        nfce_url: response.caminho_danfe ? `${focusNFeHomologacaoUrl}${response.caminho_danfe}` : null,
-        nfce_xml_path: response.caminho_xml_nota_fiscal ? `${focusNFeHomologacaoUrl}${response.caminho_xml_nota_fiscal}` : null,
-        nfce_chave: response.chave_nfe,
-        nfce_last_response: response as any
+        nfce_status: res.status,
+        nfce_url: fetchRes.caminho_danfe ? `${focusNFeHomologacaoUrl}${fetchRes.caminho_danfe}` : null,
+        nfce_xml_path: fetchRes.caminho_xml_nota_fiscal ? `${focusNFeHomologacaoUrl}${fetchRes.caminho_xml_nota_fiscal}` : null,
+        nfce_chave: fetchRes.chave_nfe,
+        nfce_last_response: res as any
     };
 
     await supabase.from('orders').update(updatePayload).eq('id', orderId);
     
-    return res.status(200).json({ data: response });
+    return res.status(200).json({ data: res });
 }
 
 async function handleCancelNfce(res: VercelResponse, userId: string, token: string | null, payload: any) {
@@ -212,17 +212,17 @@ async function handleCancelNfce(res: VercelResponse, userId: string, token: stri
     const { data: order } = await supabase.from('orders').select('nfce_ref').eq('id', orderId).single();
     if (!order || !order.nfce_ref) throw new Error('NFC-e reference not found for this order.');
 
-    const response = await callFocusNFeApi('DELETE', `/v2/nfce/${order.nfce_ref}`, token, { justificativa: justification }, focusNFeHomologacaoUrl);
+    const fetchRes = await callFocusNFeApi('DELETE', `/v2/nfce/${order.nfce_ref}`, token, { justificativa: justification }, focusNFeHomologacaoUrl);
     
     const updatePayload = {
-        nfce_status: response.status,
-        nfce_last_response: response as any,
-        nfce_xml_path: response.caminho_xml_cancelamento ? `${focusNFeHomologacaoUrl}${response.caminho_xml_cancelamento}` : null,
+        nfce_status: res.status,
+        nfce_last_response: res as any,
+        nfce_xml_path: fetchRes.caminho_xml_cancelamento ? `${focusNFeHomologacaoUrl}${fetchRes.caminho_xml_cancelamento}` : null,
     };
     
     await supabase.from('orders').update(updatePayload).eq('id', orderId);
 
-    return res.status(200).json({ data: response });
+    return res.status(200).json({ data: res });
 }
 
 async function handleConsultarCnpj(res: VercelResponse, token: string | null, payload: any) {
@@ -258,10 +258,10 @@ async function callFocusNFeApi(method: 'GET' | 'POST' | 'PUT' | 'DELETE', endpoi
         options.body = JSON.stringify(body);
     }
     
-    const response = await fetch(url, options);
-    const responseBodyText = await response.text();
+    const fetchRes = await fetch(url, options);
+    const responseBodyText = await fetchRes.text();
 
-    if (!response.ok) {
+    if (!fetchRes.ok) {
         let errorMessage;
         try {
             const errorJson = JSON.parse(responseBodyText);
@@ -269,7 +269,7 @@ async function callFocusNFeApi(method: 'GET' | 'POST' | 'PUT' | 'DELETE', endpoi
         } catch (e) {
             errorMessage = responseBodyText.substring(0, 200);
         }
-        console.error(`FocusNFe API Error (${response.status}) on ${method} ${endpoint}:`, responseBodyText);
+        console.error(`FocusNFe API Error (${fetchRes.status}) on ${method} ${endpoint}:`, responseBodyText);
         throw new Error(`Erro na API FocusNFe: ${errorMessage}`);
     }
 

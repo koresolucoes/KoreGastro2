@@ -4,22 +4,21 @@ import { triggerWebhook } from "../webhook-emitter.js";
 import { withAuth, supabase } from "../utils/api-handler.js";
 
 export default withAuth(async function handler(
-  request: VercelRequest,
-  response: VercelResponse,
+  req: any, res: any,
   restaurantId: string,
 ) {
-  switch (request.method) {
+  switch (req.method) {
     case "GET":
-      await handleGet(request, response, restaurantId);
+      await handleGet(req, res, restaurantId);
       break;
     case "PATCH":
-      await handlePatch(request, response, restaurantId);
+      await handlePatch(req, res, restaurantId);
       break;
     default:
-      response.setHeader("Allow", ["GET", "PATCH"]);
-      response
+      res.setHeader("Allow", ["GET", "PATCH"]);
+      res
         .status(405)
-        .json({ error: { message: `Method ${request.method} Not Allowed` } });
+        .json({ error: { message: `Method ${req.method} Not Allowed` } });
   }
 });
 

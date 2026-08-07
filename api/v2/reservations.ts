@@ -17,23 +17,23 @@ const reservationSchema = z.object({
 
 const reservationPatchSchema = reservationSchema.partial();
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    switch (request.method) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+    switch (req.method) {
       case 'GET':
-        await handleGet(request, response, restaurantId);
+        await handleGet(req, res, restaurantId);
         break;
       case 'POST':
-        await handlePost(request, response, restaurantId);
+        await handlePost(req, res, restaurantId);
         break;
       case 'PATCH':
-        await handlePatch(request, response, restaurantId);
+        await handlePatch(req, res, restaurantId);
         break;
       case 'DELETE':
-        await handleDelete(request, response, restaurantId);
+        await handleDelete(req, res, restaurantId);
         break;
       default:
-        response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+        res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+        res.status(405).json({ error: "An error occurred" });
     }
 });
 
@@ -47,7 +47,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     if (id && typeof id === 'string') {
         const { data, error } = await supabase.from('reservations').select('*').eq('user_id', restaurantId).eq('id', id).single();
         if (error) {
-            if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Reservation with id "${id}" not found.` });
+            if (error.code === 'PGRST116') return res.status(404).json({ error: "An error occurred" });
             throw error;
         }
         return res.status(200).json(data);
@@ -67,23 +67,23 @@ const [sY, sM, sD] = (start_date as string).split('-').map(Number);
         return res.status(200).json(data || []);
     }
     
-    return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Missing required query parameters. Use `?action=availability` });
+    return res.status(400).json({ error: "An error occurred" });
 }
 
 async function handleGetAvailability(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { date, party_size } = req.query;
     if (!date || typeof date !== 'string' || !party_size || isNaN(Number(party_size))) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`date` (YYYY-MM-DD) and `party_size` (number) are required.' });
+        return res.status(400).json({ error: "An error occurred" });
     }
     
     const { data: settings, error: settingsError } = await supabase.from('reservation_settings').select('*').eq('user_id', restaurantId).eq('is_enabled', true).single();
     if (settingsError || !settings) {
-        return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Reservation system not enabled for this restaurant.' });
+        return res.status(404).json({ error: "An error occurred" });
     }
 
     const partySizeNum = Number(party_size);
     if (partySizeNum < settings.min_party_size || partySizeNum > settings.max_party_size) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Party size must be between ${settings.min_party_size} and ${settings.max_party_size}.` });
+        return res.status(400).json({ error: "An error occurred" });
     }
     
     const [year, month, day] = (date as string).split('-').map(Number);
@@ -116,7 +116,7 @@ async function handleGetAvailability(req: VercelRequest, res: VercelResponse, re
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const parsedBody = reservationSchema.safeParse(req.body);
     if (!parsedBody.success) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+        return res.status(400).json({ error: "An error occurred" });
     }
 
     const { customer_name, party_size, reservation_time, notes, customer_phone, customer_email, status, table_id } = parsedBody.data;
@@ -133,22 +133,22 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A reservation `id` is required in the query parameters.' });
+        return res.status(400).json({ error: "An error occurred" });
     }
     
     const parsedBody = reservationPatchSchema.safeParse(req.body);
     if (!parsedBody.success) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+        return res.status(400).json({ error: "An error occurred" });
     }
 
     const updatePayload = parsedBody.data;
     
     if (Object.keys(updatePayload).length === 0) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'At least one field to update is required.' });
+        return res.status(400).json({ error: "An error occurred" });
     }
     const { data, error } = await supabase.from('reservations').update(updatePayload).eq('id', id).eq('user_id', restaurantId).select().single();
     if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Reservation with id "${id}" not found.` });
+        if (error.code === 'PGRST116') return res.status(404).json({ error: "An error occurred" });
         throw error;
     }
     return res.status(200).json(data);
@@ -157,7 +157,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A reservation `id` is required in the query parameters.' });
+        return res.status(400).json({ error: "An error occurred" });
     }
     const { error } = await supabase.from('reservations').update({ deleted_at: new Date().toISOString() }).eq('id', id).eq('user_id', restaurantId);
     if (error) throw error;

@@ -11,30 +11,30 @@ const supabase = createClient(
 );
 
 // Main handler function
-export default async function handler(request: VercelRequest, response: VercelResponse) {
+export default async function handler(req: any, res: any) {
   // CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
   
-  if (request.method !== 'POST') {
-    response.setHeader('Allow', ['POST']);
-    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
   }
 
   try {
     // 1. Authentication
-    const authHeader = request.headers.authorization;
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Authorization header is missing or invalid.' });
     }
     const providedApiKey = authHeader.split(' ')[1];
 
-    const restaurantId = request.body.restaurantId as string;
+    const restaurantId = req.body.restaurantId as string;
 
     if (!restaurantId) {
       return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
@@ -55,7 +55,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     // 2. Main Logic
-    const { driverId, latitude, longitude } = request.body;
+    const { driverId, latitude, longitude } = req.body;
     
     if (!driverId || typeof latitude !== 'number' || typeof longitude !== 'number') {
         return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`driverId` (string), `latitude` (number), and `longitude` (number) are required.' });
@@ -78,7 +78,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     // Successfully updated, no body needed
-    return response.status(204).end();
+    return res.status(204).end();
 
   } catch (error: any) {
     console.error('[API /delivery-location] Fatal error:', error);

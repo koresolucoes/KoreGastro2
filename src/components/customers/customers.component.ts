@@ -179,7 +179,7 @@ export class CustomersComponent {
     }
 
     // Compose the full address string from the separate fields
-    const parts = [];
+    const parts: string[] = [];
     if (this.addressStreet().trim()) parts.push(this.addressStreet().trim());
     if (this.addressNumber().trim())
       parts.push(`Nº ${this.addressNumber().trim()}`);

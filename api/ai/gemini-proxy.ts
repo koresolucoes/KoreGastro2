@@ -4,22 +4,22 @@ import { GoogleGenAI, Type } from '@google/genai';
 // Aumenta o tempo de execução máximo para chamadas LLM que podem demorar
 export const maxDuration = 60;
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  if (request.method !== 'POST') {
-    response.setHeader('Allow', ['POST']);
-    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+export default async function handler(req: any, res: any) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.error('[Gemini Proxy] GEMINI_API_KEY not configured.');
-    return response.status(500).json({ error: 'Server configuration error.' });
+    return res.status(500).json({ error: 'Server configuration error.' });
   }
 
-  const { prompt, type } = request.body;
+  const { prompt, type } = req.body;
   
   if (!prompt) {
-    return response.status(400).json({ error: 'Missing prompt' });
+    return res.status(400).json({ error: 'Missing prompt' });
   }
 
   try {
@@ -52,17 +52,17 @@ export default async function handler(request: VercelRequest, response: VercelRe
         const jsonText = result.text;
         if (!jsonText) throw new Error('No text returned from Gemini API');
         
-        return response.status(200).json({ result: JSON.parse(jsonText) });
+        return res.status(200).json({ result: JSON.parse(jsonText) });
     } else {
         const result = await ai.models.generateContent({
             model: 'gemini-3.1-flash-lite-preview',
             contents: prompt,
         });
         
-        return response.status(200).json({ text: result.text });
+        return res.status(200).json({ text: result.text });
     }
   } catch (error: any) {
     console.error('[Gemini Proxy] Error calling Gemini API:', error);
-    return response.status(500).json({ error: error.message || 'Failed to communicate with AI service' });
+    return res.status(500).json({ error: error.message || 'Failed to communicate with AI service' });
   }
 }

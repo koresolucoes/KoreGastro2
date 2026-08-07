@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } 
 import { CommonModule, DatePipe } from '@angular/common';
 import { SettingsStateService } from '../../services/settings-state.service';
 import { ReservationDataService } from '../../services/reservation-data.service';
-import { Reservation, ReservationStatus } from '../../models/db.models';
+import { Reservation, ReservationStatus, Customer } from '../../models/db.models';
 import { NotificationService } from '../../services/notification.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { ReservationModalComponent } from './reservation-modal.component';
@@ -179,7 +179,7 @@ export class ReservationsComponent implements OnInit {
     if (status === 'CONFIRMED' && !reservation.customer_id) {
        let customerIdToLink = '';
        const existingCustomers = this.posState.customers();
-       let match = null;
+       let match: Customer | undefined = undefined;
        if (reservation.customer_phone) {
            const cleanPhone = reservation.customer_phone.replace(/\D/g, '');
            match = existingCustomers.find(c => c.phone?.replace(/\D/g, '') === cleanPhone);
@@ -245,7 +245,7 @@ export class ReservationsComponent implements OnInit {
     let finalCustomerId = reservation.customer_id;
     if (!finalCustomerId) {
        const existingCustomers = this.posState.customers();
-       let match = null;
+       let match: Customer | undefined = undefined;
        if (reservation.customer_phone) {
            const cleanPhone = reservation.customer_phone.replace(/\D/g, '');
            match = existingCustomers.find(c => c.phone?.replace(/\D/g, '') === cleanPhone);

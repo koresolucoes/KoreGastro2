@@ -191,7 +191,7 @@ export class RequisitionCreateComponent implements OnInit {
         unit: i.ingredient.unit
     }));
 
-    const targetUnit = this.isExternalRequest() ? this.selectedTargetUnitId() : undefined;
+    const targetUnit = (this.isExternalRequest() ? this.selectedTargetUnitId() : undefined) || undefined;
     const actualStationId = this.selectedStationId() === 'main' ? null : this.selectedStationId();
 
     const { success, error } = await this.requisitionService.createRequisition(

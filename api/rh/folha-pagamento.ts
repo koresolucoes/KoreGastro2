@@ -9,8 +9,8 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
-async function authenticateUser(request: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
-    const authHeader = request.headers.authorization;
+async function authenticateUser(req: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
@@ -50,34 +50,34 @@ function calculateDurationInMs(entry: TimeClockEntry): number {
     return Math.max(0, totalDuration - breakDuration);
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
-    if (request.method !== 'GET') {
-        response.setHeader('Allow', ['GET']);
-        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+    if (req.method !== 'GET') {
+        res.setHeader('Allow', ['GET']);
+        return res.status(405).json({ error: "An error occurred" });
     }
 
     try {
-        const restaurantId = request.query.restaurantId as string;
+        const restaurantId = req.query.restaurantId as string;
         if (!restaurantId) {
-            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
+            return res.status(400).json({ error: "An error occurred" });
         }
 
-        const auth = await authenticateUser(request, restaurantId);
+        const auth = await authenticateUser(req, restaurantId);
         if (!auth.success) {
-            return response.status(auth.status!).json({ error: auth.error });
+            return res.status(auth.status!).json({ error: auth.error });
         }
 
-        const { action, mes, ano } = request.query;
+        const { action, mes, ano } = req.query;
 
         if (action !== 'resumo' || !mes || !ano) {
-            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`action=resumo` });
+            return res.status(400).json({ error: "An error occurred" });
         }
         
         const yearNum = parseInt(ano as string);
@@ -197,10 +197,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
             empleados: payrollResults,
         };
 
-        return response.status(200).json(finalResponse);
+        return res.status(200).json(finalResponse);
 
     } catch (error: any) {
         console.error('[API /rh/folha-pagamento] Fatal error:', error);
-        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
+        return res.status(500).json({ error: "An error occurred" });
     }
 }

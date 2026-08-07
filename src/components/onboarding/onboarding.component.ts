@@ -285,7 +285,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       if (hall.success && hall.data?.id) {
           await this.posData.deleteTablesByHallId(hall.data.id);
           // add tables manually
-          const tables = [];
+          const tables: any[] = [];
           for (let i = 1; i <= this.data.tableCount; i++) {
               tables.push({
                  id: uuidv4(),

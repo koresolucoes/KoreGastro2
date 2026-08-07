@@ -9,8 +9,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
 // FIX RISCO A: Autenticação Segura via JWT
-async function authenticateUser(request: VercelRequest): Promise<{ userId?: string; error?: { message: string }; status?: number }> {
-    const authHeader = request.headers.authorization;
+async function authenticateUser(req: VercelRequest): Promise<{ userId?: string; error?: { message: string }; status?: number }> {
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
     }
@@ -60,51 +60,51 @@ function sanitizeFilename(filename: string): string {
     return `${sanitizedName}${extension}`;
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
 
     try {
         // 1. Autenticar Usuário via JWT
-        const { userId, error, status } = await authenticateUser(request);
+        const { userId, error, status } = await authenticateUser(req);
         if (error) {
-            return response.status(status!).json({ error });
+            return res.status(status!).json({ error });
         }
 
         // 2. Identificar Loja Alvo (Enviada no Body ou Query)
-        const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+        const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
         if (!restaurantId) {
-             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
+             return res.status(400).json({ error: "An error occurred" });
         }
 
         // 3. Verificar Permissão (Multi-Loja)
         const hasAccess = await checkStoreAccess(userId!, restaurantId);
         if (!hasAccess) {
-             return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'You do not have permission to access this store.' });
+             return res.status(403).json({ error: "An error occurred" });
         }
 
-        switch (request.method) {
+        switch (req.method) {
             case 'GET':
-                await handleGet(request, response, restaurantId);
+                await handleGet(req, res, restaurantId);
                 break;
             case 'POST':
-                await handlePost(request, response, restaurantId);
+                await handlePost(req, res, restaurantId);
                 break;
             case 'PATCH':
-                await handlePatch(request, response, restaurantId);
+                await handlePatch(req, res, restaurantId);
                 break;
             default:
-                response.setHeader('Allow', ['GET', 'POST', 'PATCH']);
-                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+                res.setHeader('Allow', ['GET', 'POST', 'PATCH']);
+                res.status(405).json({ error: "An error occurred" });
         }
     } catch (error: any) {
         console.error('[API /rh/ausencias] Fatal error:', error);
-        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
+        return res.status(500).json({ error: "An error occurred" });
     }
 }
 
@@ -131,12 +131,12 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
     const { employeeId, request_type, start_date, end_date, reason, attachment, attachment_filename } = req.body;
     
     if (!employeeId || !request_type || !start_date || !end_date) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` });
+        return res.status(400).json({ error: "An error occurred" });
     }
 
     const validTypes: LeaveRequestType[] = ['Férias', 'Folga', 'Falta Justificada', 'Atestado'];
     if (!validTypes.includes(request_type)) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Invalid \`request_type\`. Must be one of: ${validTypes.join(' });
+        return res.status(400).json({ error: "An error occurred" });
     }
 
     const { data: newRequest, error } = await supabase
@@ -184,7 +184,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
             
             finalRequest = updatedRequest;
         } catch (uploadError: any) {
-            console.error(`[API /rh/ausencias] Failed to upload attachment for leave request ${newRequest.id}:`, uploadError.message);
+            console.error(`[API /rh/ausencias] Failed to upload attachment for leave req ${newRequest.id}:`, uploadError.message);
         }
     }
     
@@ -196,12 +196,12 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
     const { status, manager_notes } = req.body;
 
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A leave request `id` is required in the query parameters.' });
+        return res.status(400).json({ error: "An error occurred" });
     }
 
     const validStatuses: LeaveRequestStatus[] = ['Aprovada', 'Rejeitada'];
     if (!status || !validStatuses.includes(status)) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `A valid 'status' ('Aprovada' or 'Rejeitada') is required in the request body.` });
+        return res.status(400).json({ error: "An error occurred" });
     }
 
     const updatePayload: { status: LeaveRequestStatus; manager_notes?: string | null, updated_at: string } = {
@@ -223,7 +223,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
     
     if (error) {
         if (error.code === 'PGRST116') {
-            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Leave request with id "${id}" not found.` });
+            return res.status(404).json({ error: "An error occurred" });
         }
         throw error;
     }

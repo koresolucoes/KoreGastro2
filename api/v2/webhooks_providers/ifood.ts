@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-import { getIFoodOrderDetails } from './ifood-webhook-lib/ifood-api.js';
-import { getRawBody, verifySignature, getOrderIdFromPayload } from './ifood-webhook-lib/ifood-utils.js';
+import { getIFoodOrderDetails } from '../../ifood-webhook-lib/ifood-api.js';
+import { getRawBody, verifySignature, getOrderIdFromPayload } from '../../ifood-webhook-lib/ifood-utils.js';
 // FIX: Functions were missing from db-helpers. They have now been added.
-import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb, confirmOrderInDb, dispatchOrderInDb, concludeOrderInDb, updateOrderLogisticsMetadata } from './ifood-webhook-lib/db-helpers.js';
+import { logWebhookEvent, updateLogStatus, findUserByMerchantId, processPlacedOrder, cancelOrderInDb, confirmOrderInDb, dispatchOrderInDb, concludeOrderInDb, updateOrderLogisticsMetadata } from '../../ifood-webhook-lib/db-helpers.js';
 
 export const config = {
   api: {
@@ -44,30 +44,30 @@ const LOGISTICS_EVENTS = new Set([
 ]);
 
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
+export default async function handler(req: any, res: any) {
   // Set CORS headers for all responses
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   // iFood webhook requires this custom header
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-ifood-signature');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-ifood-signature');
 
-  // Handle preflight OPTIONS request
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
+  // Handle preflight OPTIONS req
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
   
-  if (request.method !== 'POST') {
-    return response.status(405).send({ error: 'Method Not Allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).send({ error: 'Method Not Allowed' });
   }
 
   const ifoodSecret = process.env.IFOOD_CLIENT_SECRET;
   if (!ifoodSecret) {
     console.error('IFOOD_CLIENT_SECRET is not set.');
-    return response.status(500).send({ error: 'Server configuration error.' });
+    return res.status(500).send({ error: 'Server configuration error.' });
   }
   
   let logId: string | null = null;
-  const rawBody = await getRawBody(request);
+  const rawBody = await getRawBody(req);
   let payload: any;
 
   try {
@@ -79,14 +79,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     if (logResult.duplicate) {
       // Event already processed, just acknowledge it to iFood so they stop sending it
-      return response.status(200).send();
+      return res.status(200).send();
     }
 
-    const signature = request.headers['x-ifood-signature'] as string;
+    const signature = req.headers['x-ifood-signature'] as string;
     if (signature && !verifySignature(signature, rawBody, ifoodSecret)) {
       console.error('[Webhook] Invalid signature received. Returning 401 Unauthorized.');
       if (logId) await updateLogStatus(supabase, logId, 'ERROR_INVALID_SIGNATURE');
-      return response.status(401).send({ error: 'Invalid signature.' });
+      return res.status(401).send({ error: 'Invalid signature.' });
     } else if (!signature) {
        console.log('[Webhook] No signature received.');
     }
@@ -106,32 +106,32 @@ export default async function handler(request: VercelRequest, response: VercelRe
           console.error('[Webhook] DB error on KEEPALIVE merchant check:', dbError);
           if (logId) await updateLogStatus(supabase, logId, 'ERROR_KEEPALIVE_DB_CHECK', dbError.message);
           // Respond with 202 but an empty list to be safe.
-          return response.status(202).json({ merchantIds: [] });
+          return res.status(202).json({ merchantIds: [] });
         }
         
         const onlineMerchantIds = (activeMerchants || []).map(m => m.ifood_merchant_id);
         console.log(`[Webhook] Responding as online for merchants:`, onlineMerchantIds);
         if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_KEEPALIVE_MERCHANTS');
-        return response.status(202).json({ merchantIds: onlineMerchantIds });
+        return res.status(202).json({ merchantIds: onlineMerchantIds });
 
       } else {
         // Per-application heartbeat
         console.log('[Webhook] KEEPALIVE event for application.');
         if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_KEEPALIVE_APP');
-        return response.status(202).send({ message: 'Accepted' });
+        return res.status(202).send({ message: 'Accepted' });
       }
     }
 
     const merchantId = payload.merchant?.id || payload.merchantId;
     if (!merchantId) {
        if (logId) await updateLogStatus(supabase, logId, 'ERROR_NO_MERCHANT_ID');
-       return response.status(400).send({ error: 'Merchant ID missing.' });
+       return res.status(400).send({ error: 'Merchant ID missing.' });
     }
 
     const userId = await findUserByMerchantId(supabase, merchantId);
     if (!userId) {
         if (logId) await updateLogStatus(supabase, logId, 'ERROR_MERCHANT_NOT_FOUND', `Merchant ID ${merchantId} not found.`);
-        return response.status(404).send({ error: 'Merchant not found' });
+        return res.status(404).send({ error: 'Merchant not found' });
     }
     if(logId) await updateLogStatus(supabase, logId, 'PROCESSING', undefined, undefined, userId);
     
@@ -149,7 +149,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                   if (logId) await updateLogStatus(supabase, logId, 'FETCHED_DETAILS', undefined, fullOrderPayload);
               } catch (fetchError: any) {
                   if (logId) await updateLogStatus(supabase, logId, 'ERROR_FETCH_DETAILS', fetchError.message);
-                  return response.status(202).send({ message: 'Accepted, but failed to fetch details.' });
+                  return res.status(202).send({ message: 'Accepted, but failed to fetch details.' });
               }
           }
           await processPlacedOrder(supabase, userId, fullOrderPayload, logId);
@@ -276,7 +276,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_UNHANDLED_EVENT');
     }
 
-    return response.status(202).send({ message: 'Event received successfully.' });
+    return res.status(202).send({ message: 'Event received successfully.' });
 
   } catch (error: any) {
     console.error('Error processing webhook:', error);
@@ -284,8 +284,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if (logId) await updateLogStatus(supabase, logId, 'ERROR_FATAL', errorMessage);
     
     if (error instanceof SyntaxError) {
-        return response.status(400).send({ error: 'Invalid JSON payload.' });
+        return res.status(400).send({ error: 'Invalid JSON payload.' });
     }
-    return response.status(500).send({ error: 'Internal Server Error' });
+    return res.status(500).send({ error: 'Internal Server Error' });
   }
 }

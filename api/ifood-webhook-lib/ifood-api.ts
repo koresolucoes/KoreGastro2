@@ -179,7 +179,7 @@ export async function getIFoodAccessToken(tenantId?: string): Promise<string> {
 }
 
 /**
- * Handles the OAuth flow and makes a signed request to the iFood Merchant API.
+ * Handles the OAuth flow and makes a signed req to the iFood Merchant API.
  */
 async function makeIFoodApiCall(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET', body: any = null, options: { isImageRequest?: boolean, tenantId?: string } = {}) {
   const fullUrl = endpoint.startsWith('http') ? endpoint : `${iFoodApiBaseUrl}${endpoint}`;

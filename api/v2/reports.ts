@@ -4,12 +4,12 @@ import { withAuth, supabase } from '../utils/api-handler.js';
 
 export const maxDuration = 300;
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    if (request.method === 'GET') {
-        await handleGet(request, response, restaurantId);
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+    if (req.method === 'GET') {
+        await handleGet(req, res, restaurantId);
     } else {
-        response.setHeader('Allow', ['GET']);
-        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+        res.setHeader('Allow', ['GET']);
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 });
 

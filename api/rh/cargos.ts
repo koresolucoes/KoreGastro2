@@ -7,8 +7,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
 // Helper para validar sessão do usuário e permissão na loja
-async function authenticateUser(request: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
-    const authHeader = request.headers.authorization;
+async function authenticateUser(req: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
@@ -38,38 +38,38 @@ async function authenticateUser(request: VercelRequest, restaurantId: string): P
     return { success: true };
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
 
     try {
         // 1. Obter ID da loja
-        const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+        const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
         if (!restaurantId) {
             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
         }
 
         // 2. Autenticação Segura
-        const auth = await authenticateUser(request, restaurantId);
+        const auth = await authenticateUser(req, restaurantId);
         if (!auth.success) {
-            return response.status(auth.status!).json({ error: auth.error });
+            return res.status(auth.status!).json({ error: auth.error });
         }
 
-        switch (request.method) {
+        switch (req.method) {
             case 'GET':
-                await handleGet(request, response, restaurantId);
+                await handleGet(req, res, restaurantId);
                 break;
             case 'PUT':
-                await handlePut(request, response, restaurantId);
+                await handlePut(req, res, restaurantId);
                 break;
             default:
-                response.setHeader('Allow', ['GET', 'PUT']);
-                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+                res.setHeader('Allow', ['GET', 'PUT']);
+                res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
         }
     } catch (error: any) {
         console.error('[API /rh/cargos] Fatal error:', error);
@@ -119,5 +119,5 @@ async function handlePut(req: VercelRequest, res: VercelResponse, restaurantId: 
         return res.status(200).json({ success: true, message: "Permissions updated." });
     }
     
-    return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request for PUT method.' });
+    return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid req for PUT method.' });
 }

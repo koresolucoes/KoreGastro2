@@ -3,7 +3,7 @@ import { withAuth, supabase } from '../utils/api-handler.js';
 import { v4 as uuidv4 } from 'uuid';
 import { triggerWebhook } from '../webhook-emitter.js';
 
-export default withAuth(async function handler(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
         return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });

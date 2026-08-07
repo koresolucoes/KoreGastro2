@@ -2,20 +2,20 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    switch (request.method) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+    switch (req.method) {
         case 'GET':
-            await handleGet(request, response, restaurantId);
+            await handleGet(req, res, restaurantId);
             break;
         case 'POST':
-            await handlePost(request, response, restaurantId);
+            await handlePost(req, res, restaurantId);
             break;
         case 'PATCH':
-            await handlePatch(request, response, restaurantId);
+            await handlePatch(req, res, restaurantId);
             break;
         default:
-            response.setHeader('Allow', ['GET', 'POST', 'PATCH']);
-            res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+            res.setHeader('Allow', ['GET', 'POST', 'PATCH']);
+            res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 });
 

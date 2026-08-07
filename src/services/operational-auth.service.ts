@@ -258,7 +258,7 @@ export class OperationalAuthService {
              return { success: false, error: new Error('Distância inválida.') };
         }
       } catch (locationError: unknown) {
-        this.notificationService.show(locationError.message, 'error', 6000);
+        this.notificationService.show((locationError as any).message, 'error', 6000);
         return { success: false, error: locationError };
       }
     } else {
@@ -285,11 +285,11 @@ export class OperationalAuthService {
 
     if (error) {
        // Check for custom error from RLS policy
-       if (error.message.includes('distancia_invalida')) {
+       if ((error as any).message.includes('distancia_invalida')) {
         this.notificationService.show('Você está muito longe do restaurante para bater o ponto.', 'error');
         return { success: false, error: { message: 'Distância inválida.' } };
       }
-       if (error.message.includes('localizacao_nao_configurada')) {
+       if ((error as any).message.includes('localizacao_nao_configurada')) {
         this.notificationService.show('A localização do restaurante não foi configurada pelo gestor.', 'error');
         return { success: false, error: { message: 'Localização não configurada.' } };
       }

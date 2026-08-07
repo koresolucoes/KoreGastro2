@@ -9,24 +9,24 @@ const hallSchema = z.object({
 });
 
 // Main handler function
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
     // Method Routing
-    switch (request.method) {
+    switch (req.method) {
       case 'GET':
-        await handleGet(request, response, restaurantId);
+        await handleGet(req, res, restaurantId);
         break;
       case 'POST':
-        await handlePost(request, response, restaurantId);
+        await handlePost(req, res, restaurantId);
         break;
       case 'PATCH':
-        await handlePatch(request, response, restaurantId);
+        await handlePatch(req, res, restaurantId);
         break;
       case 'DELETE':
-        await handleDelete(request, response, restaurantId);
+        await handleDelete(req, res, restaurantId);
         break;
       default:
-        response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+        res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 });
 
@@ -78,7 +78,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
   const parsedBody = hallSchema.safeParse(req.body);
   if (!parsedBody.success) {
-      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid req body' });
   }
 
   const { name } = parsedBody.data;
@@ -103,7 +103,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 
     const parsedBody = hallSchema.safeParse(req.body);
     if (!parsedBody.success) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid req body' });
     }
 
     const { name } = parsedBody.data;

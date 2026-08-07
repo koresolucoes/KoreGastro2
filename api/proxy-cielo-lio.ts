@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   // Set CORS headers for all responses
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Client-Id, Access-Token, Merchant-Id, Is-Sandbox');
 
-  // Handle preflight OPTIONS request
+  // Handle preflight OPTIONS req
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -86,11 +86,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const response = await fetch(targetUrl, fetchOptions);
-    const contentType = response.headers.get('content-type');
+    const fetchRes = await fetch(targetUrl, fetchOptions);
+    const contentType = res.headers.get('content-type');
     
     let responseData;
-    const textData = await response.text();
+    const textData = await fetchRes.text();
     if (textData) {
        try {
            responseData = JSON.parse(textData);
@@ -101,11 +101,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        responseData = null;
     }
 
-    if (!response.ok) {
-       console.error(`Cielo proxy failing ${response.status} ${targetUrl}`, responseData);
+    if (!fetchRes.ok) {
+       console.error(`Cielo proxy failing ${fetchRes.status} ${targetUrl}`, responseData);
     }
 
-    res.status(response.status).json(responseData);
+    res.status(fetchRes.status).json(responseData);
   } catch (error: any) {
     console.error('Cielo proxy error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });

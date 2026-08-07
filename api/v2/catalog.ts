@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
-export default withAuth(async function handler(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
     if (req.method !== 'GET') {
         res.setHeader('Allow', ['GET']);
         return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });

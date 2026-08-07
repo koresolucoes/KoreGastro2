@@ -11,27 +11,27 @@ const ALL_WEBHOOK_EVENTS: readonly WebhookEvent[] = [
   'customer.created'
 ];
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    switch (request.method) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+    switch (req.method) {
         case 'GET':
-            await handleGet(request, response, restaurantId);
+            await handleGet(req, res, restaurantId);
             break;
         case 'POST':
-            await handlePost(request, response, restaurantId);
+            await handlePost(req, res, restaurantId);
             break;
         case 'PATCH':
-            await handlePatch(request, response, restaurantId);
+            await handlePatch(req, res, restaurantId);
             break;
         case 'DELETE':
-            await handleDelete(request, response, restaurantId);
+            await handleDelete(req, res, restaurantId);
             break;
         default:
-            response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-            res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+            res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+            res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 });
 
-async function handleGet(request: VercelRequest, response: VercelResponse, restaurantId: string) {
+async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { data, error } = await supabase
         .from('webhooks')
         .select('id, url, events, is_active, created_at')
@@ -39,7 +39,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse, resta
 
     if (error) throw error;
     
-    return response.status(200).json(data || []);
+    return res.status(200).json(data || []);
 }
 
 const postWebhookSchema = z.object({
@@ -47,8 +47,8 @@ const postWebhookSchema = z.object({
     events: z.array(z.enum(ALL_WEBHOOK_EVENTS as any)).min(1)
 });
 
-async function handlePost(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    const parsed = postWebhookSchema.safeParse(request.body);
+async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const parsed = postWebhookSchema.safeParse(req.body);
     if (!parsed.success) {
         return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
@@ -70,7 +70,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse, rest
 
     if (error) throw error;
 
-    return response.status(201).json(newWebhook);
+    return res.status(201).json(newWebhook);
 }
 
 const patchWebhookSchema = z.object({
@@ -81,13 +81,13 @@ const patchWebhookSchema = z.object({
     message: "No fields to update provided."
 });
 
-async function handlePatch(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    const { id } = request.query;
+async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const { id } = req.query;
     if (!id || typeof id !== 'string') {
         return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A webhook `id` is required in the query parameters.' });
     }
 
-    const parsed = patchWebhookSchema.safeParse(request.body);
+    const parsed = patchWebhookSchema.safeParse(req.body);
     if (!parsed.success) {
         return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
     }
@@ -105,11 +105,11 @@ async function handlePatch(request: VercelRequest, response: VercelResponse, res
         throw error;
     }
 
-    return response.status(200).json(data);
+    return res.status(200).json(data);
 }
 
-async function handleDelete(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    const { id } = request.query;
+async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
+    const { id } = req.query;
     if (!id || typeof id !== 'string') {
         return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'A webhook `id` is required in the query parameters.' });
     }
@@ -122,5 +122,5 @@ async function handleDelete(request: VercelRequest, response: VercelResponse, re
 
     if (error) throw error;
 
-    return response.status(204).end();
+    return res.status(204).end();
 }

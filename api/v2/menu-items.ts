@@ -11,17 +11,17 @@ const menuItemPatchSchema = z.object({
   message: "At least one field to update (`price` or `is_available`) is required."
 });
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    switch (request.method) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+    switch (req.method) {
       case 'GET':
-        await handleGet(request, response, restaurantId);
+        await handleGet(req, res, restaurantId);
         break;
       case 'PATCH':
-        await handlePatch(request, response, restaurantId);
+        await handlePatch(req, res, restaurantId);
         break;
       default:
-        response.setHeader('Allow', ['GET', 'PATCH']);
-        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+        res.setHeader('Allow', ['GET', 'PATCH']);
+        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 });
 
@@ -63,7 +63,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
     
     const parsedBody = menuItemPatchSchema.safeParse(req.body);
     if (!parsedBody.success) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid req body' });
     }
 
     const updatePayload = parsedBody.data;

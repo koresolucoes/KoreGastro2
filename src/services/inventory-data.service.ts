@@ -166,7 +166,7 @@ export class InventoryDataService {
           station_id: ingredient.station_id,
           name: 'Entrega',
           display_order: 0,
-          created_at: this.ntpService.now().toISOString(),
+          created_at: new Date().toISOString(),
           user_id: userId!,
       };
       
@@ -255,7 +255,7 @@ export class InventoryDataService {
         const currentVersion = originalIngredient.version || 1;
         
         const { data: updatedData, error: fallbackError } = await supabase.from('ingredients')
-                                          .update({ stock: newStock, updated_at: this.ntpService.now().toISOString(), version: currentVersion + 1 })
+                                          .update({ stock: newStock, updated_at: new Date().toISOString(), version: currentVersion + 1 })
                                           .eq('id', ingredientId)
                                           .eq('user_id', userId)
                                           .eq('version', currentVersion)
@@ -379,7 +379,7 @@ export class InventoryDataService {
                   await supabase.from('station_stocks')
                       .update({ 
                           quantity: newStationQty,
-                          updated_at: this.ntpService.now().toISOString()
+                          updated_at: new Date().toISOString()
                       })
                       .eq('id', stationStock.id);
                   

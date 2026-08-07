@@ -134,7 +134,7 @@ export class ScheduleDataService {
           const newStart = new Date(oldStart);
           newStart.setDate(newStart.getDate() + 7);
           
-          let newEnd = null;
+          let newEnd: Date | null = null;
           if (oldEnd) {
               newEnd = new Date(oldEnd);
               newEnd.setDate(newEnd.getDate() + 7);

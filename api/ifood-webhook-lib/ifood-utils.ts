@@ -3,9 +3,9 @@ import { createHmac } from 'crypto';
 import { Buffer } from 'buffer';
 
 /**
- * Asynchronously reads the raw body from a Vercel request stream.
+ * Asynchronously reads the raw body from a Vercel req stream.
  * @param req The VercelRequest object.
- * @returns A Buffer containing the raw request body.
+ * @returns A Buffer containing the raw req body.
  */
 export async function getRawBody(req: VercelRequest): Promise<Buffer> {
   const chunks: Buffer[] = [];
@@ -18,7 +18,7 @@ export async function getRawBody(req: VercelRequest): Promise<Buffer> {
 /**
  * Verifies the iFood webhook signature against the computed HMAC-SHA256 hash.
  * @param signature The signature from the 'x-ifood-signature' header.
- * @param body The raw request body as a Buffer.
+ * @param body The raw req body as a Buffer.
  * @param secret The iFood client secret.
  * @returns True if the signature is valid, false otherwise.
  */

@@ -12,7 +12,7 @@ function generatePontoSignature(data: any): { hash: string, signature: string | 
     const dataString = JSON.stringify(data);
     const hash = crypto.createHash('sha256').update(dataString).digest('hex');
     
-    let signature = null;
+    let signature: string | null = null;
     const privateKeyStr = process.env.COMPANY_CERT_PRIVATE_KEY;
     
     if (privateKeyStr) {
@@ -46,13 +46,13 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
     return R * c; // in metres
 }
 
-async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
-    const authHeader = request.headers.authorization;
+async function authenticateAndGetRestaurantId(req: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
     }
     const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+    const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
     if (!restaurantId) {
         return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
     }
@@ -70,27 +70,27 @@ async function authenticateAndGetRestaurantId(request: VercelRequest): Promise<{
     return { restaurantId };
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
 
-    if (request.method !== 'POST') {
-        response.setHeader('Allow', ['POST']);
-        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+    if (req.method !== 'POST') {
+        res.setHeader('Allow', ['POST']);
+        return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 
     try {
-        const { restaurantId, error, status } = await authenticateAndGetRestaurantId(request);
+        const { restaurantId, error, status } = await authenticateAndGetRestaurantId(req);
         if (error) {
-            return response.status(status!).json({ error });
+            return res.status(status!).json({ error });
         }
 
-        const { employeeId, pin, latitude, longitude } = request.body;
+        const { employeeId, pin, latitude, longitude } = req.body;
         if (!employeeId || !pin) {
             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` and `pin` are required.' });
         }
@@ -160,7 +160,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
             }).select('id').single();
             if (insertError) throw insertError;
             await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId);
-            return response.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name, signatureData: sigData });
+            return res.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name, signatureData: sigData });
         } else { // Interacting with an active shift
             const { data: activeEntry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', employee.current_clock_in_id).single();
             if (entryError || !activeEntry) {
@@ -175,18 +175,18 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 const sigData = generateReceipt('break_start');
                 currentSignatures.break_start = sigData;
                 await supabase.from('time_clock_entries').update({ break_start_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
-                return response.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name, signatureData: sigData });
+                return res.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name, signatureData: sigData });
             } else if (!activeEntry.break_end_time) { // Ending break
                 const sigData = generateReceipt('break_end');
                 currentSignatures.break_end = sigData;
                 await supabase.from('time_clock_entries').update({ break_end_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
-                return response.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name, signatureData: sigData });
+                return res.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name, signatureData: sigData });
             } else { // Clocking out
                 const sigData = generateReceipt('clock_out');
                 currentSignatures.clock_out = sigData;
                 await supabase.from('time_clock_entries').update({ clock_out_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
                 await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
-                return response.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name, signatureData: sigData });
+                return res.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name, signatureData: sigData });
             }
         }
     } catch (error: any) {

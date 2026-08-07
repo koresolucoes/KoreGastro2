@@ -393,7 +393,7 @@ export class DeliveryOrderModalComponent {
   }
 
   async calculateFreightFromFields() {
-    let addressParts = [];
+    let addressParts: string[] = [];
     if (this.street()) {
       addressParts.push(
         `${this.street()}${this.addressNumber() ? ", " + this.addressNumber() : ""}`,
@@ -423,7 +423,7 @@ export class DeliveryOrderModalComponent {
     }
     this.isSaving.set(true);
 
-    let addressParts = [];
+    let addressParts: string[] = [];
     if (this.street()) addressParts.push(`${this.street()}`);
     if (this.addressNumber()) addressParts.push(`Nº ${this.addressNumber()}`);
     if (this.complement()) addressParts.push(`Compl: ${this.complement()}`);

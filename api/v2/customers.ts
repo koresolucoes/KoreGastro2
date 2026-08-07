@@ -10,32 +10,32 @@ import { triggerWebhook } from '../webhook-emitter.js';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
 const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Window);
+const purify = DOMPurify(window as any);
 
 const PUBLIC_CUSTOMER_COLUMNS = 'id, name, phone, email, cpf, notes, loyalty_points, user_id, created_at, address, latitude, longitude';
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-    if (request.method === 'POST' && request.query.action === 'login') {
-        await handleLogin(request, response, restaurantId);
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+    if (req.method === 'POST' && req.query.action === 'login') {
+        await handleLogin(req, res, restaurantId);
         return;
     }
 
-    switch (request.method) {
+    switch (req.method) {
       case 'GET':
-        await handleGet(request, response, restaurantId);
+        await handleGet(req, res, restaurantId);
         break;
       case 'POST':
-        await handlePost(request, response, restaurantId);
+        await handlePost(req, res, restaurantId);
         break;
       case 'PATCH':
-        await handlePatch(request, response, restaurantId);
+        await handlePatch(req, res, restaurantId);
         break;
       case 'DELETE':
-        await handleDelete(request, response, restaurantId);
+        await handleDelete(req, res, restaurantId);
         break;
       default:
-        response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+        res.status(405).json({ error: { message: `Method ${req.method} Not Allowed` } });
     }
 });
 
@@ -89,8 +89,8 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
   const body = parsed.data;
 
   if (body.cpf || body.phone) {
-    let existingCpf = null;
-    let existingPhone = null;
+    let existingCpf: { id: any } | null = null;
+    let existingPhone: { id: any } | null = null;
     
     if (body.cpf) {
         const res = await supabase.from('customers').select('id').eq('user_id', restaurantId).eq('cpf', body.cpf).limit(1).maybeSingle();

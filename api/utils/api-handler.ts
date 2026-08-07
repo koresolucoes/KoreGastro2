@@ -18,14 +18,36 @@ export const supabase = createClient(
 // Define the type for our business logic handlers
 export type ApiHandler = (req: VercelRequest, res: VercelResponse, restaurantId: string) => Promise<VercelResponse | void>;
 
+// Rate Limiting Storage (Sliding Window in-memory)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 120; // 120 requests per minute per restaurant/key
+
+function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetMs: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - 1, resetMs: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (entry.count >= MAX_REQUESTS_PER_WINDOW) {
+    return { allowed: false, remaining: 0, resetMs: entry.resetTime - now };
+  }
+
+  entry.count += 1;
+  return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - entry.count, resetMs: entry.resetTime - now };
+}
+
 /**
- * Middleware to handle CORS, Authentication, Correlation IDs, Latency Metrics, and Global Error Catching.
+ * Middleware to handle CORS, Authentication, Rate Limiting, Correlation IDs, Latency Metrics, and Global Error Catching.
  * Reduces boilerplate in all API routes.
  */
 export function withAuth(handler: ApiHandler) {
     return async (req: VercelRequest, res: VercelResponse) => {
         const startTime = Date.now();
-        const traceId = (req.headers['x-request-id'] || req.headers['x-trace-id'] || ('trace_' + Math.random().toString(36).substring(2, 10))) as string;
+        const traceId = (req.headers['x-req-id'] || req.headers['x-trace-id'] || ('trace_' + Math.random().toString(36).substring(2, 10))) as string;
         
         // 1. CORS & Observability Headers
         const allowedOrigin = process.env.FRONTEND_URL || 'https://chefos.com.br';
@@ -34,12 +56,32 @@ export function withAuth(handler: ApiHandler) {
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Trace-ID');
         res.setHeader('X-Trace-ID', traceId);
 
-        // 2. Handle Preflight OPTIONS request
+        // 2. Handle Preflight OPTIONS req
         if (req.method === 'OPTIONS') {
             return res.status(200).end();
         }
 
         let restaurantId = (req.query.restaurantId || req.body?.restaurantId) as string || 'unknown';
+
+        // Rate limit check based on IP / client header or restaurantId
+        const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+        const limitKey = `${clientIp}_${restaurantId}`;
+        const { allowed, remaining, resetMs } = checkRateLimit(limitKey);
+
+        res.setHeader('X-RateLimit-Limit', MAX_REQUESTS_PER_WINDOW);
+        res.setHeader('X-RateLimit-Remaining', remaining);
+        res.setHeader('X-RateLimit-Reset', Math.ceil(resetMs / 1000));
+
+        if (!allowed) {
+            res.setHeader('Retry-After', Math.ceil(resetMs / 1000));
+            Logger.warn('Rate limit exceeded', { endpoint: req.url, clientIp, restaurantId, traceId });
+            return res.status(429).json({
+                type: "about:blank",
+                title: "Too Many Requests",
+                status: 429,
+                detail: 'Rate limit exceeded. Please try again later.'
+            });
+        }
 
         try {
             // 3. Authentication

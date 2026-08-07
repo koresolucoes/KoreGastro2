@@ -654,6 +654,7 @@ export interface CompanyProfile {
   latitude: number | null;
   longitude: number | null;
   time_clock_radius: number | null;
+  service_fee_percentage?: number | null;
   focusnfe_token?: string | null;
   focusnfe_cert_valid_until?: string | null;
   mp_access_token?: string | null;

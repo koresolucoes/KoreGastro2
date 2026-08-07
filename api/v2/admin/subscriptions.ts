@@ -19,7 +19,7 @@ const supabaseAdmin = createClient(
   }
 );
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { userId, status, planId, currentPeriodEnd } = req.body;
 
     if (!userId || !status) {
-      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Missing required fields: userId });
+      return res.status(400).json({ error: "An error occurred" });
     }
 
     // Check if subscription exists

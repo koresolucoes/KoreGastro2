@@ -531,7 +531,7 @@ export class DashboardComponent implements OnInit {
     return this.dashboardState.performanceCompletedOrders().flatMap(o => o.order_items).reduce((sum, item) => {
       if (item.status === 'CANCELADO') return sum;
       // AUDIT: Usa unit_cost salvo na venda (furo de precisão temporal corrigido)
-      const cost = item.unit_cost && item.unit_cost > 0 ? item.unit_cost : (recipeCosts.get(item.recipe_id)?.totalCost ?? 0);
+      const cost = item.unit_cost && item.unit_cost > 0 ? item.unit_cost : (item.recipe_id ? (recipeCosts.get(item.recipe_id)?.totalCost ?? 0) : 0);
       return sum + (cost * item.quantity);
     }, 0);
   });

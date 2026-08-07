@@ -13,21 +13,21 @@ const supabase = createClient(
   supabaseKey || 'placeholder-key'
 );
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
 
     if (!clientId || !clientSecret) {
-        return response.status(500).json({ message: 'iFood credentials not configured on the server.' });
+        return res.status(500).json({ message: 'iFood credentials not configured on the server.' });
     }
 
     try {
-        const { action } = request.body || request.query;
+        const { action } = req.body || req.query;
 
         if (action === 'clientCredentials') {
             const params = new URLSearchParams();
@@ -43,12 +43,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
             if (!iFoodRes.ok) {
                 const err = await iFoodRes.text();
-                return response.status(iFoodRes.status).json({ message: `Failed to get token via client_credentials: ${err}` });
+                return res.status(iFoodRes.status).json({ message: `Failed to get token via client_credentials: ${err}` });
             }
 
             const tokenData = await iFoodRes.json();
             
-            let tenantId = request.body.tenantId;
+            let tenantId = req.body.tenantId;
 
             if (tokenData.accessToken) {
                 try {
@@ -64,7 +64,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 }
             }
             
-            // If we don't have a specific tenantId from token or request body, fetch merchants
+            // If we don't have a specific tenantId from token or req body, fetch merchants
             if (!tenantId) {
                 try {
                     const merchantRes = await fetch(`${iFoodApiBaseUrl}/merchant/v1.0/merchants`, {
@@ -93,7 +93,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 updated_at: new Date().toISOString()
             });
 
-            return response.status(200).json({ success: true, tenantId, message: 'Autenticado via Client Credentials' });
+            return res.status(200).json({ success: true, tenantId, message: 'Autenticado via Client Credentials' });
         }
 
         if (action === 'userCode') {
@@ -109,19 +109,19 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
             if (!iFoodRes.ok) {
                 const err = await iFoodRes.text();
-                return response.status(iFoodRes.status).json({ message: `Failed to get userCode: ${err}` });
+                return res.status(iFoodRes.status).json({ message: `Failed to get userCode: ${err}` });
             }
 
             const data = await iFoodRes.json();
-            return response.status(200).json(data);
+            return res.status(200).json(data);
         }
 
         if (action === 'token') {
             // Step 2: Exchange authorizationCode for token
-            const { authorizationCode, authorizationCodeVerifier } = request.body;
+            const { authorizationCode, authorizationCodeVerifier } = req.body;
 
             if (!authorizationCode || !authorizationCodeVerifier) {
-                return response.status(400).json({ message: 'Missing required parameters.' });
+                return res.status(400).json({ message: 'Missing required parameters.' });
             }
 
             const params = new URLSearchParams();
@@ -139,12 +139,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
             if (!iFoodRes.ok) {
                 const err = await iFoodRes.text();
-                return response.status(iFoodRes.status).json({ message: `Failed to get token: ${err}` });
+                return res.status(iFoodRes.status).json({ message: `Failed to get token: ${err}` });
             }
 
             const tokenData = await iFoodRes.json();
             
-            let tenantId = request.body.tenantId;
+            let tenantId = req.body.tenantId;
 
             // Extract tenantId from JWT if possible
             if (tokenData.accessToken) {
@@ -200,13 +200,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 });
             }
 
-            return response.status(200).json({ success: true, tenantId });
+            return res.status(200).json({ success: true, tenantId });
         }
 
-        return response.status(400).json({ message: 'Invalid action.' });
+        return res.status(400).json({ message: 'Invalid action.' });
 
     } catch (error: any) {
         console.error('[iFood OAuth]', error);
-        return response.status(500).json({ message: error.message });
+        return res.status(500).json({ message: error.message });
     }
 }

@@ -2,39 +2,39 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { sendIFoodOrderAction, sendIFoodLogisticsAction, sendIFoodDisputeAction, sendIFoodDisputeAlternativeAction, getIFoodImage } from './ifood-webhook-lib/ifood-api.js';
 import { Buffer } from 'buffer';
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
+export default async function handler(req: any, res: any) {
   // Set CORS headers for all responses
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight OPTIONS request
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
+  // Handle preflight OPTIONS req
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
 
-  if (request.method !== 'POST') {
-    return response.status(405).send({ message: 'Only POST requests are allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).send({ message: 'Only POST requests are allowed' });
   }
   
-  console.log('[Proxy] Received iFood action request from frontend.');
+  console.log('[Proxy] Received iFood action req from frontend.');
 
   try {
-    const { action, orderId, details, isLogistics, isDispute, disputeId, imageUrl, merchantId } = request.body;
+    const { action, orderId, details, isLogistics, isDispute, disputeId, imageUrl, merchantId } = req.body;
 
     // --- Image Request Logic ---
     if (action === 'getEvidenceImage') {
-        if (!imageUrl) return response.status(400).json({ message: 'Missing "imageUrl" for image request' });
+        if (!imageUrl) return res.status(400).json({ message: 'Missing "imageUrl" for image req' });
         
         try {
-            console.log(`[Proxy] Forwarding IMAGE request for URL: ${imageUrl}`);
+            console.log(`[Proxy] Forwarding IMAGE req for URL: ${imageUrl}`);
             const { imageBuffer, contentType } = await getIFoodImage(imageUrl, merchantId);
             console.log(`[Proxy] Successfully fetched image. Converting to base64.`);
             
             const base64Image = Buffer.from(imageBuffer).toString('base64');
             
             console.log(`[Proxy] Returning base64 image with content type: ${contentType}`);
-            return response.status(200).json({ base64Image, contentType });
+            return res.status(200).json({ base64Image, contentType });
         } catch (error: any) {
             console.error(`[Proxy] Failed to fetch image from iFood: ${error.message}`);
             // Let the main handler catch and respond with 500
@@ -43,12 +43,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     if (!action) {
-      return response.status(400).json({ message: 'Missing "action" in request body' });
+      return res.status(400).json({ message: 'Missing "action" in req body' });
     }
     
     // --- Dispute/Handshake Logic ---
     if (isDispute) {
-        if (!disputeId) return response.status(400).json({ message: 'Missing "disputeId" for dispute action' });
+        if (!disputeId) return res.status(400).json({ message: 'Missing "disputeId" for dispute action' });
         
         try {
             let apiResponse;
@@ -65,17 +65,17 @@ export default async function handler(request: VercelRequest, response: VercelRe
                 case 'proposeAlternative':
                     const { alternativeId, body } = details;
                     if (!alternativeId || !body) {
-                        return response.status(400).json({ message: 'Missing "alternativeId" or "body" for proposing an alternative.' });
+                        return res.status(400).json({ message: 'Missing "alternativeId" or "body" for proposing an alternative.' });
                     }
                     console.log(`[Proxy] Forwarding DISPUTE action 'proposeAlternative' for dispute '${disputeId}'.`);
                     apiResponse = await sendIFoodDisputeAlternativeAction(disputeId, alternativeId, body, merchantId);
                     break;
                 default:
-                    return response.status(400).json({ message: `Invalid dispute action provided: ${action}` });
+                    return res.status(400).json({ message: `Invalid dispute action provided: ${action}` });
             }
             console.log(`[Proxy] Dispute action '${action}' for dispute '${disputeId}' processed successfully.`);
             // iFood often returns 201 for these actions
-            return response.status(201).json(apiResponse || { message: 'Dispute action processed successfully by iFood.' });
+            return res.status(201).json(apiResponse || { message: 'Dispute action processed successfully by iFood.' });
         } catch (error: any) {
             throw error; // Let the main handler catch and respond
         }
@@ -83,16 +83,16 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     // --- Logistics Logic ---
     if (isLogistics) {
-      if (!orderId) return response.status(400).json({ message: 'Missing "orderId" for logistics action' });
+      if (!orderId) return res.status(400).json({ message: 'Missing "orderId" for logistics action' });
       console.log(`[Proxy] Forwarding LOGISTICS action '${action}' for order '${orderId}' to iFood API.`);
       const apiResponse = await sendIFoodLogisticsAction(orderId, action, details, merchantId);
       console.log(`[Proxy] Logistics action for order '${orderId}' processed successfully.`);
-      return response.status(200).json(apiResponse || { message: 'Logistics action processed successfully by iFood.' });
+      return res.status(200).json(apiResponse || { message: 'Logistics action processed successfully by iFood.' });
     }
 
     // --- Original Order Status Logic ---
     if (!orderId) {
-      return response.status(400).json({ message: 'Missing "orderId" for order action' });
+      return res.status(400).json({ message: 'Missing "orderId" for order action' });
     }
 
     let apiAction: 'confirm' | 'dispatch' | 'readyToPickup' | 'requestCancellation' | null = null;
@@ -116,11 +116,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
         };
         break;
       default:
-        return response.status(400).json({ message: `Invalid action provided: ${action}` });
+        return res.status(400).json({ message: `Invalid action provided: ${action}` });
     }
     
     if (!apiAction) {
-       return response.status(400).json({ message: `Action '${action}' could not be mapped.` });
+       return res.status(400).json({ message: `Action '${action}' could not be mapped.` });
     }
 
     console.log(`[Proxy] Forwarding action '${apiAction}' for order '${orderId}' to iFood API.`);
@@ -128,14 +128,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     
     // Most iFood order actions return 202 Accepted with no body.
     console.log(`[Proxy] Action for order '${orderId}' processed successfully.`);
-    return response.status(202).json({ message: 'Action processed successfully by iFood.' });
+    return res.status(202).json({ message: 'Action processed successfully by iFood.' });
 
   } catch (error: any) {
-    console.error('[Proxy] Error processing request:', error);
+    console.error('[Proxy] Error processing req:', error);
     // Try to parse iFood error message if it exists
     const errorMessage = error.message.includes('iFood API error:') 
       ? error.message 
       : 'An internal server error occurred.';
-    return response.status(500).json({ message: errorMessage });
+    return res.status(500).json({ message: errorMessage });
   }
 }

@@ -17,31 +17,31 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 async function fetchWithRetry(url: string, options: RequestInit, userId: string, event: string, payloadStr: string, maxRetries = 3): Promise<any> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            const response = await fetch(url, options);
-            if (response.ok) {
-                return { url, status: response.status };
+            const res = await fetch(url, options);
+            if (res.ok) {
+                return { url, status: res.status };
             }
             
             // Handle 429 and 5xx errors with retry
-            if (response.status === 429 || response.status >= 500) {
+            if (res.status === 429 || res.status >= 500) {
                 if (attempt === maxRetries) {
-                    const text = await response.text();
-                    throw new Error(`Status: ${response.status}. Body: ${text}`);
+                    const text = await res.text();
+                    throw new Error(`Status: ${res.status}. Body: ${text}`);
                 }
-                const retryAfter = response.headers.get('Retry-After');
+                const retryAfter = res.headers.get('Retry-After');
                 let waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff
                 if (retryAfter) {
                     const parsed = parseInt(retryAfter, 10);
                     if (!isNaN(parsed)) waitTime = parsed * 1000;
                 }
-                console.log(`[WebhookEmitter] Attempt ${attempt} failed for ${url} (status ${response.status}). Retrying in ${waitTime}ms...`);
+                console.log(`[WebhookEmitter] Attempt ${attempt} failed for ${url} (status ${res.status}). Retrying in ${waitTime}ms...`);
                 await delay(waitTime);
                 continue;
             }
             
             // Client errors (4xx other than 429) do not retry
-            const text = await response.text();
-            throw new Error(`Status: ${response.status}. Body: ${text}`);
+            const text = await res.text();
+            throw new Error(`Status: ${res.status}. Body: ${text}`);
             
         } catch (error: any) {
             if (attempt === maxRetries) {
@@ -63,7 +63,7 @@ async function fetchWithRetry(url: string, options: RequestInit, userId: string,
 }
 
 /**
- * Triggers a webhook event, sending a POST request to all subscribed URLs for a specific user.
+ * Triggers a webhook event, sending a POST req to all subscribed URLs for a specific user.
  * This is a server-side function designed to be called from other Vercel serverless functions.
  * @param userId The ID of the user whose webhooks should be triggered.
  * @param event The type of event being triggered.
@@ -102,7 +102,7 @@ export async function triggerWebhook(userId: string, event: WebhookEvent, payloa
       .update(payloadBuffer)
       .digest('hex');
 
-    // 2b. Fire the fetch request with retries
+    // 2b. Fire the fetch req with retries
     return fetchWithRetry(webhook.url, {
       method: 'POST',
       headers: {

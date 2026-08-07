@@ -13,27 +13,27 @@ const supabase = createClient(
   supabaseKey || 'placeholder-key'
 );
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
+export default async function handler(req: any, res: any) {
   // CORS configuration
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-signature, x-request-id');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-signature, x-req-id');
 
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
 
   // Allow GET for ping/validation 
-  if (request.method === 'GET') {
-    return response.status(200).send('OK');
+  if (req.method === 'GET') {
+    return res.status(200).send('OK');
   }
 
-  if (request.method !== 'POST') {
-    return response.status(405).send({ error: 'Method Not Allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).send({ error: 'Method Not Allowed' });
   }
 
   try {
-    const payload = request.body || {};
+    const payload = req.body || {};
     console.log('[MercadoPago Webhook] Payload received:', JSON.stringify(payload));
     
     const mpAccessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
@@ -87,10 +87,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
       }
     } 
 
-    return response.status(200).send({ message: 'Success' });
+    return res.status(200).send({ message: 'Success' });
   } catch (error: any) {
     console.error('[MercadoPago Webhook] Error:', error);
-    return response.status(500).send({ error: 'Internal Server Error' });
+    return res.status(500).send({ error: 'Internal Server Error' });
   }
 }
 

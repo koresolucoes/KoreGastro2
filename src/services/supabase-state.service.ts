@@ -71,7 +71,7 @@ export class SupabaseStateService {
             this.unsubscribeFromChanges();
             this.clearAllData();
             if (this.unitContextService.activeUnitId()) {
-                this.unitContextService.activeUnitId.set(null);
+                this.unitContextService.activeUnitId.set('');
             }
             this.isDataLoaded.set(true); // Signal completion so guards don't hang for unauthenticated users
         }

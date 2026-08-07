@@ -254,7 +254,7 @@ export class CashierDataService {
             .reduce((sum, item) => {
                 if (item.status === 'CANCELADO') return sum;
                 // Furo 8: Use frozen unit_cost if available, fallback to current recipe cost
-                const cost = item.unit_cost ?? (recipeCosts.get(item.recipe_id)?.totalCost ?? 0);
+                const cost = item.unit_cost ?? (item.recipe_id ? (recipeCosts.get(item.recipe_id)?.totalCost ?? 0) : 0);
                 return sum + (cost * item.quantity);
             }, 0);
     };

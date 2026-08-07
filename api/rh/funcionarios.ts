@@ -11,14 +11,14 @@ import { validateApiKey } from '../utils/api-key-auth.js';
 
 // ... (existing imports)
 
-async function authenticate(request: VercelRequest): Promise<{ restaurantId: string | null, error?: any, status?: number, isApiKey?: boolean }> {
-    const authHeader = request.headers.authorization;
+async function authenticate(req: VercelRequest): Promise<{ restaurantId: string | null, error?: any, status?: number, isApiKey?: boolean }> {
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { restaurantId: null, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
     
     // Tenta primeiro como API Key
-    const apiKeyResult = await validateApiKey(request);
+    const apiKeyResult = await validateApiKey(req);
     if (apiKeyResult.restaurantId) {
         return { ...apiKeyResult, isApiKey: true };
     }
@@ -31,47 +31,47 @@ async function authenticate(request: VercelRequest): Promise<{ restaurantId: str
         return { restaurantId: null, error: { message: 'Invalid or expired token.' }, status: 401 };
     }
     
-    const restaurantId = (request.query.restaurantId || request.body.restaurantId) as string;
+    const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
     // ... (rest of the existing Supabase Auth logic)
     return { restaurantId, isApiKey: false };
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (request.method === 'OPTIONS') {
-    return response.status(204).end();
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
 
   try {
-    const auth = await authenticate(request);
+    const auth = await authenticate(req);
     if (auth.error) {
-        return response.status(auth.status!).json({ error: auth.error });
+        return res.status(auth.status!).json({ error: auth.error });
     }
     const restaurantId = auth.restaurantId!;
 
-    switch (request.method) {
+    switch (req.method) {
       case 'GET':
-        await handleGet(request, response, restaurantId);
+        await handleGet(req, res, restaurantId);
         break;
       case 'POST':
-        await handlePost(request, response, restaurantId);
+        await handlePost(req, res, restaurantId);
         break;
       case 'PATCH':
-        await handlePatch(request, response, restaurantId);
+        await handlePatch(req, res, restaurantId);
         break;
       case 'DELETE':
-        await handleDelete(request, response, restaurantId);
+        await handleDelete(req, res, restaurantId);
         break;
       default:
-        response.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
-        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+        res.setHeader('Allow', ['GET', 'POST', 'PATCH', 'DELETE']);
+        res.status(405).json({ error: "An error occurred" });
     }
   } catch (error: any) {
     console.error('[API /rh/funcionarios] Fatal error:', error);
-    return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
+    return res.status(500).json({ error: "An error occurred" });
   }
 }
 
@@ -97,7 +97,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
     const employeeData: Partial<Employee> = req.body;
     
     if (!employeeData.name || !employeeData.pin || !employeeData.role_id) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`name` });
+        return res.status(400).json({ error: "An error occurred" });
     }
 
     const { data, error } = await supabase
@@ -113,7 +113,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`id` query parameter is required for PATCH.' });
+        return res.status(400).json({ error: "An error occurred" });
     }
     
     const updateData: Partial<Employee> = req.body;
@@ -135,7 +135,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id } = req.query;
     if (!id || typeof id !== 'string') {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`id` query parameter is required for DELETE.' });
+        return res.status(400).json({ error: "An error occurred" });
     }
     
     const { error } = await supabase

@@ -234,7 +234,7 @@ export class MiseEnPlaceComponent {
       const items = [...event.container.data];
       moveItemInArray(items, event.previousIndex, event.currentIndex);
       items.forEach((item, idx) => item.priority = idx + 1);
-      this.dataService.updateTaskPriorities(items.map(t => ({ id: t.id, priority: t.priority })));
+      this.dataService.updateTaskPriorities(items.map(t => ({ id: t.id, priority: t.priority ?? 0 })));
     } else {
       // Moved to another list/status
       const task = event.previousContainer.data[event.previousIndex];

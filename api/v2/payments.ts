@@ -18,22 +18,22 @@ const requestBodySchema = z.object({
   tip: z.number().nonnegative('Tip cannot be negative').optional()
 });
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
-  if (request.method !== 'POST') {
-    response.setHeader('Allow', ['POST']);
-    return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: 'Method Not Allowed' });
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ error: "An error occurred" });
   }
 
-  const parsedBody = requestBodySchema.safeParse(request.body);
+  const parsedBody = requestBodySchema.safeParse(req.body);
   if (!parsedBody.success) {
-      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid request body' });
+      return res.status(400).json({ error: "An error occurred" });
   }
 
   const { orderId, payments, tip } = parsedBody.data;
 
     // 1. Fetch order details for validation
     const [orderResponse, profileResponse] = await Promise.all([
-      supabase.from('orders').select('*, order_items(*)').eq('id', orderId).eq('user_id', restaurantId).eq('status', 'OPEN').single(),
+      supabase.from('orders').select('*, order_items(*)').eq('id', orderId).eq('user_id', restaurantId).in('status', ['OPEN', 'PAYING']).single(),
       supabase.from('company_profile').select('payment_methods').eq('user_id', restaurantId).single()
     ]);
 
@@ -41,7 +41,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
     const { data: profile } = profileResponse;
 
     if (orderError) {
-      if (orderError.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Open order with id "${orderId}" not found.` });
+      if (orderError.code === 'PGRST116') return res.status(404).json({ error: "An error occurred" });
       throw orderError;
     }
     
@@ -50,16 +50,16 @@ export default withAuth(async function handler(request: VercelRequest, response:
     if (validMethods && Array.isArray(validMethods) && validMethods.length > 0) {
         const invalidPayments = payments.filter(p => !validMethods.includes(p.method));
         if (invalidPayments.length > 0) {
-            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Invalid payment methods: ${invalidPayments.map(p => p.method).join(' });
+            return res.status(400).json({ error: "An error occurred" });
         }
     }
     
     const orderItems = (order.order_items || []) as OrderItem[];
-    const orderTotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + (tip || 0);
-    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const orderTotalCents = orderItems.reduce((sum, item) => sum + Math.round((item.price || 0) * 100) * (item.quantity || 1), 0) + Math.round((tip || 0) * 100);
+    const totalPaidCents = payments.reduce((sum, p) => sum + Math.round((p.amount || 0) * 100), 0);
     
-    if (totalPaid < orderTotal - 0.01) {
-      return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Payment amount is insufficient. Order total is ${orderTotal.toFixed(2)}, but received ${totalPaid.toFixed(2)}.` });
+    if (totalPaidCents < orderTotalCents - 1) { // 1 cent rounding tolerance
+      return res.status(400).json({ error: "An error occurred" });
     }
 
     // 2. Identify Table ID (if applicable)
@@ -103,5 +103,5 @@ export default withAuth(async function handler(request: VercelRequest, response:
         await triggerWebhook(restaurantId, 'order.updated', updatedOrder).catch(console.error);
     }
 
-    return response.status(200).json({ success: true, message: 'Payment processed, stock deducted, and order completed successfully.' });
+    return res.status(200).json({ success: true, message: 'Payment processed, stock deducted, and order completed successfully.' });
 });

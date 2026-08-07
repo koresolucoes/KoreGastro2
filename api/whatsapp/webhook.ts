@@ -141,7 +141,7 @@ const manageReservationFunc: FunctionDeclaration = {
   },
 };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
@@ -405,23 +405,23 @@ Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa).
     history: contents.slice(0, -1), // All except the very last one
   });
 
-  let response = await chatSession.sendMessage({
+  let res = await chatSession.sendMessage({
     message: contents[contents.length - 1]?.parts[0]?.text || "Hello",
   });
 
   let replyText = "";
   try {
-    if (response.text) {
-      replyText = response.text;
+    if (res.text) {
+      replyText = res.text;
     }
   } catch (e) {
-    // response.text can throw if there are no text parts
+    // res.text can throw if there are no text parts
   }
 
-  while (response.functionCalls && response.functionCalls.length > 0) {
-    const functionResponses = [];
+  while (res.functionCalls && res.functionCalls.length > 0) {
+    const functionResponses: any[] = [];
 
-    for (const call of response.functionCalls) {
+    for (const call of res.functionCalls) {
       if (call.name === "submit_public_order") {
         const args = call.args as any;
         try {
@@ -429,7 +429,7 @@ Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa).
           functionResponses.push({
             functionResponse: {
               name: call.name,
-              response: { success: true, result: "Pedido criado com sucesso!" }
+              res: { success: true, result: "Pedido criado com sucesso!" }
             }
           });
         } catch (e) {
@@ -437,7 +437,7 @@ Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa).
           functionResponses.push({
             functionResponse: {
               name: call.name,
-              response: { success: false, error: "Erro interno ao criar pedido." }
+              res: { success: false, error: "Erro interno ao criar pedido." }
             }
           });
         }
@@ -449,26 +449,26 @@ Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa).
         functionResponses.push({
           functionResponse: {
             name: call.name,
-            response: { success: true, result: "Transferência para humano realizada." }
+            res: { success: true, result: "Transferência para humano realizada." }
           }
         });
       } else if (call.name === "manage_reservation") {
         const args = call.args as any;
         try {
           const res = await handleReservation(storeId, customerPhone, args, chat.customer_id);
-          functionResponses.push({ functionResponse: { name: call.name, response: res } });
+          functionResponses.push({ functionResponse: { name: call.name, res: res } });
         } catch (e: any) {
           console.error("Error managing reservation:", e);
-          functionResponses.push({ functionResponse: { name: call.name, response: { success: false, error: e.message } } });
+          functionResponses.push({ functionResponse: { name: call.name, res: { success: false, error: e.message } } });
         }
       }
     }
 
     if (functionResponses.length > 0) {
-      response = await chatSession.sendMessage({ message: functionResponses as any });
+      res = await chatSession.sendMessage({ message: functionResponses as any });
       try {
-        if (response.text) {
-          replyText = response.text;
+        if (res.text) {
+          replyText = res.text;
         }
       } catch (e) {
         // Safe catch
@@ -734,7 +734,7 @@ async function transcribeWhatsAppAudio(
     const base64Audio = Buffer.from(arrayBuffer).toString("base64");
     const mimeType = mediaData.mime_type || "audio/ogg";
 
-    const response = await ai.models.generateContent({
+    const res = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
@@ -749,7 +749,7 @@ async function transcribeWhatsAppAudio(
       ],
     });
 
-    return response.text;
+    return res.text ?? null;
   } catch (e) {
     console.error("Error transcribing audio:", e);
     return null;

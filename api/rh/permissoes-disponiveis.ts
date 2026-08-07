@@ -7,8 +7,8 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
-async function authenticateUser(request: VercelRequest): Promise<{ success: boolean; error?: any; status?: number }> {
-    const authHeader = request.headers.authorization;
+async function authenticateUser(req: VercelRequest): Promise<{ success: boolean; error?: any; status?: number }> {
+    const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
     }
@@ -23,27 +23,27 @@ async function authenticateUser(request: VercelRequest): Promise<{ success: bool
     return { success: true };
 }
 
-export default async function handler(request: VercelRequest, response: VercelResponse) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).end();
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
     
-    if (request.method !== 'GET') {
-        response.setHeader('Allow', ['GET']);
+    if (req.method !== 'GET') {
+        res.setHeader('Allow', ['GET']);
         return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: 'Method Not Allowed' });
     }
 
     try {
-        const auth = await authenticateUser(request);
+        const auth = await authenticateUser(req);
         if (!auth.success) {
-            return response.status(auth.status!).json({ error: auth.error });
+            return res.status(auth.status!).json({ error: auth.error });
         }
         
-        return response.status(200).json(ALL_PERMISSION_KEYS);
+        return res.status(200).json(ALL_PERMISSION_KEYS);
 
     } catch (error: any) {
         console.error('[API /rh/permissoes-disponiveis] Fatal error:', error);

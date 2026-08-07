@@ -116,7 +116,7 @@ export default async function handler(req: any, res: any) {
         const applicationFee = 1.0; // Fixed R$ 1.00 platform fee
 
         // Call MP API with application_fee to perform split
-        const response = await fetch(
+        const fetchRes = await fetch(
           "https://api.mercadopago.com/v1/payments",
           {
             method: "POST",
@@ -137,8 +137,8 @@ export default async function handler(req: any, res: any) {
           },
         );
 
-        const data = await response.json();
-        if (!response.ok) {
+        const data = await fetchRes.json();
+        if (!fetchRes.ok) {
           throw new Error(data.message || "Erro ao gerar PIX no Mercado Pago");
         }
 

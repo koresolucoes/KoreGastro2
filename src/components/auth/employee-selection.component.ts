@@ -241,7 +241,7 @@ export class EmployeeSelectionComponent implements OnDestroy {
         const defaultRoute = this.operationalAuth.getDefaultRoute();
         this.router.navigate([defaultRoute]);
     } else {
-        this.notificationService.show(`Erro ao iniciar turno: ${error?.message}`, 'error');
+        this.notificationService.show(`Erro ao iniciar turno: ${(error as any)?.message}`, 'error');
     }
     this.confirmationEmployee.set(null);
   }

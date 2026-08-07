@@ -251,7 +251,7 @@ export class PurchasingComponent implements OnInit {
             : await this.purchasingDataService.createPurchaseOrder(formValue, items, employeeId || null);
 
         if (result.success) this.closeModal();
-        else await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error?.message}`);
+        else await this.notificationService.alert(`Falha ao salvar. Erro: ${result.error.message}`);
     }
 
     async markAsReceived(order: PurchaseOrder) {
@@ -280,7 +280,7 @@ export class PurchasingComponent implements OnInit {
 
         const result = await this.purchasingDataService.receivePurchaseOrder(order, employeeId || null);
         if (!result.success) {
-            await this.notificationService.alert(`Falha ao receber pedido. Erro: ${result.error?.message}`);
+            await this.notificationService.alert(`Falha ao receber pedido. Erro: ${result.error.message}`);
         }
     }
     
@@ -291,7 +291,7 @@ export class PurchasingComponent implements OnInit {
         const order = this.orderPendingDeletion();
         if (order) {
             const result = await this.purchasingDataService.deletePurchaseOrder(order.id);
-            if (!result.success) await this.notificationService.alert(`Falha ao deletar. Erro: ${result.error?.message}`);
+            if (!result.success) await this.notificationService.alert(`Falha ao deletar. Erro: ${result.error.message}`);
             this.orderPendingDeletion.set(null);
         }
     }
@@ -308,7 +308,7 @@ export class PurchasingComponent implements OnInit {
     }
 
     // FIX: Replaced unsafe object update with a type-safe switch statement to handle different field types correctly.
-    updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers'>, value: any) {
+    updateNewIngredientField(field: keyof Omit<Ingredient, 'id' | 'created_at' | 'user_id' | 'ingredient_categories' | 'suppliers' | 'version' | 'last_updated_at'>, value: any) {
         this.newIngredientForm.update(form => {
             const newForm: Partial<Ingredient> = { ...form };
             
@@ -371,7 +371,7 @@ export class PurchasingComponent implements OnInit {
             await this.addItemToOrder(newIngredient as Ingredient);
             this.closeAddIngredientModal();
         } else {
-            await this.notificationService.alert(`Erro: ${error?.message}`);
+            await this.notificationService.alert(`Erro: ${error.message}`);
         }
     }
 }

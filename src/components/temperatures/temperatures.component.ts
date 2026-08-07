@@ -976,7 +976,7 @@ export class TemperaturesComponent implements OnInit {
         null, // fetch all for the report
         range.start,
         range.end,
-        values.equipmentId !== 'all' ? values.equipmentId : undefined,
+        values.equipmentId && values.equipmentId !== 'all' ? values.equipmentId : undefined,
         values.status as any || 'all'
       );
 

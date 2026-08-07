@@ -10,48 +10,48 @@ import { JSDOM } from 'jsdom';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
 const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Window);
+const purify = DOMPurify(window as any);
 
 interface RequestItem {
   externalCode: string;
   quantity: number;
-  notes?: string;
+  notes?: string | null;
 }
 
-export default withAuth(async function handler(request: VercelRequest, response: VercelResponse, restaurantId: string) {
+export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
     // Custom subresource routing for GET
-    const { orderId, subresource } = request.query;
+    const { orderId, subresource } = req.query;
 
-    if (request.method === 'GET' && orderId && typeof orderId === 'string' && subresource === 'summary') {
-        await handleGetSummary(request, response, restaurantId, orderId);
+    if (req.method === 'GET' && orderId && typeof orderId === 'string' && subresource === 'summary') {
+        await handleGetSummary(req, res, restaurantId, orderId);
         return;
     }
 
     // Custom subresource routing for POST
-    if (request.method === 'POST' && orderId && typeof orderId === 'string' && subresource) {
+    if (req.method === 'POST' && orderId && typeof orderId === 'string' && subresource) {
         if (subresource === 'items') {
-            await handleAddItems(request, response, restaurantId, orderId);
+            await handleAddItems(req, res, restaurantId, orderId);
             return;
         }
-        if (subresource === 'request-payment') {
-            await handleRequestPayment(request, response, restaurantId, orderId);
+        if (subresource === 'req-payment') {
+            await handleRequestPayment(req, res, restaurantId, orderId);
             return;
         }
     }
 
-    switch (request.method) {
+    switch (req.method) {
       case 'GET':
-        await handleGet(request, response, restaurantId);
+        await handleGet(req, res, restaurantId);
         break;
       case 'POST':
-        await handlePost(request, response, restaurantId);
+        await handlePost(req, res, restaurantId);
         break;
       case 'DELETE':
-        await handleDelete(request, response, restaurantId);
+        await handleDelete(req, res, restaurantId);
         break;
       default:
-        response.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
+        res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+        res.status(405).json({ error: { message: `Method ${req.method} Not Allowed` } });
     }
 });
 
@@ -129,9 +129,9 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
     if (!orderId || typeof orderId !== 'string') {
         return res.status(400).json({ error: { message: 'An `orderId` is required in the query parameters.' } });
     }
-    const { data, error } = await supabase.from('orders').update({ status: 'CANCELLED', completed_at: new Date().toISOString() }).eq('id', orderId).eq('user_id', restaurantId).eq('status', 'OPEN').select().single();
+    const { data, error } = await supabase.from('orders').update({ status: 'CANCELLED', completed_at: new Date().toISOString() }).eq('id', orderId).eq('user_id', restaurantId).in('status', ['OPEN', 'PAYING']).select().single();
     if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
+        if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Active order with id "${orderId}" not found.` } });
         throw error;
     }
     await triggerWebhook(restaurantId, 'order.updated', data).catch(console.error);
@@ -159,17 +159,22 @@ async function handleGetSummary(req: VercelRequest, res: VercelResponse, restaur
         throw error;
     }
 
-    const items = (order.order_items as any[])?.map((item: any) => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.quantity * item.price,
-        notes: item.notes,
-    })) || [];
+    const items = (order.order_items as any[])?.map((item: any) => {
+        const itemPriceCents = Math.round((item.price || 0) * 100);
+        const qty = item.quantity || 1;
+        const itemTotalCents = itemPriceCents * qty;
+        return {
+            name: item.name,
+            quantity: qty,
+            price: itemPriceCents / 100,
+            total: itemTotalCents / 100,
+            notes: item.notes,
+        };
+    }) || [];
 
-    const subtotal = items.reduce((acc: number, item: any) => acc + item.total, 0);
-    const serviceFee = subtotal * 0.10; // Standard 10%
-    const total = subtotal + serviceFee;
+    const subtotalCents = items.reduce((acc: number, item: any) => acc + Math.round(item.total * 100), 0);
+    const serviceFeeCents = Math.round(subtotalCents * 0.10); // Standard 10%
+    const totalCents = subtotalCents + serviceFeeCents;
     
     const responsePayload = {
         orderId: order.id,
@@ -178,9 +183,9 @@ async function handleGetSummary(req: VercelRequest, res: VercelResponse, restaur
         customer: order.customers,
         items: items,
         summary: {
-            subtotal: parseFloat(subtotal.toFixed(2)),
-            serviceFee: parseFloat(serviceFee.toFixed(2)),
-            total: parseFloat(total.toFixed(2)),
+            subtotal: subtotalCents / 100,
+            serviceFee: serviceFeeCents / 100,
+            total: totalCents / 100,
         }
     };
     
@@ -203,8 +208,8 @@ async function handleAddItems(req: VercelRequest, res: VercelResponse, restauran
     }
     const { items } = parsed.data;
     
-    const { data: order, error: orderError } = await supabase.from('orders').select('id').eq('id', orderId).eq('status', 'OPEN').single();
-    if (orderError) return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
+    const { data: order, error: orderError } = await supabase.from('orders').select('id').eq('id', orderId).in('status', ['OPEN', 'PAYING']).single();
+    if (orderError) return res.status(404).json({ error: { message: `Active order with id "${orderId}" not found.` } });
     
     try {
         const orderItemsToInsert = await buildOrderItems(restaurantId, orderId, items);
@@ -227,10 +232,14 @@ async function handleRequestPayment(req: VercelRequest, res: VercelResponse, res
         return res.status(404).json({ error: { message: `Dine-in order with id "${orderId}" not found.` } });
     }
     
+    const { error: orderUpdateError } = await supabase.from('orders').update({ status: 'PAYING' }).eq('id', orderId).eq('user_id', restaurantId);
+    if (orderUpdateError) throw orderUpdateError;
+
     const { error: tableError } = await supabase.from('tables').update({ status: 'PAGANDO' }).eq('user_id', restaurantId).eq('number', order.table_number);
     if (tableError) throw tableError;
     
-    return res.status(200).json({ success: true, message: `Table #${order.table_number} status updated to PAGANDO.` });
+    await triggerWebhook(restaurantId, 'order.updated', { orderId, status: 'PAYING', tableNumber: order.table_number }).catch(console.error);
+    return res.status(200).json({ success: true, message: `Table #${order.table_number} and order status updated to PAYING.` });
 }
 
 

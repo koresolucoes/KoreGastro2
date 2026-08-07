@@ -446,7 +446,7 @@ export class KdsComponent implements OnInit, OnDestroy {
                     effectiveRecipeId = auxIdMatch[1];
                 }
 
-                const recipe = recipesMap.get(effectiveRecipeId);
+                const recipe = effectiveRecipeId ? recipesMap.get(effectiveRecipeId) : undefined;
                 let prepTimeInMinutes = recipe?.prep_time_in_minutes ?? 15;
 
                 if (recipe) {
@@ -825,7 +825,7 @@ export class KdsComponent implements OnInit, OnDestroy {
                     isHeld: item.isHeld,
                     timeToStart: item.timeToStart,
                     stationName: item.stationName,
-                    isCancelled: item.isCancelled,
+                    isCancelled: !!item.isCancelled,
                     elapsedTimeSeconds: item.elapsedTimeSeconds,
                     status_timestamps: item.status_timestamps
                 });

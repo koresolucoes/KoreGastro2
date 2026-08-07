@@ -11,13 +11,13 @@
  * environment (e.g., Vercel project settings), as they are used by the API proxy functions.
  */
 export const environment = {
-  /**
-   * The public URL of your Supabase project.
-   */
   supabaseUrl: (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '') || (import.meta.env['VITE_SUPABASE_URL'] as string) || '',
-
-  /**
-   * The anonymous public key for your Supabase project.
-   */
   supabaseAnonKey: (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '') || (import.meta.env['VITE_SUPABASE_ANON_KEY'] as string) || '',
 };
+
+if (!environment.supabaseUrl || !environment.supabaseUrl.startsWith('http')) {
+  console.warn('ChefOS: Invalid or missing SUPABASE_URL configuration. Please set it in your environment.');
+}
+if (!environment.supabaseAnonKey) {
+  console.warn('ChefOS: Invalid or missing SUPABASE_ANON_KEY configuration. Please set it in your environment.');
+}
