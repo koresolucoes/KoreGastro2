@@ -2,6 +2,11 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { OrderItem, OrderStatus, OrderType, IfoodOrderDelivery, Customer } from '../../src/models/db.models.js';
 import { getOrderIdFromPayload } from './ifood-utils.js';
 import { v4 as uuidv4 } from 'uuid';
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
+
+const window = new JSDOM('').window;
+const purify = DOMPurify(window as unknown as Window);
 
 // --- LOGGING ---
 
@@ -76,7 +81,7 @@ async function getOrCreateCustomer(supabase: SupabaseClient, userId: string, ifo
 
   const phone = ifoodCustomer.phone?.number || null;
   const cpf = ifoodCustomer.documentNumber || null;
-  const name = ifoodCustomer.name;
+  const name = ifoodCustomer.name ? purify.sanitize(ifoodCustomer.name) : null;
   let existingCustomer: { id: string, cpf: string | null, phone: string | null } | null = null;
   let updates: Partial<Customer> = {};
 

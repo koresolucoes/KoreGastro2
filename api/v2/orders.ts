@@ -4,8 +4,13 @@ import { z } from 'zod';
 import { OrderItem, OrderItemStatus, Recipe, RecipePreparation } from '../../src/models/db.models.js';
 import { v4 as uuidv4 } from 'uuid';
 import { triggerWebhook } from '../webhook-emitter.js';
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
 
 import { withAuth, supabase } from '../utils/api-handler.js';
+
+const window = new JSDOM('').window;
+const purify = DOMPurify(window as unknown as Window);
 
 interface RequestItem {
   externalCode: string;
@@ -46,7 +51,7 @@ export default withAuth(async function handler(request: VercelRequest, response:
         break;
       default:
         response.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-        res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${request.method} Not Allowed` });
+        response.status(405).json({ error: { message: `Method ${request.method} Not Allowed` } });
     }
 });
 
@@ -56,7 +61,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     if (orderId && typeof orderId === 'string') {
         const { data, error } = await supabase.from('orders').select('*, customers(*), order_items(*)').eq('id', orderId).eq('user_id', restaurantId).single();
         if (error) {
-            if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Order with id "${orderId}" not found.` });
+            if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Order with id "${orderId}" not found.` } });
             throw error;
         }
         return res.status(200).json(data);
@@ -90,7 +95,7 @@ const postOrderSchema = z.object({
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const parsed = postOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
     }
     const { tableNumber, customerId, items } = parsed.data;
 
@@ -110,7 +115,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 
     if (error) {
         if (error.message.includes('not found')) {
-            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: error.message });
+            return res.status(404).json({ error: { message: error.message } });
         }
         throw error;
     }
@@ -122,11 +127,11 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
 async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { orderId } = req.query;
     if (!orderId || typeof orderId !== 'string') {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'An `orderId` is required in the query parameters.' });
+        return res.status(400).json({ error: { message: 'An `orderId` is required in the query parameters.' } });
     }
-    const { data, error } = await supabase.from('orders').update({ status: 'CANCELLED', deleted_at: new Date().toISOString(), completed_at: new Date().toISOString() }).eq('id', orderId).eq('user_id', restaurantId).eq('status', 'OPEN').select().single();
+    const { data, error } = await supabase.from('orders').update({ status: 'CANCELLED', completed_at: new Date().toISOString() }).eq('id', orderId).eq('user_id', restaurantId).eq('status', 'OPEN').select().single();
     if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Open order with id "${orderId}" not found.` });
+        if (error.code === 'PGRST116') return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
         throw error;
     }
     await triggerWebhook(restaurantId, 'order.updated', data).catch(console.error);
@@ -149,7 +154,7 @@ async function handleGetSummary(req: VercelRequest, res: VercelResponse, restaur
     
     if (error) {
         if (error.code === 'PGRST116') {
-            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Order with id "${orderId}" not found.` });
+            return res.status(404).json({ error: { message: `Order with id "${orderId}" not found.` } });
         }
         throw error;
     }
@@ -194,12 +199,12 @@ const addItemsSchema = z.object({
 async function handleAddItems(req: VercelRequest, res: VercelResponse, restaurantId: string, orderId: string) {
     const parsed = addItemsSchema.safeParse(req.body);
     if (!parsed.success) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Invalid payload' });
+        return res.status(400).json({ error: { message: 'Invalid payload', details: parsed.error.issues } });
     }
     const { items } = parsed.data;
     
     const { data: order, error: orderError } = await supabase.from('orders').select('id').eq('id', orderId).eq('status', 'OPEN').single();
-    if (orderError) return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Open order with id "${orderId}" not found.` });
+    if (orderError) return res.status(404).json({ error: { message: `Open order with id "${orderId}" not found.` } });
     
     try {
         const orderItemsToInsert = await buildOrderItems(restaurantId, orderId, items);
@@ -210,7 +215,7 @@ async function handleAddItems(req: VercelRequest, res: VercelResponse, restauran
         return res.status(200).json(insertedItems);
     } catch (error: any) {
         if (error.message.includes('not found')) {
-            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: error.message });
+            return res.status(404).json({ error: { message: error.message } });
         }
         throw error;
     }
@@ -219,7 +224,7 @@ async function handleAddItems(req: VercelRequest, res: VercelResponse, restauran
 async function handleRequestPayment(req: VercelRequest, res: VercelResponse, restaurantId: string, orderId: string) {
     const { data: order, error: orderError } = await supabase.from('orders').select('table_number').eq('id', orderId).eq('user_id', restaurantId).single();
     if (orderError || !order || order.table_number <= 0) {
-        return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Dine-in order with id "${orderId}" not found.` });
+        return res.status(404).json({ error: { message: `Dine-in order with id "${orderId}" not found.` } });
     }
     
     const { error: tableError } = await supabase.from('tables').update({ status: 'PAGANDO' }).eq('user_id', restaurantId).eq('number', order.table_number);
@@ -258,20 +263,21 @@ async function buildOrderItems(restaurantId: string, orderId: string, items: Req
         const recipe = recipesMap.get(item.externalCode)!;
         const recipePreps = prepsMap.get(recipe.id);
         const finalPrice = recipe.price; // Price overrides are not supported in V2 yet
+        const sanitizedNotes = item.notes ? purify.sanitize(item.notes) : null;
 
         if (recipePreps && recipePreps.length > 0) {
             const groupId = uuidv4();
             return recipePreps.map((prep, prepIndex) => ({
                 order_id: orderId, recipe_id: recipe.id, name: `${recipe.name} (${prep.name})`,
                 quantity: item.quantity, price: finalPrice / recipePreps.length, original_price: recipe.price / recipePreps.length,
-                notes: prepIndex === 0 ? item.notes : null, status: 'PENDENTE' as OrderItemStatus,
+                notes: prepIndex === 0 ? sanitizedNotes : null, status: 'PENDENTE' as OrderItemStatus,
                 station_id: prep.station_id, group_id: groupId, status_timestamps, user_id: restaurantId,
             }));
         } else {
             return [{
                 order_id: orderId, recipe_id: recipe.id, name: recipe.name,
                 quantity: item.quantity, price: finalPrice, original_price: recipe.price,
-                notes: item.notes, status: 'PENDENTE' as OrderItemStatus,
+                notes: sanitizedNotes, status: 'PENDENTE' as OrderItemStatus,
                 station_id: fallbackStationId, status_timestamps, user_id: restaurantId
             }];
         }

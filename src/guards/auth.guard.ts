@@ -13,8 +13,9 @@ export const authGuard: CanActivateFn = (): Observable<boolean | UrlTree> => {
   const router: Router = inject(Router);
   const demoService = inject(DemoService);
 
-  // If in demo mode, bypass all authentication checks.
-  if (demoService.isDemoMode()) {
+  // If in demo mode and in a development environment, bypass all authentication checks.
+  // We use import.meta.env.DEV to ensure this can never be accidentally enabled in a production build.
+  if (demoService.isDemoMode() && import.meta.env.DEV) {
     return of(true);
   }
 

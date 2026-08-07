@@ -227,7 +227,7 @@ export class InventoryDataService {
 
     const { data: originalIngredient, error: fetchError } = await supabase
         .from('ingredients')
-        .select('name, stock, unit')
+        .select('name, stock, unit, version')
         .eq('id', ingredientId)
         .single();
     
@@ -250,13 +250,24 @@ export class InventoryDataService {
         // Fallback: manually update existing stock if RPC throws FK violation or similar.
         // This ensures external transfers and requisitions are not blocked.
         const newStock = originalIngredient.stock + quantityChange;
-        const { error: fallbackError } = await supabase.from('ingredients')
-                                          .update({ stock: newStock, updated_at: new Date().toISOString() })
+        const currentVersion = originalIngredient.version || 1;
+        
+        const { data: updatedData, error: fallbackError } = await supabase.from('ingredients')
+                                          .update({ stock: newStock, updated_at: new Date().toISOString(), version: currentVersion + 1 })
                                           .eq('id', ingredientId)
-                                          .eq('user_id', userId);
+                                          .eq('user_id', userId)
+                                          .eq('version', currentVersion)
+                                          .select('id');
+                                          
         if (fallbackError) {
              console.error("Fallback update failed:", fallbackError);
              return { success: false, error: fallbackError };
+        }
+        
+        if (!updatedData || updatedData.length === 0) {
+             const concurrencyError = new Error('Concurrent modification detected. Please try again.');
+             console.error(concurrencyError);
+             return { success: false, error: concurrencyError };
         }
 
         // FEFO Lot deduction fallback for stock exits

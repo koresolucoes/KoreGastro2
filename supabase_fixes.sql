@@ -15,3 +15,11 @@ CREATE INDEX IF NOT EXISTS idx_time_clock_entries_user_id_clock_in ON time_clock
 
 -- Also useful indexes
 CREATE INDEX IF NOT EXISTS idx_reservations_user_id_time ON reservations (user_id, reservation_time);
+
+-- M8: Missing Critical Indexes in Webhook Logs Table
+CREATE INDEX IF NOT EXISTS idx_ifood_webhook_logs_merchant_id_created_at ON ifood_webhook_logs (merchant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ifood_webhook_logs_ifood_order_id ON ifood_webhook_logs (ifood_order_id);
+CREATE INDEX IF NOT EXISTS idx_ifood_webhook_logs_event_code_status ON ifood_webhook_logs (event_code, processing_status);
+
+-- M10: Optimistic locking for ingredients
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;

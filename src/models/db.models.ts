@@ -298,6 +298,7 @@ export interface Ingredient {
   price: number | null;
   proxy_recipe_id: string | null;
   pos_category_id: string | null;
+  version?: number; // optimistic locking
   station_id: string | null;
   external_code: string | null;
   is_portionable: boolean;
