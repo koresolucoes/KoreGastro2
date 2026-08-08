@@ -4,6 +4,7 @@ import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 import { loginGuard } from './guards/login.guard';
 import { systemAdminGuard } from './guards/system-admin.guard';
+import { portalGuard } from './guards/portal.guard';
 
 export const APP_ROUTES: Routes = [
   { 
@@ -47,7 +48,7 @@ export const APP_ROUTES: Routes = [
   { 
     path: 'dashboard', 
     loadComponent: () => import('./components/dashboard/dashboard.component').then(m => m.DashboardComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'my-profile', 
@@ -57,67 +58,67 @@ export const APP_ROUTES: Routes = [
   { 
     path: 'pos', 
     loadComponent: () => import('./components/pos/pos.component').then(m => m.PosComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'kds', 
     loadComponent: () => import('./components/kds/kds.component').then(m => m.KdsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'ifood-kds', 
     loadComponent: () => import('./components/kds/kds.component').then(m => m.KdsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'cashier', 
     loadComponent: () => import('./components/cashier/cashier.component').then(m => m.CashierComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'inventory', 
     loadComponent: () => import('./components/inventory/inventory.component').then(m => m.InventoryComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'inventory/audit', 
     loadComponent: () => import('./components/inventory/inventory-audit/inventory-audit.component').then(m => m.InventoryAuditComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'inventory/portioning', 
     loadComponent: () => import('./components/inventory/portioning/portioning.component').then(m => m.PortioningComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'requisitions', 
     loadComponent: () => import('./components/requisitions/requisitions.component').then(m => m.RequisitionsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'purchasing', 
     loadComponent: () => import('./components/purchasing/purchasing.component').then(m => m.PurchasingComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'suppliers', 
     loadComponent: () => import('./components/suppliers/suppliers.component').then(m => m.SuppliersComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'customers', 
     loadComponent: () => import('./components/customers/customers.component').then(m => m.CustomersComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'menu-builder', 
     loadComponent: () => import('./components/menu-builder/menu-builder.component').then(m => m.MenuBuilderComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'menu', 
     loadComponent: () => import('./components/menu/menu.component').then(m => m.MenuComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'menu/:userId', 
@@ -126,12 +127,12 @@ export const APP_ROUTES: Routes = [
   { 
     path: 'ifood-menu', 
     loadComponent: () => import('./components/ifood-menu/ifood-menu.component').then(m => m.IfoodMenuComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'ifood-store-manager', 
     loadComponent: () => import('./components/ifood-store-manager/ifood-store-manager.component').then(m => m.IfoodStoreManagerComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'book/:userId', 
@@ -147,39 +148,38 @@ export const APP_ROUTES: Routes = [
   }, // Public table/order route with userId constraint
   { 
     path: 'technical-sheets', 
-
     loadComponent: () => import('./components/technical-sheets/technical-sheets.component').then(m => m.TechnicalSheetsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'mise-en-place', 
     loadComponent: () => import('./components/mise-en-place/mise-en-place.component').then(m => m.MiseEnPlaceComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'performance', 
     loadComponent: () => import('./components/performance/performance.component').then(m => m.PerformanceComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'reports', 
     loadComponent: () => import('./components/reports/reports.component').then(m => m.ReportsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'whatsapp-chats', 
     loadComponent: () => import('./components/whatsapp-chats/whatsapp-chats.component').then(m => m.WhatsappChatsComponent),
-    canActivate: [roleGuard]
+    canActivate: [portalGuard, roleGuard]
   },
   { 
     path: 'employees', 
     loadComponent: () => import('./components/employees/employees.component').then(m => m.EmployeesComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'schedules', 
     loadComponent: () => import('./components/schedules/schedules.component').then(m => m.SchedulesComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'my-leave', 
@@ -189,17 +189,17 @@ export const APP_ROUTES: Routes = [
   { 
     path: 'payroll', 
     loadComponent: () => import('./components/payroll/payroll.component').then(m => m.PayrollComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'settings', 
     loadComponent: () => import('./components/settings/settings.component').then(m => m.SettingsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'reservations', 
     loadComponent: () => import('./components/reservations/reservations.component').then(m => m.ReservationsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'time-clock', 
@@ -209,7 +209,7 @@ export const APP_ROUTES: Routes = [
   { 
     path: 'leave-management', 
     loadComponent: () => import('./components/leave-management/leave-management.component').then(m => m.LeaveManagementComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'tutorials', 
@@ -224,17 +224,17 @@ export const APP_ROUTES: Routes = [
   { 
     path: 'delivery', 
     loadComponent: () => import('./components/delivery/delivery.component').then(m => m.DeliveryComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'checklists', 
     loadComponent: () => import('./components/checklists/checklists.component').then(m => m.ChecklistsComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   { 
     path: 'temperatures', 
     loadComponent: () => import('./components/temperatures/temperatures.component').then(m => m.TemperaturesComponent), 
-    canActivate: [roleGuard] 
+    canActivate: [portalGuard, roleGuard] 
   },
   {
     path: 'support',
@@ -260,3 +260,4 @@ export const APP_ROUTES: Routes = [
     redirectTo: 'dashboard' 
   }
 ];
+

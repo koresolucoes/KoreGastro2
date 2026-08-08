@@ -11,6 +11,7 @@ import { InventoryStateService } from '../../services/inventory-state.service';
 import { PosStateService } from '../../services/pos-state.service';
 import { NotificationService, SystemNotification, NotificationFilter, NotificationType } from '../../services/notification.service';
 import { LayoutService } from '../../services/layout.service';
+import { PortalContextService } from '../../services/portal-context.service';
 
 export interface SearchPageItem {
   name: string;
@@ -37,7 +38,10 @@ export class TopNavComponent {
   posState = inject(PosStateService);
   notificationService = inject(NotificationService);
   layoutService = inject(LayoutService);
+  portalContextService = inject(PortalContextService);
   router: Router = inject(Router);
+
+  portalInfo = this.portalContextService.portalInfo;
 
   @ViewChild('searchInput') searchInputRef?: ElementRef<HTMLInputElement>;
 
@@ -100,8 +104,9 @@ export class TopNavComponent {
 
   filteredPages = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
-    if (!q) return this.systemPages.slice(0, 6);
-    return this.systemPages.filter(p =>
+    const allowedPages = this.systemPages.filter(p => this.portalContextService.isRouteAllowedInCurrentPortal(p.path));
+    if (!q) return allowedPages.slice(0, 6);
+    return allowedPages.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q) ||
       p.path.toLowerCase().includes(q)

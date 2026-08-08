@@ -6,6 +6,7 @@ import { OperationalAuthService } from '../../services/operational-auth.service'
 import { DemoService } from '../../services/demo.service';
 import { UnitContextService } from '../../services/unit-context.service';
 import { LayoutService } from '../../services/layout.service';
+import { PortalContextService, PortalType } from '../../services/portal-context.service';
 
 export interface NavLink {
   name: string;
@@ -32,6 +33,7 @@ export class SidebarComponent {
   demoService = inject(DemoService);
   unitContextService = inject(UnitContextService);
   layoutService = inject(LayoutService);
+  portalContextService = inject(PortalContextService);
   router = inject(Router);
 
   isDemoMode = this.demoService.isDemoMode;
@@ -40,10 +42,15 @@ export class SidebarComponent {
   activeUnitId = this.unitContextService.activeUnitId;
   availableUnits = this.unitContextService.availableUnits;
 
+  portalInfo = this.portalContextService.portalInfo;
+  currentPortalMode = this.portalContextService.currentMode;
+  isDomainLocked = this.portalContextService.isDomainLocked;
+
   isCollapsed = signal(false);
   isUnitSelectorOpen = signal(false);
+  isPortalSelectorOpen = signal(false);
   
-    allNavGroups: NavGroup[] = [
+  allNavGroups: NavGroup[] = [
     {
       name: 'Painel',
       id: 'painel',
@@ -142,6 +149,11 @@ export class SidebarComponent {
     return this.allNavGroups.map(group => ({
       ...group,
       children: group.children.filter(link => {
+        // First check portal context permission
+        if (!this.portalContextService.isRouteAllowedInCurrentPortal(link.path)) {
+          return false;
+        }
+
         if (isDemo) return demoAllowedPaths.includes(link.path);
         return this.operationalAuthService.hasPermission(link.path);
       })
@@ -157,6 +169,15 @@ export class SidebarComponent {
       event.stopPropagation();
     }
     this.isUnitSelectorOpen.update(v => !v);
+    this.isPortalSelectorOpen.set(false);
+  }
+
+  togglePortalSelector(event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.isPortalSelectorOpen.update(v => !v);
+    this.isUnitSelectorOpen.set(false);
   }
 
   switchUnit(unitId: string, event?: Event) {
@@ -167,11 +188,29 @@ export class SidebarComponent {
     this.isUnitSelectorOpen.set(false);
   }
 
+  switchPortalMode(mode: PortalType, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.portalContextService.setPortalMode(mode);
+    this.isPortalSelectorOpen.set(false);
+    
+    // Navigate to default route of new portal if current path is no longer allowed
+    const currentPath = this.router.url.split('?')[0];
+    if (!this.portalContextService.isRouteAllowedInCurrentPortal(currentPath)) {
+      const targetRoute = this.portalContextService.getPortalDefaultRoute(mode === 'operacao' ? 'operacao' : 'gestao');
+      this.router.navigateByUrl(targetRoute);
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   closeDropdowns(event: Event) {
     const target = event.target as HTMLElement;
     if (!target.closest('.unit-selector')) {
       this.isUnitSelectorOpen.set(false);
+    }
+    if (!target.closest('.portal-selector')) {
+      this.isPortalSelectorOpen.set(false);
     }
   }
 }

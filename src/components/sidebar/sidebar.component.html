@@ -10,14 +10,101 @@
   [class.translate-x-0]="layoutService.isMobileSidebarOpen()">
   
   <!-- Logo -->
-  <div class="h-16 flex items-center px-4 border-b border-subtle shrink-0">
+  <div class="h-16 flex items-center px-4 border-b border-subtle shrink-0 justify-between">
     @if (!isCollapsed()) {
       <div class="flex items-center gap-2 text-title w-full overflow-hidden whitespace-nowrap">
-        <img src="/logo.svg" alt="ChefOS Logo" class="h-12 w-auto">
+        <img src="/logo.svg" alt="ChefOS Logo" class="h-10 w-auto">
       </div>
     } @else {
       <div class="flex items-center justify-center w-full text-brand">
-        <img src="/logo.svg" alt="ChefOS Logo" class="h-12 w-auto">
+        <img src="/logo.svg" alt="ChefOS Logo" class="h-10 w-auto">
+      </div>
+    }
+  </div>
+
+  <!-- Portal Context Badge / Selector -->
+  <div class="p-3 border-b border-subtle shrink-0 relative portal-selector">
+    <button (click)="togglePortalSelector($event)" 
+      class="w-full flex items-center justify-between p-2 rounded-xl transition-all border text-left"
+      [ngClass]="portalInfo().color"
+      [title]="isCollapsed() ? portalInfo().name : ''">
+      <div class="flex items-center gap-2 overflow-hidden min-w-0">
+        <span translate="no" class="notranslate material-symbols-outlined text-lg shrink-0">{{ portalInfo().icon }}</span>
+        @if (!isCollapsed()) {
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-bold truncate leading-tight">{{ portalInfo().badge }}</span>
+            <span class="text-[10px] opacity-75 truncate font-mono">{{ portalInfo().domain }}</span>
+          </div>
+        }
+      </div>
+      @if (!isCollapsed()) {
+        <span translate="no" class="notranslate material-symbols-outlined text-sm opacity-60">unfold_more</span>
+      }
+    </button>
+
+    <!-- Portal Switcher Dropdown -->
+    @if (isPortalSelectorOpen() && !isCollapsed()) {
+      <div class="absolute top-full left-3 right-3 mt-1 bg-surface-elevated border border-strong rounded-xl shadow-2xl z-50 overflow-hidden text-title animate-in fade-in slide-in-from-top-2 duration-200">
+        <div class="p-2.5 border-b border-subtle bg-surface/80 flex items-center justify-between">
+          <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Alternar Ambientes</p>
+          @if (!isDomainLocked()) {
+            <span class="text-[9px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded font-bold uppercase">Simulação Dev</span>
+          } @else {
+            <span class="text-[9px] bg-brand/10 text-brand px-1.5 py-0.5 rounded font-bold uppercase">Produção</span>
+          }
+        </div>
+
+        <div class="p-1.5 space-y-1">
+          <!-- Gestão Option -->
+          <button (click)="switchPortalMode('gestao', $event)"
+            class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface"
+            [class.bg-emerald-500\/10]="currentPortalMode() === 'gestao'">
+            <span translate="no" class="notranslate material-symbols-outlined text-emerald-500 text-lg">analytics</span>
+            <div class="flex flex-col min-w-0 flex-1">
+              <span class="text-xs font-bold text-title flex items-center justify-between">
+                Portal Gestão & RH
+                @if (currentPortalMode() === 'gestao') {
+                  <span translate="no" class="notranslate material-symbols-outlined text-emerald-500 text-xs">check_circle</span>
+                }
+              </span>
+              <span class="text-[10px] text-muted font-mono">portal.chefos.online</span>
+            </div>
+          </button>
+
+          <!-- Operacao Option -->
+          <button (click)="switchPortalMode('operacao', $event)"
+            class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface"
+            [class.bg-amber-500\/10]="currentPortalMode() === 'operacao'">
+            <span translate="no" class="notranslate material-symbols-outlined text-amber-500 text-lg">point_of_sale</span>
+            <div class="flex flex-col min-w-0 flex-1">
+              <span class="text-xs font-bold text-title flex items-center justify-between">
+                App Operacional
+                @if (currentPortalMode() === 'operacao') {
+                  <span translate="no" class="notranslate material-symbols-outlined text-amber-500 text-xs">check_circle</span>
+                }
+              </span>
+              <span class="text-[10px] text-muted font-mono">app.chefos.online</span>
+            </div>
+          </button>
+
+          <!-- All / Unified Option (Dev) -->
+          @if (!isDomainLocked()) {
+            <button (click)="switchPortalMode('all', $event)"
+              class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface"
+              [class.bg-indigo-500\/10]="currentPortalMode() === 'all'">
+              <span translate="no" class="notranslate material-symbols-outlined text-indigo-500 text-lg">hub</span>
+              <div class="flex flex-col min-w-0 flex-1">
+                <span class="text-xs font-bold text-title flex items-center justify-between">
+                  Modo Unificado (Dev)
+                  @if (currentPortalMode() === 'all') {
+                    <span translate="no" class="notranslate material-symbols-outlined text-indigo-500 text-xs">check_circle</span>
+                  }
+                </span>
+                <span class="text-[10px] text-muted font-mono">Todos os módulos</span>
+              </div>
+            </button>
+          }
+        </div>
       </div>
     }
   </div>
