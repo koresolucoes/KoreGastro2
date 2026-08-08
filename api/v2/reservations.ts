@@ -53,21 +53,24 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
         return res.status(200).json(data);
     }
     
+    const limit = parseInt(req.query.limit as string) || 50;
+    const cursor = req.query.cursor as string;
+
+    let query = supabase.from('reservations').select('*').eq('user_id', restaurantId).is('deleted_at', null);
+
     if (start_date && end_date) {
-        const limit = parseInt(req.query.limit as string) || 50;
-        const cursor = req.query.cursor as string;
-const [sY, sM, sD] = (start_date as string).split('-').map(Number);
+        const [sY, sM, sD] = (start_date as string).split('-').map(Number);
         const [eY, eM, eD] = (end_date as string).split('-').map(Number);
-        let query = supabase.from('reservations').select('*').eq('user_id', restaurantId).is('deleted_at', null)
+        query = query
             .gte('reservation_time', new Date(Date.UTC(sY, sM - 1, sD, 0, 0, 0, 0)).toISOString())
             .lte('reservation_time', new Date(Date.UTC(eY, eM - 1, eD, 23, 59, 59, 999)).toISOString());
-        if (cursor) query = query.gt('reservation_time', cursor);
-        const { data, error } = await query.order('reservation_time', { ascending: true }).limit(limit);
-        if (error) throw error;
-        return res.status(200).json(data || []);
     }
-    
-    return res.status(400).json({ error: "An error occurred" });
+
+    if (cursor) query = query.gt('reservation_time', cursor);
+
+    const { data, error } = await query.order('reservation_time', { ascending: true }).limit(limit);
+    if (error) throw error;
+    return res.status(200).json(data || []);
 }
 
 async function handleGetAvailability(req: VercelRequest, res: VercelResponse, restaurantId: string) {
