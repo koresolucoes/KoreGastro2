@@ -4,7 +4,6 @@ import { PurchaseOrder, PurchaseOrderStatus, PurchaseOrderItem } from '../models
 import { AuthService } from './auth.service';
 import { InventoryDataService } from './inventory-data.service';
 import { ApiClientService } from './api-client.service';
-import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
 
 type FormItem = {
@@ -71,68 +70,12 @@ export class PurchasingDataService {
   }
 
   async receivePurchaseOrder(order: PurchaseOrder, employeeId: string | null): Promise<{ success: boolean; error: any }> {
-    if (!order.purchase_order_items || order.purchase_order_items.length === 0) {
-      return { success: false, error: { message: 'Ordem de compra não contém itens.' } };
-    }
-
-    const supplierName = order.suppliers?.name;
-
-    for (const item of order.purchase_order_items) {
-      const reason = `Compra de Fornecedor${supplierName ? ` - ${supplierName}` : ''}`;
-      // AUDIT: Pass employeeId to stock adjustment
-      const result = await this.inventoryDataService.adjustIngredientStock({
-          ingredientId: item.ingredient_id,
-          quantityChange: item.quantity,
-          reason: reason,
-          lotNumberForEntry: item.lot_number,
-          expirationDateForEntry: item.expiration_date,
-          employeeId: employeeId,
-          unitCostForEntry: item.cost // Furo 2: Passar custo unitário para o lote
-      });
-      if (!result.success) {
-        return { success: false, error: { message: `Falha ao atualizar o estoque para o item ID ${item.ingredient_id}: ${result.error?.message}` } };
-      }
-      
-      if (item.cost > 0) {
-        // Calculate Weighted Average Cost (Custo Médio Ponderado)
-        const { data: currentIngredient } = await supabase
-            .from('ingredients')
-            .select('stock, cost')
-            .eq('id', item.ingredient_id)
-            .single();
-            
-        if (currentIngredient) {
-            const currentStock = currentIngredient.stock || 0;
-            const currentTotalValue = currentStock * (currentIngredient.cost || 0);
-            const newPurchaseValue = item.quantity * item.cost;
-            const newTotalStock = currentStock + item.quantity;
-            
-            let newUnitCost = item.cost; // Fallback
-            if (newTotalStock > 0) {
-                newUnitCost = (currentTotalValue + newPurchaseValue) / newTotalStock;
-            }
-
-            const { error: costUpdateError } = await supabase
-              .from('ingredients')
-              .update({ cost: newUnitCost })
-              .eq('id', item.ingredient_id);
-            
-            if (costUpdateError) {
-              console.error(`Failed to update cost for ingredient ${item.ingredient_id}:`, costUpdateError);
-            }
-        }
-      }
-    }
-    
-    // AUDIT: Update status AND received_by_employee_id
-    const { error: updateError } = await this.apiClient.put(`/api/v2/purchase-orders?id=${order.id}`, { 
-        status: 'Recebida',
-        received_by_employee_id: employeeId
+    const { error } = await this.apiClient.post(`/api/v2/purchase-orders/receive`, { 
+        orderId: order.id,
+        employeeId
     });
         
-    if (updateError) return { success: false, error: updateError };
-
-    return { success: true, error: null };
+    return { success: !error, error };
   }
   
   async deletePurchaseOrder(orderId: string): Promise<{ success: boolean; error: any }> {

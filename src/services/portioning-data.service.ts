@@ -1,6 +1,5 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
-import { supabase } from './supabase-client';
 import { ApiClientService } from './api-client.service';
 import { PortioningEvent, PortioningEventOutput } from '../models/db.models';
 import { UnitContextService } from './unit-context.service';
