@@ -1,12 +1,40 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { withAuth, supabase } from '../../utils/api-handler.js';
+import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { TimeClockEntry } from '../../../src/models/db.models.js';
+import { validateApiKey } from '../../utils/api-key-auth.js';
 
-// Haversine formula
-function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
+
+// Helper to generate signature
+function generatePontoSignature(data: any): { hash: string, signature: string | null } {
+    const dataString = JSON.stringify(data);
+    const hash = crypto.createHash('sha256').update(dataString).digest('hex');
+    
+    let signature: string | null = null;
+    const privateKeyStr = process.env.COMPANY_CERT_PRIVATE_KEY;
+    
+    if (privateKeyStr) {
+        try {
+            const formattedKey = privateKeyStr.replace(/\\n/g, '\n');
+            const sign = crypto.createSign('SHA256');
+            sign.update(dataString);
+            sign.end();
+            signature = sign.sign(formattedKey, 'base64');
+        } catch (e) {
+            console.error('Error signing ponto:', e);
+        }
+    }
+    
+    return { hash, signature };
+}
+
+// Haversine formula to calculate distance between two lat/lon points in meters
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
     const R = 6371e3; // metres
-    const φ1 = lat1 * Math.PI/180;
+    const φ1 = lat1 * Math.PI/180; // φ, λ in radians
     const φ2 = lat2 * Math.PI/180;
     const Δφ = (lat2-lat1) * Math.PI/180;
     const Δλ = (lon2-lon1) * Math.PI/180;
@@ -15,126 +43,162 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
               Math.cos(φ1) * Math.cos(φ2) *
               Math.sin(Δλ/2) * Math.sin(Δλ/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
     return R * c; // in metres
 }
 
-function generatePontoSignature(data: any): string {
-    const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'default-secret';
-    const payload = JSON.stringify(data);
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(payload);
-    return hmac.digest('hex');
+async function authenticateAndGetRestaurantId(req: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
+    }
+    const providedApiKey = authHeader.split(' ')[1];
+    const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
+    if (!restaurantId) {
+        return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
+    }
+    const { data: profile, error: profileError } = await supabase
+      .from('company_profile')
+      .select('external_api_key')
+      .eq('user_id', restaurantId)
+      .single();
+    if (profileError || !profile || !profile.external_api_key) {
+        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
+    }
+    if (providedApiKey !== profile.external_api_key) {
+        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
+    }
+    return { restaurantId };
 }
 
-export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
+export default async function handler(req: any, res: any) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
         return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });
     }
 
-    const { employeeId, pin, latitude, longitude } = req.body;
+    try {
+        const { restaurantId, error, status } = await authenticateAndGetRestaurantId(req);
+        if (error) {
+            return res.status(status!).json({ error });
+        }
 
-    if (!employeeId || !pin) {
-        return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '\`employeeId\` and \`pin\` are required.' });
-    }
-
-    const { data: employee, error: empError } = await supabase
-        .from('employees')
-        .select('id, name, pin, current_clock_in_id, cpf')
-        .eq('id', employeeId)
-        .eq('user_id', restaurantId)
-        .single();
+        let { employeeId, pin, latitude, longitude, lat, lng } = req.body;
         
-    if (empError || !employee) {
-        return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Employee not found.' });
-    }
+        latitude = latitude ?? lat;
+        longitude = longitude ?? lng;
 
-    if (employee.pin !== pin) {
-        return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid PIN.' });
-    }
+        if (latitude !== undefined && latitude !== null) latitude = Number(latitude);
+        if (longitude !== undefined && longitude !== null) longitude = Number(longitude);
+
+        if (!employeeId || !pin) {
+            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` and `pin` are required.' });
+        }
+
+        const { data: employee, error: empError } = await supabase
+            .from('employees')
+            .select('id, name, pin, current_clock_in_id, cpf')
+            .eq('id', employeeId)
+            .single();
         
-    // --- Geolocation validation logic ---
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('user_id, cnpj, latitude, longitude, time_clock_radius')
-      .eq('user_id', restaurantId)
-      .single();
-
-    if (profileError) throw profileError;
-
-    if (profile.latitude && profile.longitude && profile.time_clock_radius) {
-        if (latitude === undefined || longitude === undefined) {
-            return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Localização do funcionário não fornecida.' });
+        if (empError || !employee) {
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Employee not found.' });
+        }
+        if (employee.pin !== pin) {
+            return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid PIN.' });
         }
         
-        const distance = getDistance(latitude, longitude, profile.latitude, profile.longitude);
-        if (distance > profile.time_clock_radius) {
-            return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Você está muito longe do restaurante para bater o ponto.' });
-        }
-    }
+        // --- Geolocation validation logic ---
+        const { data: profile, error: profileError } = await supabase
+          .from('company_profile')
+          .select('user_id, cnpj, latitude, longitude, time_clock_radius')
+          .eq('user_id', restaurantId)
+          .single();
 
-    const now = new Date().toISOString();
+        if (profileError) throw profileError;
+
+        // Check only if the restaurant has configured the location check
+        if (profile.latitude && profile.longitude && profile.time_clock_radius) {
+            if (latitude === undefined || latitude === null || isNaN(latitude) || longitude === undefined || longitude === null || isNaN(longitude)) {
+                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Localização do funcionário não fornecida ou inválida.' });
+            }
+            const distance = getDistance(latitude, longitude, profile.latitude, profile.longitude);
+            if (distance > profile.time_clock_radius) {
+                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Você está muito longe do restaurante para bater o ponto.' });
+            }
+        }
+        // If location is not configured on profile, the check is skipped. 
+        // Could be changed to an error if strict checking is required.
+
+
+        const now = new Date().toISOString();
         
-    const generateReceipt = (action: string) => {
-        const receiptData = {
-            employeeId: employee.id,
-            employeeName: employee.name,
-            employeeCpf: employee.cpf || '',
-            restaurantId: profile.user_id,
-            restaurantCnpj: profile.cnpj || '',
-            timestamp: now,
-            action: action,
+        const generateReceipt = (action: string) => {
+            const receiptData = {
+                employeeId: employee.id,
+                employeeName: employee.name,
+                employeeCpf: employee.cpf || '',
+                restaurantId: profile.user_id,
+                restaurantCnpj: profile.cnpj || '',
+                timestamp: now,
+                action: action,
+            };
+            return generatePontoSignature(receiptData);
         };
-        return generatePontoSignature(receiptData);
-    };
 
-    if (!employee.current_clock_in_id) { // Clocking in
-        const sigData = generateReceipt('clock_in');
-        const signatures = { clock_in: sigData };
+        if (!employee.current_clock_in_id) { // Clocking in
+            const sigData = generateReceipt('clock_in');
+            const signatures = { clock_in: sigData };
 
-        const { data: newEntry, error: insertError } = await supabase.from('time_clock_entries').insert({ 
-             employee_id: employeeId, 
-             user_id: restaurantId,
-            latitude: latitude || null,
-            longitude: longitude || null,
-            clock_in_time: now,
-            signatures: signatures
-        }).select('id').single();
+            const { data: newEntry, error: insertError } = await supabase.from('time_clock_entries').insert({ 
+                employee_id: employeeId, 
+                user_id: restaurantId,
+                latitude: latitude ?? null,
+                longitude: longitude ?? null,
+                clock_in_time: now,
+                signatures: signatures
+            }).select('id').single();
+            if (insertError) throw insertError;
+            await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId);
+            return res.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name, signatureData: sigData });
+        } else { // Interacting with an active shift
+            const { data: activeEntry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', employee.current_clock_in_id).single();
+            if (entryError || !activeEntry) {
+                // This case can happen if the `current_clock_in_id` is stale. Let's fix it and ask the user to try again.
+                await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
+                return res.status(409).json({ type: "about:blank", title: "Conflict", status: 409, detail: 'Shift data out of sync. Please try again.' });
+            }
 
-        if (insertError) throw insertError;
+            const currentSignatures = activeEntry.signatures || {};
 
-        await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId);
-
-        return res.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name, signatureData: sigData });
-
-    } else { // Interacting with an active shift
-        const { data: activeEntry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', employee.current_clock_in_id).single();
-
-        if (entryError || !activeEntry) {
-            await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
-            return res.status(409).json({ type: "about:blank", title: "Conflict", status: 409, detail: 'Shift data out of sync. Please try again.' });
+            if (!activeEntry.break_start_time) { // Starting break
+                const sigData = generateReceipt('break_start');
+                currentSignatures.break_start = sigData;
+                await supabase.from('time_clock_entries').update({ break_start_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
+                return res.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name, signatureData: sigData });
+            } else if (!activeEntry.break_end_time) { // Ending break
+                const sigData = generateReceipt('break_end');
+                currentSignatures.break_end = sigData;
+                await supabase.from('time_clock_entries').update({ break_end_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
+                return res.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name, signatureData: sigData });
+            } else { // Clocking out
+                const sigData = generateReceipt('clock_out');
+                currentSignatures.clock_out = sigData;
+                await supabase.from('time_clock_entries').update({ clock_out_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
+                await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
+                return res.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name, signatureData: sigData });
+            }
         }
-
-        const currentSignatures = activeEntry.signatures || {};
-
-        if (!activeEntry.break_start_time) { // Starting break
-            const sigData = generateReceipt('break_start');
-            currentSignatures.break_start = sigData;
-            await supabase.from('time_clock_entries').update({ break_start_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
-            return res.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name, signatureData: sigData });
-
-        } else if (!activeEntry.break_end_time) { // Ending break
-            const sigData = generateReceipt('break_end');
-            currentSignatures.break_end = sigData;
-            await supabase.from('time_clock_entries').update({ break_end_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
-            return res.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name, signatureData: sigData });
-
-        } else { // Clocking out
-            const sigData = generateReceipt('clock_out');
-            currentSignatures.clock_out = sigData;
-            await supabase.from('time_clock_entries').update({ clock_out_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
-            await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
-            return res.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name, signatureData: sigData });
-        }
+    } catch (error: any) {
+        console.error('[API /rh/ponto/bater-ponto] Fatal error:', error);
+        return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
     }
-});
+}
