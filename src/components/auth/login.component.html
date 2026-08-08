@@ -3,23 +3,17 @@
   <div class="absolute top-4 left-4 right-4 z-30 flex items-center justify-between">
     <!-- Portal Indicator / Dev Switcher -->
     <div class="flex items-center gap-2">
-      <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md shadow-sm transition-all" [ngClass]="portalInfo().color">
-        <span translate="no" class="notranslate material-symbols-outlined text-base">{{ portalInfo().icon }}</span>
-        <span class="text-xs font-bold">{{ portalInfo().badge }}</span>
-        <span class="text-[10px] opacity-70 font-mono hidden sm:inline">({{ portalInfo().domain }})</span>
-      </div>
-
       <!-- Dev Switcher Tabs if not domain-locked -->
       @if (!isDomainLocked()) {
-        <div class="hidden sm:flex items-center bg-gray-100/90 dark:bg-zinc-800/90 rounded-full p-1 gap-1 text-sm font-medium shadow-inner backdrop-blur-md">
+        <div class="hidden sm:flex items-center bg-surface border border-strong rounded-full p-1 gap-1 text-sm font-medium shadow-sm backdrop-blur-md">
           <button (click)="switchPortal('gestao')" type="button" 
             class="px-4 py-1.5 rounded-full transition-all duration-300 ease-out flex items-center gap-1.5"
-            [ngClass]="currentPortalMode() === 'gestao' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+            [ngClass]="currentPortalMode() === 'gestao' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
             Gestão
           </button>
           <button (click)="switchPortal('operacao')" type="button" 
             class="px-4 py-1.5 rounded-full transition-all duration-300 ease-out flex items-center gap-1.5"
-            [ngClass]="currentPortalMode() === 'operacao' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+            [ngClass]="currentPortalMode() === 'operacao' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
             Operação
           </button>
         </div>
@@ -27,15 +21,15 @@
     </div>
 
     <!-- Theme Toggle Floating Button -->
-    <div class="flex items-center bg-gray-100/90 dark:bg-zinc-800/90 rounded-full p-1 shadow-inner backdrop-blur-md">
+    <div class="flex items-center bg-surface border border-strong rounded-full p-1 shadow-sm backdrop-blur-md">
       <button (click)="themeService.currentTheme() === 'dark' ? toggleTheme() : null" type="button" 
         class="p-2 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
-        [ngClass]="themeService.currentTheme() === 'light' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+        [ngClass]="themeService.currentTheme() === 'light' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
         <span translate="no" class="notranslate material-symbols-outlined text-[20px]">light_mode</span>
       </button>
       <button (click)="themeService.currentTheme() === 'light' ? toggleTheme() : null" type="button" 
         class="p-2 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
-        [ngClass]="themeService.currentTheme() === 'dark' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+        [ngClass]="themeService.currentTheme() === 'dark' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
         <span translate="no" class="notranslate material-symbols-outlined text-[20px]">dark_mode</span>
       </button>
     </div>
@@ -58,11 +52,6 @@
         <div class="text-center lg:text-left mb-8 flex flex-col items-center lg:items-start">
           <div class="flex items-center justify-center lg:justify-start gap-3 mb-4 lg:hidden">
             <img src="/logo.svg" alt="ChefOS Logo" class="h-16 w-auto">
-          </div>
-          
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold mb-3" [ngClass]="portalInfo().color">
-            <span translate="no" class="notranslate material-symbols-outlined text-sm">{{ portalInfo().icon }}</span>
-            <span>{{ portalInfo().badge }}</span>
           </div>
 
           <h2 class="text-3xl font-bold text-title tracking-tight">
