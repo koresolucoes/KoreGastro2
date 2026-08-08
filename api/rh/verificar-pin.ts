@@ -1,32 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { validateApiKey } from '../utils/api-key-auth.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
 async function authenticateAndGetRestaurantId(req: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
+    const authResult = await validateApiKey(req);
+    if (!authResult.isValid || !authResult.restaurantId) {
+        return {
+            restaurantId: authResult.restaurantId || '',
+            error: authResult.error ? { message: authResult.error.message } : { message: 'Authentication failed.' },
+            status: authResult.status || 403
+        };
     }
-    const providedApiKey = authHeader.split(' ')[1];
-    const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
-    if (!restaurantId) {
-        return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
-    }
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('external_api_key')
-      .eq('user_id', restaurantId)
-      .single();
-    if (profileError || !profile || !profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== profile.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
-    }
-    return { restaurantId };
+    return { restaurantId: authResult.restaurantId };
 }
 
 export default async function handler(req: any, res: any) {
