@@ -39,19 +39,11 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
     providedApiKey = (req.headers['x-api-key'] as string)?.trim();
   }
 
-  if (!providedApiKey && req.query?.apiKey) {
-    providedApiKey = req.query.apiKey as string;
-  }
-
-  if (!providedApiKey && req.body?.apiKey) {
-    providedApiKey = req.body.apiKey as string;
-  }
-
   if (!providedApiKey) {
     return {
       isValid: false,
       restaurantId: null,
-      error: { message: 'Chave de API (x-api-key ou Bearer token) não fornecida.' },
+      error: { message: 'Chave de API (x-api-key ou Bearer token) não fornecida nos cabeçalhos.' },
       status: 401
     };
   }
