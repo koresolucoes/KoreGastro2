@@ -522,15 +522,17 @@ export class PosDataService {
         destOrderId = destOrder.id;
 
         // Update table customer counts
-        await supabase.from("tables").upsert([
-          {
-            ...destinationTable,
-            status: "OCUPADA",
-            customer_count:
-              (destinationTable.customer_count || 0) +
-              (sourceTable.customer_count || 0),
-          },
-        ]);
+        await this.apiClient.post('/api/v2/pos/tables?action=upsert', {
+          tables: [
+            {
+              ...destinationTable,
+              status: "OCUPADA",
+              customer_count:
+                (destinationTable.customer_count || 0) +
+                (sourceTable.customer_count || 0),
+            },
+          ]
+        });
       } else {
         // Create a new order for destination table
         const newOrderPayload = {

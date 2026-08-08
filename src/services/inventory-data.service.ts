@@ -178,7 +178,7 @@ export class InventoryDataService {
       
       await this.recipeDataService.saveTechnicalSheet(recipe!.id, {}, [prep], [recipeIngredient], []);
 
-      const { error: updateError } = await supabase.from('ingredients').update({ proxy_recipe_id: recipe!.id }).eq('id', ingredient.id!);
+      const { error: updateError } = await this.apiClient.put(`/api/v2/ingredients?id=${ingredient.id!}`, { proxy_recipe_id: recipe!.id });
       if (updateError) return { success: false, error: updateError };
       
       return { success: true, error: null, proxyRecipeId: recipe!.id };
@@ -352,10 +352,7 @@ export class InventoryDataService {
       if (!success) throw error;
       
       const newUnitCost = recipeComposition.totalCost;
-      const { error: costUpdateError } = await supabase
-        .from('ingredients')
-        .update({ cost: newUnitCost })
-        .eq('id', sourceIngredientId);
+      const { error: costUpdateError } = await this.apiClient.put(`/api/v2/ingredients?id=${sourceIngredientId}`, { cost: newUnitCost });
       
       if (costUpdateError) console.error(`Production stock updated, but failed to update cost:`, costUpdateError);
       
