@@ -154,11 +154,11 @@ export class MenuEngineeringComponent {
 
   getCategoryColor(category: string) {
     switch(category) {
-      case 'Estrela': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30';
-      case 'Vaca Leiteira': return 'bg-blue-500/10 text-blue-500 border-blue-500/30';
-      case 'Quebra-Cabeça': return 'bg-amber-500/10 text-amber-500 border-amber-500/30';
-      case 'Cachorro': return 'bg-rose-500/10 text-rose-500 border-rose-500/30';
-      default: return 'bg-surface border-subtle';
+      case 'Estrela': return 'bg-surface-elevated text-title border-strong';
+      case 'Vaca Leiteira': return 'bg-surface-elevated text-title border-strong';
+      case 'Quebra-Cabeça': return 'bg-surface-elevated text-title border-strong';
+      case 'Cachorro': return 'bg-surface-elevated text-title border-strong';
+      default: return 'bg-surface border-subtle text-muted';
     }
   }
   

@@ -9,13 +9,13 @@ import { FinancialDataService, LossReportItem } from '../../../services/financia
   providers: [CurrencyPipe, DatePipe],
   template: `
     <div class="h-full flex flex-col space-y-8">
-      <div class="chef-surface rounded-3xl border border-subtle shadow-xl p-6 bg-amber-500/5 border-amber-500/20 flex-shrink-0">
+      <div class="chef-surface rounded-3xl border border-strong shadow-sm p-6 bg-surface flex-shrink-0">
         <div class="flex items-start gap-6">
-          <div class="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center border border-amber-500/20 shadow-inner flex-shrink-0">
-            <span translate="no" class="notranslate material-symbols-outlined text-amber-600 text-4xl">trending_down</span>
+          <div class="w-16 h-16 bg-surface-elevated rounded-2xl flex items-center justify-center border border-strong shadow-inner flex-shrink-0">
+            <span translate="no" class="notranslate material-symbols-outlined text-title text-4xl">trending_down</span>
           </div>
           <div class="flex-1">
-            <h2 class="text-2xl font-black text-amber-600 title-display tracking-tight">Relatório de Perdas & Desperdício</h2>
+            <h2 class="text-2xl font-black text-title title-display tracking-tight">Relatório de Perdas & Desperdício</h2>
             <p class="text-muted font-medium text-sm mt-2 max-w-3xl leading-relaxed">
               DRE das perdas: Visualize o <strong>custo total de ingredientes vencidos, erros operacionais e cortesias</strong> e o impacto direto na margem de lucro.
             </p>
@@ -30,9 +30,9 @@ import { FinancialDataService, LossReportItem } from '../../../services/financia
       
       <!-- Metricas -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
-          <div class="chef-surface p-4 rounded-2xl border border-subtle flex items-center gap-4">
-              <div class="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-                  <span translate="no" class="notranslate material-symbols-outlined text-orange-500">inventory_2</span>
+          <div class="chef-surface p-4 rounded-2xl border border-strong shadow-sm bg-surface flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-surface-elevated flex items-center justify-center border border-strong">
+                  <span translate="no" class="notranslate material-symbols-outlined text-title">inventory_2</span>
               </div>
               <div>
                   <p class="text-xs font-bold text-muted tracking-wide uppercase">Custo de Ingredientes (Estoque)</p>
@@ -40,9 +40,9 @@ import { FinancialDataService, LossReportItem } from '../../../services/financia
               </div>
           </div>
           
-          <div class="chef-surface p-4 rounded-2xl border border-subtle flex items-center gap-4">
-              <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                  <span translate="no" class="notranslate material-symbols-outlined text-red-500">cancel</span>
+          <div class="chef-surface p-4 rounded-2xl border border-strong shadow-sm bg-surface flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-surface-elevated flex items-center justify-center border border-strong">
+                  <span translate="no" class="notranslate material-symbols-outlined text-title">cancel</span>
               </div>
               <div>
                   <p class="text-xs font-bold text-muted tracking-wide uppercase">Custo de Cancelamentos (Estimado)</p>

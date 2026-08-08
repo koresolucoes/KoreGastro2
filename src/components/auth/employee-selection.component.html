@@ -2,13 +2,18 @@
   
   <!-- Theme Toggle Floating Button -->
   <div class="absolute top-4 right-4 z-30">
-    <button (click)="toggleTheme()" type="button" 
-            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-elevated/80 border border-strong text-muted hover:text-title hover:border-brand/40 transition-all shadow-sm active:scale-95 text-xs font-bold">
-      <span translate="no" class="notranslate material-symbols-outlined text-lg text-brand">
-        {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
-      </span>
-      <span class="hidden sm:inline">{{ themeService.currentTheme() === 'dark' ? 'Modo Claro' : 'Modo Escuro' }}</span>
-    </button>
+    <div class="flex items-center bg-surface border border-strong rounded-full p-1 shadow-sm backdrop-blur-md">
+      <button (click)="themeService.currentTheme() === 'dark' ? toggleTheme() : null" type="button" 
+        class="p-2 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+        [ngClass]="themeService.currentTheme() === 'light' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">light_mode</span>
+      </button>
+      <button (click)="themeService.currentTheme() === 'light' ? toggleTheme() : null" type="button" 
+        class="p-2 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+        [ngClass]="themeService.currentTheme() === 'dark' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">dark_mode</span>
+      </button>
+    </div>
   </div>
 
   <!-- Liquid Glow Background Orbs -->
@@ -93,12 +98,7 @@
           </div>
         }
         
-        <div class="mt-8 pt-6 border-t border-subtle text-center lg:text-left animate-in fade-in">
-          <a href="javascript:void(0)" (click)="logoutAdmin()" class="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted hover:text-brand transition-colors px-4 py-2 rounded-full bg-surface border border-strong shadow-sm hover:-translate-y-0.5">
-            <span translate="no" class="notranslate material-symbols-outlined text-sm">admin_panel_settings</span>
-            Acesso Gerencial
-          </a>
-        </div>
+
       </div>
     </div>
 
