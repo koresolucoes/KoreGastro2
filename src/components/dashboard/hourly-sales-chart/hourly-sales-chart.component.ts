@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, ElementRef, inject, viewChild, inpu
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { PeakHoursData } from '../../../services/cashier-data.service';
 
-declare var d3: any;
+import * as d3 from 'd3';
 
 @Component({
   selector: 'app-hourly-sales-chart',

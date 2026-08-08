@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, ElementRef, inject, viewChild, inpu
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { DailySalesCogs } from '../../../services/cashier-data.service';
 
-declare var d3: any;
+import * as d3 from 'd3';
 
 @Component({
   selector: 'app-sales-cogs-chart',

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Logger } from './logger.js';
+import { validateApiKey } from './api-key-auth.js';
 
 // Initialize Supabase client once
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -41,6 +42,44 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number; res
 }
 
 /**
+ * Configure standard CORS headers restricted to app.chefos.online and authorized dev environments.
+ */
+export function setCorsHeaders(req: VercelRequest, res: VercelResponse) {
+    const allowedOrigins = [
+        'https://app.chefos.online',
+        'http://app.chefos.online',
+        process.env.FRONTEND_URL
+    ].filter(Boolean);
+
+    const requestOrigin = (req.headers.origin || req.headers.referer) as string | undefined;
+
+    let originToSet = 'https://app.chefos.online';
+    if (requestOrigin) {
+        try {
+            const url = new URL(requestOrigin);
+            const host = url.hostname;
+            if (
+                host === 'app.chefos.online' ||
+                host.endsWith('.chefos.online') ||
+                host === 'localhost' ||
+                host === '127.0.0.1' ||
+                host.endsWith('.run.app') ||
+                allowedOrigins.includes(requestOrigin)
+            ) {
+                originToSet = requestOrigin;
+            }
+        } catch {
+            // Invalid origin URL, default to https://app.chefos.online
+        }
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', originToSet);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, X-Request-ID, X-Trace-ID, x-restaurant-id');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+}
+
+/**
  * Middleware to handle CORS, Authentication, Rate Limiting, Correlation IDs, Latency Metrics, and Global Error Catching.
  * Reduces boilerplate in all API routes.
  */
@@ -49,21 +88,32 @@ export function withAuth(handler: ApiHandler) {
         const startTime = Date.now();
         const traceId = (req.headers['x-req-id'] || req.headers['x-trace-id'] || ('trace_' + Math.random().toString(36).substring(2, 10))) as string;
         
-        // 1. CORS & Observability Headers
-        const allowedOrigin = process.env.FRONTEND_URL || 'https://chefos.com.br';
-        res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Trace-ID');
-        res.setHeader('X-Trace-ID', traceId);
+        // 1. CORS Headers
+        setCorsHeaders(req, res);
 
-        // 2. Handle Preflight OPTIONS req
+        // 2. Preflight OPTIONS
         if (req.method === 'OPTIONS') {
-            return res.status(200).end();
+            return res.status(204).end();
         }
 
-        let restaurantId = (req.query.restaurantId || req.body?.restaurantId) as string || 'unknown';
+        // 3. Authentication via API Key
+        const authResult = await validateApiKey(req);
+        if (!authResult.isValid || !authResult.restaurantId) {
+            Logger.warn('Unauthorized API Request', {
+                endpoint: req.url,
+                method: req.method,
+                traceId,
+                error: authResult.error?.message
+            });
+            return res.status(authResult.status || 401).json({
+                success: false,
+                error: authResult.error?.message || 'Chave de API inválida ou não fornecida.'
+            });
+        }
 
-        // Rate limit check based on IP / client header or restaurantId
+        const restaurantId = authResult.restaurantId;
+
+        // Rate limit check based on IP + restaurantId
         const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown';
         const limitKey = `${clientIp}_${restaurantId}`;
         const { allowed, remaining, resetMs } = checkRateLimit(limitKey);
@@ -76,58 +126,12 @@ export function withAuth(handler: ApiHandler) {
             res.setHeader('Retry-After', Math.ceil(resetMs / 1000));
             Logger.warn('Rate limit exceeded', { endpoint: req.url, clientIp, restaurantId, traceId });
             return res.status(429).json({
-                type: "about:blank",
-                title: "Too Many Requests",
-                status: 429,
-                detail: 'Rate limit exceeded. Please try again later.'
+                success: false,
+                error: 'Muitas requisições. Tente novamente em alguns segundos.'
             });
         }
 
         try {
-            // 3. Authentication
-            const authHeader = req.headers.authorization;
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                Logger.warn('Unauthorized API Request: Missing Bearer token', {
-                    endpoint: req.url,
-                    method: req.method,
-                    traceId,
-                    restaurantId
-                });
-                return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Authorization header is missing or invalid.' });
-            }
-            
-            const providedApiKey = authHeader.split(' ')[1];
-            
-            if (!restaurantId || restaurantId === 'unknown') {
-                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required in query or body.' });
-            }
-
-            const { data: profile, error: profileError } = await supabase
-                .from('company_profile')
-                .select('external_api_key')
-                .eq('user_id', restaurantId)
-                .single();
-
-            if (profileError || !profile || !profile.external_api_key) {
-                Logger.warn('Invalid restaurantId or unconfigured API key', {
-                    endpoint: req.url,
-                    method: req.method,
-                    traceId,
-                    restaurantId
-                });
-                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid `restaurantId` or API key not configured.' });
-            }
-
-            if (providedApiKey !== profile.external_api_key) {
-                Logger.warn('API Key mismatch attempt', {
-                    endpoint: req.url,
-                    method: req.method,
-                    traceId,
-                    restaurantId
-                });
-                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid API key.' });
-            }
-
             // 4. Check Admin routes
             if (req.url && req.url.includes('/admin/')) {
                 const { data: userData } = await supabase.auth.admin.getUserById(restaurantId);
@@ -138,10 +142,10 @@ export function withAuth(handler: ApiHandler) {
                         .eq('email', userData.user.email)
                         .maybeSingle();
                     if (!adminData) {
-                        return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Forbidden: System Admin access required.' });
+                        return res.status(403).json({ success: false, error: 'Acesso negado: Requer privilégios de Administrador.' });
                     }
                 } else {
-                    return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Forbidden: Could not verify system admin status.' });
+                    return res.status(403).json({ success: false, error: 'Acesso negado: Não foi possível verificar status de administrador.' });
                 }
             }
 
@@ -168,19 +172,18 @@ export function withAuth(handler: ApiHandler) {
                 latencyMs
             });
             
-            // 5. Global Error Handling (Hiding internal DB errors)
-            const message = error.message || 'An internal server error occurred.';
-            
-            // Mask Supabase specific errors
+            // Mask Supabase / Internal DB errors
+            const message = error.message || 'Erro interno no servidor.';
             if (message.includes('PGRST116')) {
-                return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Resource not found.' });
+                return res.status(404).json({ success: false, error: 'Recurso não encontrado.' });
             }
             if (message.includes('duplicate key value')) {
-                return res.status(409).json({ type: "about:blank", title: "Conflict", status: 409, detail: 'Resource already exists (Conflict).' });
+                return res.status(409).json({ success: false, error: 'Recurso já existente (Conflito).' });
             }
 
-            return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: 'Internal Server Error' });
+            return res.status(500).json({ success: false, error: 'Erro interno no servidor.' });
         }
     };
 }
+
 
