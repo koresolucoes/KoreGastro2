@@ -4,12 +4,15 @@ import { Logger } from './logger.js';
 import { validateApiKey } from './api-key-auth.js';
 import { checkRateLimit } from './redis.js';
 
-// Initialize Supabase client once
+// Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-    Logger.error('Missing Supabase environment variables');
+if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
+    Logger.error('Missing or placeholder Supabase environment variables');
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('FATAL: Configuração do Supabase ausente ou inválida em produção.');
+    }
 }
 
 export const supabase = createClient(
@@ -34,7 +37,7 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse) {
 
     const requestOrigin = (req.headers.origin || req.headers.referer) as string | undefined;
 
-    let originToSet = 'https://app.chefos.online';
+    let originToSet: string | null = null;
     if (requestOrigin) {
         try {
             const url = new URL(requestOrigin);
@@ -50,14 +53,18 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse) {
                 originToSet = requestOrigin;
             }
         } catch {
-            // Invalid origin URL, default to https://app.chefos.online
+            // Invalid origin URL
         }
     }
 
-    res.setHeader('Access-Control-Allow-Origin', originToSet);
+    if (originToSet) {
+        res.setHeader('Access-Control-Allow-Origin', originToSet);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    } else {
+        res.setHeader('Access-Control-Allow-Origin', 'https://app.chefos.online');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, X-Request-ID, X-Trace-ID, x-restaurant-id');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
 }
 
 /**
@@ -97,7 +104,7 @@ export function withAuth(handler: ApiHandler) {
         // Rate limit check based on hashed API Key (or fallback to IP + restaurantId)
         const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown';
         const limitKey = authResult.apiKeyHash
-            ? `apikey:${authResult.apiKeyHash}`
+            ? `apikey:${authResult.apiKeyHash.slice(0, 16)}`
             : `ip:${clientIp}_${restaurantId}`;
 
         const { allowed, remaining, resetMs, isRedis } = await checkRateLimit(limitKey, MAX_REQUESTS_PER_WINDOW, 60);
