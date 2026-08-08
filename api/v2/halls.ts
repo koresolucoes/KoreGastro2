@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 import { withAuth, supabase } from '../utils/api-handler.js';
+import { remember, deleteCache, invalidateCachePattern } from '../utils/redis.js';
 import { z } from 'zod';
 
 const hallSchema = z.object({
@@ -32,46 +33,63 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
 
 // --- Handler for GET requests ---
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-  const { id, subresource } = req.query;
+  const { id, subresource, nocache } = req.query;
 
   if (id && typeof id === 'string') {
     if (subresource === 'tables') {
-      // Get all tables for a specific hall
-      const { data, error } = await supabase
-        .from('tables')
-        .select('*')
-        .eq('user_id', restaurantId)
-        .eq('hall_id', id);
-      if (error) throw error;
-      return res.status(200).json(data || []);
+      const cacheKey = `hall_tables:${restaurantId}:${id}`;
+      const fetcher = async () => {
+        const { data, error } = await supabase
+          .from('tables')
+          .select('*')
+          .eq('user_id', restaurantId)
+          .eq('hall_id', id);
+        if (error) throw error;
+        return data || [];
+      };
+
+      const tables = nocache === 'true' ? await fetcher() : await remember(cacheKey, 300, fetcher);
+      return res.status(200).json(tables);
     } else {
-      // Get a single hall by ID
-      const { data, error } = await supabase
-        .from('halls')
-        .select('*')
-        .eq('user_id', restaurantId)
-        .eq('id', id)
-        .single();
-      if (error) {
-        if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Hall with id "${id}" not found.` });
-        throw error;
+      const cacheKey = `hall:${restaurantId}:${id}`;
+      const fetcher = async () => {
+        const { data, error } = await supabase
+          .from('halls')
+          .select('*')
+          .eq('user_id', restaurantId)
+          .eq('id', id)
+          .single();
+        if (error) {
+          if (error.code === 'PGRST116') return null;
+          throw error;
+        }
+        return data;
+      };
+
+      const hall = nocache === 'true' ? await fetcher() : await remember(cacheKey, 300, fetcher);
+      if (!hall) {
+        return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Hall with id "${id}" not found.` });
       }
-      return res.status(200).json(data);
+      return res.status(200).json(hall);
     }
   }
 
   // Get all halls for the restaurant
   const limit = parseInt(req.query.limit as string) || 50;
-  const cursor = req.query.cursor as string;
+  const cursor = (req.query.cursor as string) || 'none';
+  const listCacheKey = `halls:${restaurantId}:${limit}:${cursor}`;
 
-  let query = supabase.from('halls').select('*').eq('user_id', restaurantId).is('deleted_at', null);
-  
-  if (cursor) query = query.gt('created_at', cursor);
+  const fetchList = async () => {
+    let query = supabase.from('halls').select('*').eq('user_id', restaurantId).is('deleted_at', null);
+    if (req.query.cursor) query = query.gt('created_at', req.query.cursor as string);
 
-  const { data, error } = await query.order('created_at', { ascending: true }).limit(limit);
-  
-  if (error) throw error;
-  return res.status(200).json(data || []);
+    const { data, error } = await query.order('created_at', { ascending: true }).limit(limit);
+    if (error) throw error;
+    return data || [];
+  };
+
+  const halls = nocache === 'true' ? await fetchList() : await remember(listCacheKey, 300, fetchList);
+  return res.status(200).json(halls);
 }
 
 // --- Handler for POST requests ---
@@ -90,6 +108,9 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
     .single();
 
   if (error) throw error;
+
+  await invalidateCachePattern(`halls:${restaurantId}:*`);
+
   return res.status(201).json(newHall);
 }
 
@@ -120,6 +141,12 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Hall with id "${id}" not found.` });
         throw error;
     }
+
+    await Promise.all([
+      deleteCache(`hall:${restaurantId}:${id}`),
+      invalidateCachePattern(`halls:${restaurantId}:*`)
+    ]);
+
     return res.status(200).json(updatedHall);
 }
 
@@ -139,7 +166,6 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
     
     if (tablesError) {
         console.error(`Failed to delete tables for hall ${id}:`, tablesError);
-        // We continue to try deleting the hall itself, but log the error.
     }
 
     // Then, delete the hall itself
@@ -150,6 +176,13 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
         .eq('user_id', restaurantId);
 
     if (error) throw error;
+
+    await Promise.all([
+      deleteCache(`hall:${restaurantId}:${id}`),
+      deleteCache(`hall_tables:${restaurantId}:${id}`),
+      invalidateCachePattern(`halls:${restaurantId}:*`),
+      invalidateCachePattern(`tables:${restaurantId}:*`)
+    ]);
 
     return res.status(204).end();
 }

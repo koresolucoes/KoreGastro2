@@ -8,6 +8,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
 import { validateApiKey } from '../utils/api-key-auth.js';
+import { remember, deleteCache, invalidateCachePattern } from '../utils/redis.js';
 
 // ... (existing imports)
 
@@ -76,21 +77,40 @@ export default async function handler(req: any, res: any) {
 }
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { id } = req.query;
+    const { id, nocache } = req.query;
 
     if (id && typeof id === 'string') {
-        const { data, error } = await supabase.from('employees').select('*, roles(name)').eq('user_id', restaurantId).eq('id', id).single();
-        if (error) throw error;
-        return res.status(200).json(data);
+        const cacheKey = `employee:${restaurantId}:${id}`;
+        const fetcher = async () => {
+            const { data, error } = await supabase.from('employees').select('*, roles(name)').eq('user_id', restaurantId).eq('id', id).single();
+            if (error) {
+                if (error.code === 'PGRST116') return null;
+                throw error;
+            }
+            return data;
+        };
+
+        const item = nocache === 'true' ? await fetcher() : await remember(cacheKey, 300, fetcher);
+        if (!item) {
+            return res.status(404).json({ error: "Employee not found" });
+        }
+        return res.status(200).json(item);
     }
 
     const limit = parseInt(req.query.limit as string) || 50;
-    const cursor = req.query.cursor as string;
-    let query = supabase.from('employees').select('*, roles(name)').eq('user_id', restaurantId).is('deleted_at', null);
-    if (cursor) query = query.gt('name', cursor);
-    const { data, error } = await query.order('name').limit(limit);
-    if (error) throw error;
-    return res.status(200).json(data || []);
+    const cursor = (req.query.cursor as string) || 'none';
+    const listCacheKey = `employees:${restaurantId}:${limit}:${cursor}`;
+
+    const fetchList = async () => {
+        let query = supabase.from('employees').select('*, roles(name)').eq('user_id', restaurantId).is('deleted_at', null);
+        if (req.query.cursor) query = query.gt('name', req.query.cursor as string);
+        const { data, error } = await query.order('name').limit(limit);
+        if (error) throw error;
+        return data || [];
+    };
+
+    const employees = nocache === 'true' ? await fetchList() : await remember(listCacheKey, 300, fetchList);
+    return res.status(200).json(employees);
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId: string) {
@@ -107,6 +127,9 @@ async function handlePost(req: VercelRequest, res: VercelResponse, restaurantId:
         .single();
     
     if (error) throw error;
+
+    await invalidateCachePattern(`employees:${restaurantId}:*`);
+
     return res.status(201).json(data);
 }
 
@@ -129,6 +152,12 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         .single();
         
     if (error) throw error;
+
+    await Promise.all([
+        deleteCache(`employee:${restaurantId}:${id}`),
+        invalidateCachePattern(`employees:${restaurantId}:*`)
+    ]);
+
     return res.status(200).json(data);
 }
 
@@ -145,5 +174,11 @@ async function handleDelete(req: VercelRequest, res: VercelResponse, restaurantI
         .eq('user_id', restaurantId);
         
     if (error) throw error;
+
+    await Promise.all([
+        deleteCache(`employee:${restaurantId}:${id}`),
+        invalidateCachePattern(`employees:${restaurantId}:*`)
+    ]);
+
     return res.status(204).end();
 }
