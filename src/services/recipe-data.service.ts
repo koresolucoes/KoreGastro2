@@ -2,6 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Recipe, RecipeIngredient, RecipePreparation, RecipeSubRecipe, Category } from '../models/db.models';
 import { AuthService } from './auth.service';
+import { ApiClientService } from './api-client.service';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
 import { AuditDataService } from './audit-data.service';
@@ -13,20 +14,14 @@ export class RecipeDataService {
   private authService = inject(AuthService);
   private unitContextService = inject(UnitContextService);
   private auditDataService = inject(AuditDataService);
+  private apiClient = inject(ApiClientService);
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
   }
 
   async addRecipe(recipe: Partial<Omit<Recipe, 'id' | 'created_at'>>): Promise<{ success: boolean; error: any; data?: Recipe }> {
-    const storeId = this.getActiveUnitId();
-    if (!storeId) return { success: false, error: { message: 'Active unit or user not found' }, data: undefined };
-    
-    const { data, error } = await supabase.from('recipes').insert({ 
-      ...recipe, 
-      user_id: storeId, 
-      store_id: storeId 
-    }).select().single();
+    const { data, error } = await this.apiClient.post<Recipe>('/api/v2/recipes', recipe);
     return { success: !error, error, data };
   }
   
@@ -147,31 +142,17 @@ export class RecipeDataService {
   }
 
   async updateRecipeAvailability(recipeId: string, isAvailable: boolean): Promise<{ success: boolean; error: any }> {
-    const { error } = await supabase
-      .from('recipes')
-      .update({ is_available: isAvailable })
-      .eq('id', recipeId);
-      
+    const { error } = await this.apiClient.put(`/api/v2/recipes?id=${recipeId}`, { is_available: isAvailable });
     return { success: !error, error };
   }
 
   async deleteRecipe(recipeId: string): Promise<{ success: boolean; error: any }> {
-    await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
-    await supabase.from('recipe_sub_recipes').delete().eq('parent_recipe_id', recipeId);
-    await supabase.from('recipe_sub_recipes').delete().eq('child_recipe_id', recipeId);
-    await supabase.from('recipe_preparations').delete().eq('recipe_id', recipeId);
-    await supabase.from('promotion_recipes').delete().eq('recipe_id', recipeId);
-    await supabase.from('order_items').delete().eq('recipe_id', recipeId);
-
-    const { error } = await supabase.from('recipes').delete().eq('id', recipeId);
+    const { error } = await this.apiClient.delete(`/api/v2/recipes?id=${recipeId}`);
     return { success: !error, error };
   }
 
   async addRecipeCategory(name: string, imageFile?: File | null): Promise<{ success: boolean, error: any, data?: Category }> {
-    const userId = this.getActiveUnitId();
-    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
-
-    const { data, error } = await supabase.from('categories').insert({ name, user_id: userId }).select().single();
+    const { data, error } = await this.apiClient.post<Category>('/api/v2/recipe-categories', { name });
     
     if (error) {
         return { success: false, error, data: undefined };
@@ -184,13 +165,14 @@ export class RecipeDataService {
         }
     }
     
-    const { data: finalData } = await supabase.from('categories').select('*').eq('id', data.id).single();
+    const { data: finalData } = await this.apiClient.get<Category>('/api/v2/recipe-categories'); 
+    const singleData = Array.isArray(finalData) ? finalData.find(c => c.id === data?.id) : finalData;
 
-    return { success: true, error: null, data: finalData || data };
+    return { success: true, error: null, data: (singleData as Category) || data };
   }
 
   async updateRecipeCategory(id: string, name: string, imageFile?: File | null): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.from('categories').update({ name }).eq('id', id);
+    const { error } = await this.apiClient.put(`/api/v2/recipe-categories?id=${id}`, { name });
 
     if (error) {
         return { success: false, error };
@@ -231,7 +213,7 @@ export class RecipeDataService {
   }
 
   async deleteRecipeCategory(id: string): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.from('categories').delete().eq('id', id);
+    const { error } = await this.apiClient.delete(`/api/v2/recipe-categories?id=${id}`);
     return { success: !error, error };
   }
 

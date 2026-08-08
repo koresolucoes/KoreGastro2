@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { PurchaseOrder, PurchaseOrderStatus, PurchaseOrderItem } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { InventoryDataService } from './inventory-data.service';
+import { ApiClientService } from './api-client.service';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
 
@@ -24,44 +25,28 @@ export class PurchasingDataService {
   private authService = inject(AuthService);
   private inventoryDataService = inject(InventoryDataService);
   private unitContextService = inject(UnitContextService);
+  private apiClient = inject(ApiClientService);
 
   async createPurchaseOrder(
     orderData: { supplier_id: string | null; status: PurchaseOrderStatus; notes: string },
     items: FormItem[],
     employeeId: string | null // AUDIT: Created By
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-
-    const { data: order, error: orderError } = await supabase
-      .from('purchase_orders')
-      .insert({ 
-          ...orderData, 
-          user_id: userId,
-          created_by_employee_id: employeeId 
-      })
-      .select('id')
-      .single();
-
-    if (orderError) return { success: false, error: orderError };
-
     const itemsToInsert = items.map(item => ({
-      purchase_order_id: order.id,
       ingredient_id: item.ingredient_id,
       quantity: item.quantity,
       cost: item.cost,
       lot_number: item.lot_number,
       expiration_date: item.expiration_date,
-      user_id: userId,
     }));
 
-    const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemsToInsert);
-    if (itemsError) {
-      await supabase.from('purchase_orders').delete().eq('id', order.id);
-      return { success: false, error: itemsError };
-    }
+    const { error } = await this.apiClient.post('/api/v2/purchase-orders', {
+        ...orderData,
+        created_by_employee_id: employeeId,
+        items: itemsToInsert
+    });
 
-    return { success: true, error: null };
+    return { success: !error, error };
   }
   
   async updatePurchaseOrder(
@@ -69,30 +54,20 @@ export class PurchasingDataService {
     orderData: { supplier_id: string | null; status: PurchaseOrderStatus; notes: string },
     items: FormItem[]
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
-    
-    const { error: orderError } = await supabase.from('purchase_orders').update(orderData).eq('id', orderId);
-    if (orderError) return { success: false, error: orderError };
-
-    await supabase.from('purchase_order_items').delete().eq('purchase_order_id', orderId);
-
     const itemsToInsert = items.map(item => ({
-      purchase_order_id: orderId,
       ingredient_id: item.ingredient_id,
       quantity: item.quantity,
       cost: item.cost,
       lot_number: item.lot_number,
       expiration_date: item.expiration_date,
-      user_id: userId,
     }));
 
-    if (itemsToInsert.length > 0) {
-      const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemsToInsert);
-      if (itemsError) return { success: false, error: itemsError };
-    }
+    const { error } = await this.apiClient.put(`/api/v2/purchase-orders?id=${orderId}`, {
+        ...orderData,
+        items: itemsToInsert
+    });
     
-    return { success: true, error: null };
+    return { success: !error, error };
   }
 
   async receivePurchaseOrder(order: PurchaseOrder, employeeId: string | null): Promise<{ success: boolean; error: any }> {
@@ -150,13 +125,10 @@ export class PurchasingDataService {
     }
     
     // AUDIT: Update status AND received_by_employee_id
-    const { error: updateError } = await supabase
-        .from('purchase_orders')
-        .update({ 
-            status: 'Recebida',
-            received_by_employee_id: employeeId
-        })
-        .eq('id', order.id);
+    const { error: updateError } = await this.apiClient.put(`/api/v2/purchase-orders?id=${order.id}`, { 
+        status: 'Recebida',
+        received_by_employee_id: employeeId
+    });
         
     if (updateError) return { success: false, error: updateError };
 
@@ -164,8 +136,7 @@ export class PurchasingDataService {
   }
   
   async deletePurchaseOrder(orderId: string): Promise<{ success: boolean; error: any }> {
-    await supabase.from('purchase_order_items').delete().eq('purchase_order_id', orderId);
-    const { error } = await supabase.from('purchase_orders').delete().eq('id', orderId);
+    const { error } = await this.apiClient.delete(`/api/v2/purchase-orders?id=${orderId}`);
     return { success: !error, error };
   }
 }

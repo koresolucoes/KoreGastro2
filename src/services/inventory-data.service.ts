@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Ingredient, IngredientCategory, RecipeIngredient, RecipePreparation, Supplier, OrderItem, LabelLog, InventoryLog } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
+import { ApiClientService } from './api-client.service';
 import { RecipeStateService } from './recipe-state.service';
 import { RecipeDataService } from './recipe-data.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,6 +25,7 @@ export class InventoryDataService {
   private posState = inject(PosStateService);
   private unitContextService = inject(UnitContextService);
   private ntpService = inject(NtpService);
+  private apiClient = inject(ApiClientService);
 
   private getActiveUnitId(): string | null {
       return this.unitContextService.activeUnitId();
@@ -64,18 +66,14 @@ export class InventoryDataService {
     const initialStock = ingredient.stock || 0;
     const { stock, ...ingredientData } = ingredient;
 
-    const { data: newIngredient, error: ingredientError } = await supabase
-      .from('ingredients')
-      .insert({ ...ingredientData, stock: 0, user_id: userId })
-      .select()
-      .single();
+    const { data: newIngredient, error: ingredientError } = await this.apiClient.post<Ingredient>('/api/v2/ingredients', ingredientData);
 
-    if (ingredientError) return { success: false, error: ingredientError, data: undefined };
+    if (ingredientError || !newIngredient) return { success: false, error: ingredientError || new Error('Failed to create ingredient'), data: undefined };
 
     try {
         if (initialStock > 0) {
             const { success, error } = await this.adjustIngredientStock({
-                ingredientId: newIngredient.id,
+                ingredientId: newIngredient.id!,
                 quantityChange: initialStock,
                 reason: 'Entrada de estoque inicial',
                 expirationDateForEntry: newIngredient.expiration_date
@@ -85,28 +83,28 @@ export class InventoryDataService {
 
         let createdProxyId: string | undefined;
         if (newIngredient.is_sellable) {
-            const { data: updatedIngredient, error: refetchError } = await supabase.from('ingredients').select('*').eq('id', newIngredient.id).single();
-            if (refetchError) throw refetchError;
+            const { data: updatedIngredient, error: refetchError } = await this.apiClient.get<Ingredient>('/api/v2/ingredients', { id: newIngredient.id! });
+            if (refetchError || !updatedIngredient) throw refetchError || new Error('Failed to fetch updated ingredient');
             
             const { success, error, proxyRecipeId } = await this.createOrUpdateProxyRecipe(updatedIngredient);
             if (!success) throw error;
             createdProxyId = proxyRecipeId;
         }
         
-        const { data: finalIngredient, error: finalError } = await supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('id', newIngredient.id).single();
-        if (finalError) throw finalError;
+        const { data: finalIngredient, error: finalError } = await this.apiClient.get<Ingredient>('/api/v2/ingredients', { id: newIngredient.id! });
+        if (finalError || !finalIngredient) throw finalError || new Error('Failed to fetch final ingredient');
 
-        return { success: true, error: null, data: finalIngredient as Ingredient, proxyRecipeId: createdProxyId };
+        return { success: true, error: null, data: finalIngredient, proxyRecipeId: createdProxyId };
 
     } catch (error) {
-        await supabase.from('ingredients').delete().eq('id', newIngredient.id);
+        await this.apiClient.delete(`/api/v2/ingredients?id=${newIngredient.id}`);
         return { success: false, error, data: undefined };
     }
   }
   
   async updateIngredient(ingredient: Partial<Ingredient>): Promise<{ success: boolean; error: any }> {
-    const { data: currentIngredient, error: fetchError } = await supabase.from('ingredients').select('*').eq('id', ingredient.id!).single();
-    if (fetchError) return { success: false, error: fetchError };
+    const { data: currentIngredient, error: fetchError } = await this.apiClient.get<Ingredient>('/api/v2/ingredients', { id: ingredient.id! });
+    if (fetchError || !currentIngredient) return { success: false, error: fetchError || new Error('Not found') };
 
     const { id, stock, ...updateData } = ingredient;
 
@@ -127,11 +125,11 @@ export class InventoryDataService {
       }
     } else if (isNowSellable && currentIngredient.proxy_recipe_id) {
       if (updateData.name !== currentIngredient.name || updateData.price !== currentIngredient.price) {
-        await supabase.from('recipes').update({ name: updateData.name, price: updateData.price }).eq('id', currentIngredient.proxy_recipe_id);
+        await this.apiClient.put(`/api/v2/recipes?id=${currentIngredient.proxy_recipe_id}`, { name: updateData.name, price: updateData.price });
       }
     }
     
-    const { error } = await supabase.from('ingredients').update(updateData).eq('id', id!);
+    const { error } = await this.apiClient.put(`/api/v2/ingredients?id=${id}`, updateData);
     return { success: !error, error };
   }
   
@@ -187,18 +185,14 @@ export class InventoryDataService {
   }
 
   async deleteIngredient(id: string): Promise<{ success: boolean; error: any }> {
-    const { data: ingredient, error: fetchError } = await supabase.from('ingredients').select('proxy_recipe_id').eq('id', id).single();
+    const { data: ingredient, error: fetchError } = await this.apiClient.get<{ proxy_recipe_id: string }>('/api/v2/ingredients', { id });
     if(fetchError) return { success: false, error: fetchError };
 
     if(ingredient?.proxy_recipe_id) {
         await this.recipeDataService.deleteRecipe(ingredient.proxy_recipe_id);
     }
     
-    // Explicitly delete related records that might not have ON DELETE CASCADE
-    await supabase.from('inventory_logs').delete().eq('ingredient_id', id);
-    await supabase.from('inventory_adjustments').delete().eq('ingredient_id', id);
-    
-    const { error } = await supabase.from('ingredients').delete().eq('id', id);
+    const { error } = await this.apiClient.delete(`/api/v2/ingredients?id=${id}`);
     return { success: !error, error };
   }
 
@@ -213,141 +207,11 @@ export class InventoryDataService {
     employeeId?: string | null; // AUDIT: Capture who performed the adjustment
     unitCostForEntry?: number; // Furo 2: Custo por lote
   }): Promise<{ success: boolean; error: any }> {
-    const userId = this.getActiveUnitId();
-    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
-
-    const {
-        ingredientId,
-        quantityChange,
-        reason,
-        lotIdForExit = null,
-        lotNumberForEntry = null,
-        expirationDateForEntry = null,
-        employeeId = null, // Default to null if not provided
-        unitCostForEntry
-    } = params;
-
-    const { data: originalIngredient, error: fetchError } = await supabase
-        .from('ingredients')
-        .select('name, stock, unit, version')
-        .eq('id', ingredientId)
-        .single();
-    
-    if (fetchError) {
-        return { success: false, error: fetchError };
+    const { error } = await this.apiClient.post('/api/v2/inventory/adjust', params);
+    if (!error) {
+        // Optimistically update stock on webhook or state if needed, wait, state updates via real-time DB change
     }
-        
-    const { error } = await supabase.rpc('adjust_stock_by_lot', {
-        p_ingredient_id: ingredientId,
-        p_quantity_change: quantityChange,
-        p_reason: reason,
-        p_user_id: userId,
-        p_lot_id_for_exit: lotIdForExit,
-        p_lot_number_for_entry: lotNumberForEntry,
-        p_expiration_date_for_entry: expirationDateForEntry
-    });
-
-    if (error) {
-        console.error("RPC adjust_stock_by_lot failed:", error);
-        // Fallback: manually update existing stock if RPC throws FK violation or similar.
-        // This ensures external transfers and requisitions are not blocked.
-        const newStock = originalIngredient.stock + quantityChange;
-        const currentVersion = originalIngredient.version || 1;
-        
-        const { data: updatedData, error: fallbackError } = await supabase.from('ingredients')
-                                          .update({ stock: newStock, updated_at: new Date().toISOString(), version: currentVersion + 1 })
-                                          .eq('id', ingredientId)
-                                          .eq('user_id', userId)
-                                          .eq('version', currentVersion)
-                                          .select('id');
-                                          
-        if (fallbackError) {
-             console.error("Fallback update failed:", fallbackError);
-             return { success: false, error: fallbackError };
-        }
-        
-        if (!updatedData || updatedData.length === 0) {
-             const concurrencyError = new Error('Concurrent modification detected. Please try again.');
-             console.error(concurrencyError);
-             return { success: false, error: concurrencyError };
-        }
-
-        // FEFO Lot deduction fallback for stock exits
-        if (quantityChange < 0) {
-            if (lotIdForExit) {
-                const { data: targetLot } = await supabase.from('inventory_lots').select('quantity').eq('id', lotIdForExit).single();
-                if (targetLot) {
-                    const newLotQty = Math.max(0, targetLot.quantity + quantityChange);
-                    await supabase.from('inventory_lots').update({ quantity: newLotQty }).eq('id', lotIdForExit);
-                }
-            } else {
-                const { data: activeLots } = await supabase
-                    .from('inventory_lots')
-                    .select('id, quantity')
-                    .eq('ingredient_id', ingredientId)
-                    .gt('quantity', 0)
-                    .order('expiration_date', { ascending: true, nullsFirst: false });
-
-                if (activeLots && activeLots.length > 0) {
-                    let toDeduct = Math.abs(quantityChange);
-                    for (const lot of activeLots) {
-                        if (toDeduct <= 0) break;
-                        const deduct = Math.min(lot.quantity, toDeduct);
-                        await supabase.from('inventory_lots').update({ quantity: lot.quantity - deduct }).eq('id', lot.id);
-                        toDeduct -= deduct;
-                    }
-                }
-            }
-        }
-    }
-
-    // Furo 2: Update lot unit cost if provided
-    if (quantityChange > 0 && unitCostForEntry !== undefined) {
-        const query = supabase.from('inventory_lots')
-            .select('id')
-            .eq('ingredient_id', ingredientId)
-            .order('created_at', { ascending: false })
-            .limit(1);
-            
-        if (lotNumberForEntry) {
-            query.eq('lot_number', lotNumberForEntry);
-        } else {
-            query.is('lot_number', null);
-        }
-        
-        const { data: lot } = await query.single();
-        if (lot) {
-            await supabase.from('inventory_lots').update({ unit_cost: unitCostForEntry }).eq('id', lot.id);
-        }
-    }
-    
-    // AUDIT: Insert into inventory_logs (Phase 2 Requirement)
-    const newStock = originalIngredient.stock + quantityChange;
-    const { error: logError } = await supabase.from('inventory_logs').insert({
-        user_id: userId,
-        ingredient_id: ingredientId,
-        employee_id: employeeId, // Traceability!
-        quantity_change: quantityChange,
-        previous_balance: originalIngredient.stock,
-        new_balance: newStock,
-        reason: reason
-    });
-
-    if (logError) {
-        console.error("Failed to insert inventory log audit trail:", logError);
-    }
-
-    const webhookPayload = {
-        ingredientId: ingredientId,
-        ingredientName: originalIngredient.name,
-        quantityChange: quantityChange,
-        newStock: newStock,
-        unit: originalIngredient.unit,
-        reason: reason
-    };
-    this.webhookService.triggerWebhook('stock.updated', webhookPayload);
-
-    return { success: true, error: null };
+    return { success: !error, error };
   }
 
   // --- Helper to consume from station with fallback to central ---
@@ -416,37 +280,33 @@ export class InventoryDataService {
 
   // ... existing category / supplier CRUD ...
   async addIngredientCategory(name: string): Promise<{ success: boolean, error: any, data?: IngredientCategory }> {
-    const userId = this.getActiveUnitId();
-    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
-    const { data, error } = await supabase.from('ingredient_categories').insert({ name, user_id: userId }).select().single();
+    const { data, error } = await this.apiClient.post<IngredientCategory>('/api/v2/ingredient-categories', { name });
     return { success: !error, error, data };
   }
 
   async updateIngredientCategory(id: string, name: string): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.from('ingredient_categories').update({ name }).eq('id', id);
+    const { error } = await this.apiClient.put(`/api/v2/ingredient-categories?id=${id}`, { name });
     return { success: !error, error };
   }
 
   async deleteIngredientCategory(id: string): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.from('ingredient_categories').delete().eq('id', id);
+    const { error } = await this.apiClient.delete(`/api/v2/ingredient-categories?id=${id}`);
     return { success: !error, error };
   }
 
   async addSupplier(supplier: Partial<Supplier>): Promise<{ success: boolean, error: any, data?: Supplier }> {
-    const userId = this.getActiveUnitId();
-    if (!userId) return { success: false, error: { message: 'Active unit not found' } };
-    const { data, error } = await supabase.from('suppliers').insert({ ...supplier, user_id: userId }).select().single();
+    const { data, error } = await this.apiClient.post<Supplier>('/api/v2/suppliers', supplier);
     return { success: !error, error, data };
   }
 
   async updateSupplier(supplier: Partial<Supplier>): Promise<{ success: boolean, error: any }> {
     const { id, ...updateData } = supplier;
-    const { error } = await supabase.from('suppliers').update(updateData).eq('id', id!);
+    const { error } = await this.apiClient.put(`/api/v2/suppliers?id=${id}`, updateData);
     return { success: !error, error };
   }
   
   async deleteSupplier(id: string): Promise<{ success: boolean, error: any }> {
-    const { error } = await supabase.from('suppliers').delete().eq('id', id);
+    const { error } = await this.apiClient.delete(`/api/v2/suppliers?id=${id}`);
     return { success: !error, error };
   }
   
