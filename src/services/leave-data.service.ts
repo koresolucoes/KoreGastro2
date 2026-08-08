@@ -64,7 +64,32 @@ export class LeaveDataService {
   }
 
   async updateLeaveRequest(id: string, updates: Partial<LeaveRequest>): Promise<{ success: boolean; error: any }> {
-    const { error } = await supabase.from('leave_requests').update(updates).eq('id', id);
-    return { success: !error, error };
+    const restaurantId = this.getActiveUnitId();
+    const { data: { session } } = await (supabase.auth as any).getSession();
+    const accessToken = session?.access_token;
+
+    if (!restaurantId || !accessToken) {
+      return { success: false, error: { message: 'Usuário não autenticado ou unidade não selecionada.' } };
+    }
+
+    try {
+      const response = await fetch(`https://app.chefos.online/api/rh/ausencias?restaurantId=${restaurantId}&id=${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.error?.message || `API error (${response.status})`);
+      }
+      return { success: true, error: null };
+    } catch (error: any) {
+      console.error('Error updating leave request API:', error);
+      return { success: false, error: { message: error.message } };
+    }
   }
 }

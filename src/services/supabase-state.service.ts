@@ -63,8 +63,9 @@ export class SupabaseStateService {
         const isDemo = this.demoService.isDemoMode();
 
         if (isDemo) {
-            this.loadMockData();
+            this.demoService.disableDemoMode();
             this.unsubscribeFromChanges();
+            this.isDataLoaded.set(true);
         } else if (user) {
             await this.unitContextService.loadContext(user.id);
         } else {

@@ -11,48 +11,78 @@ export class TimeClockService {
   private authService = inject(AuthService);
   private unitContextService = inject(UnitContextService);
 
+  private async getAuthHeaders(): Promise<HeadersInit> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token}`,
+    };
+  }
+
   async getEntriesForPeriod(startDate: string, endDate: string, employeeId: string): Promise<{ data: TimeClockEntry[] | null; error: any }> {
     const userId = this.unitContextService.activeUnitId();
     if (!userId) return { data: null, error: { message: 'User not authenticated' } };
 
-    // Create Date objects from the string inputs, ensuring they are parsed as local time.
-    const start = new Date(`${startDate}T00:00:00`);
-    const end = new Date(`${endDate}T23:59:59`);
-
-    let query = supabase.from('time_clock_entries')
-        .select('*, employees!employee_id(name)')
-        .eq('user_id', userId)
-        .gte('clock_in_time', start.toISOString())
-        .lte('clock_in_time', end.toISOString())
-        .order('clock_in_time', { ascending: false });
-
-    if (employeeId !== 'all') {
-        query = query.eq('employee_id', employeeId);
+    try {
+      const headers = await this.getAuthHeaders();
+      let url = `/api/rh/ponto?restaurantId=${userId}&data_inicio=${startDate}&data_fim=${endDate}`;
+      if (employeeId !== 'all') {
+        url += `&employeeId=${employeeId}`;
+      }
+      
+      const response = await fetch(url, { headers });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: 'Failed to fetch entries' }));
+        return { data: null, error: err };
+      }
+      
+      const data = await response.json();
+      return { data, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
     }
-    
-    return query;
   }
 
   async addEntry(entry: Partial<TimeClockEntry>): Promise<{ success: boolean; error: any }> {
     const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const { error } = await supabase.from('time_clock_entries').insert({
-      employee_id: entry.employee_id,
-      clock_in_time: entry.clock_in_time,
-      clock_out_time: entry.clock_out_time,
-      break_start_time: entry.break_start_time,
-      break_end_time: entry.break_end_time,
-      notes: entry.notes,
-      user_id: userId,
-    });
-    return { success: !error, error };
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`/api/rh/ponto?restaurantId=${userId}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(entry),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: 'Failed to add entry' }));
+        return { success: false, error: err };
+      }
+      return { success: true, error: null };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
   }
   
   async updateEntry(id: string, updates: Partial<TimeClockEntry>): Promise<{ success: boolean; error: any }> {
-    const { id: entryId, created_at, user_id, employees, ...updateData } = updates;
-    const { error } = await supabase.from('time_clock_entries').update(updateData).eq('id', id);
-    return { success: !error, error };
+    const userId = this.unitContextService.activeUnitId();
+    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`/api/rh/ponto?restaurantId=${userId}&id=${id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: 'Failed to update entry' }));
+        return { success: false, error: err };
+      }
+      return { success: true, error: null };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
   }
 
   async deleteEntry(id: string): Promise<{ success: boolean; error: any }> {
