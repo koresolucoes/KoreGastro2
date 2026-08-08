@@ -10,7 +10,7 @@ import { triggerWebhook } from '../webhook-emitter.js';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
 const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Window);
+const purify = DOMPurify(window as unknown as Parameters<typeof DOMPurify>[0]);
 
 const PUBLIC_CUSTOMER_COLUMNS = 'id, name, phone, email, cpf, notes, loyalty_points, user_id, created_at, address, latitude, longitude';
 
