@@ -304,7 +304,7 @@ export class PosDataService {
       };
       return { ...item, status: status, status_timestamps: newTimestamps };
     });
-    const { error } = await supabase.from("order_items").upsert(updates);
+    const { error } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: updates });
     if (!error && items && items.length > 0) {
       const orderId = items[0].order_id;
       this.checkAndUpdateDeliveryOrderStatus(orderId);
@@ -419,7 +419,7 @@ export class PosDataService {
       };
     });
     if (updates.length === 0) return { success: true, error: null };
-    const { error } = await supabase.from("order_items").upsert(updates);
+    const { error } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: updates });
     return { success: !error, error };
   }
 
@@ -551,14 +551,16 @@ export class PosDataService {
         destOrderId = newOrderData.id;
 
         // Update destination table status
-        await supabase.from("tables").upsert([
-          {
-            ...destinationTable,
-            status: "OCUPADA",
-            employee_id: sourceTable.employee_id,
-            customer_count: sourceTable.customer_count || 1,
-          },
-        ]);
+        await this.apiClient.post('/api/v2/pos/tables?action=upsert', {
+          tables: [
+            {
+              ...destinationTable,
+              status: "OCUPADA",
+              employee_id: sourceTable.employee_id,
+              customer_count: sourceTable.customer_count || 1,
+            },
+          ]
+        });
       }
 
       const itemsToInsert: any[] = [];
@@ -597,16 +599,12 @@ export class PosDataService {
       }
 
       if (itemsToUpdate.length > 0) {
-        const { error: updateError } = await supabase
-          .from("order_items")
-          .upsert(itemsToUpdate);
+        const { error: updateError } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: itemsToUpdate });
         if (updateError) throw updateError;
       }
 
       if (itemsToInsert.length > 0) {
-        const { error: insertError } = await supabase
-          .from("order_items")
-          .insert(itemsToInsert);
+        const { error: insertError } = await this.apiClient.post('/api/v2/pos/order-items?action=add-items', { items: itemsToInsert });
         if (insertError) throw insertError;
       }
 
@@ -615,11 +613,7 @@ export class PosDataService {
         originalOrderItems.reduce((acc, curr) => acc + curr.quantity, 0) -
         itemsToSplit.reduce((acc, curr) => acc + curr.quantity, 0);
       if (remainingItemsCount <= 0) {
-        await supabase.from("orders").delete().eq("id", order.id);
-        await supabase
-          .from("tables")
-          .update({ status: "LIVRE", employee_id: null, customer_count: 0 })
-          .eq("id", sourceTable.id);
+        await this.deleteEmptyOrder(order.id);
       }
 
       return { success: true, error: null };
@@ -631,32 +625,7 @@ export class PosDataService {
   async deleteEmptyOrder(
     orderId: string,
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.getActiveUnitId();
-    const { data: order } = await supabase
-      .from("orders")
-      .select("table_number")
-      .eq("id", orderId)
-      .single();
-
-    const { error } = await supabase.from("orders").delete().eq("id", orderId);
-
-    if (!error && order && order.table_number > 0 && userId) {
-      const { count } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("table_number", order.table_number)
-        .eq("user_id", userId)
-        .in("status", ["OPEN", "PAYING"]);
-
-      if (count === 0) {
-        await supabase
-          .from("tables")
-          .update({ status: "LIVRE", employee_id: null, customer_count: 0 })
-          .eq("number", order.table_number)
-          .eq("user_id", userId);
-      }
-    }
-
+    const { error } = await this.apiClient.delete(`/api/v2/pos/orders?id=${orderId}`);
     return { success: !error, error };
   }
 
@@ -720,7 +689,7 @@ export class PosDataService {
         }));
       }
     }
-    const { error } = await supabase.from("order_items").upsert(updates);
+    const { error } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: updates });
     if (error) return { success: false, error };
     this.posState.orders.update((currentOrders) => {
       return currentOrders.map((order) => {

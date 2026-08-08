@@ -91,13 +91,19 @@ export default async function handler(req: any, res: any) {
             return res.status(status!).json({ error });
         }
 
-        let { employeeId, pin, latitude, longitude, lat, lng } = req.body;
+        let { employeeId, pin, latitude, longitude, lat, lng, location, coords } = req.body;
         
-        latitude = latitude ?? lat;
-        longitude = longitude ?? lng;
+        latitude = latitude ?? lat ?? location?.latitude ?? location?.lat ?? coords?.latitude ?? coords?.lat;
+        longitude = longitude ?? lng ?? location?.longitude ?? location?.lng ?? coords?.longitude ?? coords?.lng;
 
-        if (latitude !== undefined && latitude !== null) latitude = Number(latitude);
-        if (longitude !== undefined && longitude !== null) longitude = Number(longitude);
+        if (latitude !== undefined && latitude !== null) {
+            if (typeof latitude === 'string') latitude = parseFloat(latitude.replace(',', '.'));
+            latitude = Number(latitude);
+        }
+        if (longitude !== undefined && longitude !== null) {
+            if (typeof longitude === 'string') longitude = parseFloat(longitude.replace(',', '.'));
+            longitude = Number(longitude);
+        }
 
         if (!employeeId || !pin) {
             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` and `pin` are required.' });
@@ -128,11 +134,22 @@ export default async function handler(req: any, res: any) {
         // Check only if the restaurant has configured the location check
         if (profile.latitude && profile.longitude && profile.time_clock_radius) {
             if (latitude === undefined || latitude === null || isNaN(latitude) || longitude === undefined || longitude === null || isNaN(longitude)) {
-                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Localização do funcionário não fornecida ou inválida.' });
+                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Localização do funcionário não fornecida ou inválida. Recebido: lat=${latitude}, lng=${longitude}. Body: ${JSON.stringify(req.body)}` });
             }
             const distance = getDistance(latitude, longitude, profile.latitude, profile.longitude);
             if (distance > profile.time_clock_radius) {
-                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Você está muito longe do restaurante para bater o ponto.' });
+                return res.status(403).json({ 
+                    type: "about:blank", 
+                    title: "Forbidden", 
+                    status: 403, 
+                    detail: `Você está muito longe do restaurante para bater o ponto. Distância: ${Math.round(distance)}m. Raio permitido: ${profile.time_clock_radius}m.`,
+                    distance,
+                    radius: profile.time_clock_radius,
+                    receivedLat: latitude,
+                    receivedLng: longitude,
+                    restaurantLat: profile.latitude,
+                    restaurantLng: profile.longitude
+                });
             }
         }
         // If location is not configured on profile, the check is skipped. 

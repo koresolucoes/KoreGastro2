@@ -18,6 +18,16 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
             return res.status(200).json(inserted);
         }
 
+        if (action === 'upsert') {
+            const { items } = req.body;
+            if (!items || !Array.isArray(items)) {
+                return res.status(400).json({ error: 'items array is required' });
+            }
+            const itemsToUpsert = items.map(item => ({ ...item, user_id: restaurantId }));
+            const { error } = await supabase.from('order_items').upsert(itemsToUpsert);
+            if (error) return res.status(500).json({ error });
+            return res.status(200).json({ success: true });
+        }
         if (action === 'split') {
             const { itemsToInsert, itemsToUpdate, sourceTable, destinationTable, orderId, destOrderId, deleteSourceOrder } = req.body;
 
