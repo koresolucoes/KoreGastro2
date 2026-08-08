@@ -77,23 +77,34 @@ export default async function handler(req: any, res: any) {
     }
 }
 
+import { remember, invalidateCachePattern } from '../utils/redis.js';
+
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     const { id, subresource } = req.query;
 
     if (id && subresource === 'permissoes') {
-        const { data, error } = await supabase
-            .from('role_permissions')
-            .select('permission_key')
-            .eq('role_id', id as string);
+        const roleId = id as string;
+        const cacheKey = `role_permissions:${roleId}`;
+        const permissions = await remember<string[]>(cacheKey, 300, async () => {
+            const { data, error } = await supabase
+                .from('role_permissions')
+                .select('permission_key')
+                .eq('role_id', roleId);
+            
+            if (error) throw error;
+            return (data || []).map(p => p.permission_key);
+        });
         
-        if (error) throw error;
-        const permissions = (data || []).map(p => p.permission_key);
         return res.status(200).json(permissions);
     }
 
-    const { data, error } = await supabase.from('roles').select('*').eq('user_id', restaurantId);
-    if (error) throw error;
-    return res.status(200).json(data || []);
+    const cacheKey = `roles:${restaurantId}`;
+    const roles = await remember(cacheKey, 300, async () => {
+        const { data, error } = await supabase.from('roles').select('*').eq('user_id', restaurantId);
+        if (error) throw error;
+        return data || [];
+    });
+    return res.status(200).json(roles);
 }
 
 async function handlePut(req: VercelRequest, res: VercelResponse, restaurantId: string) {
@@ -101,20 +112,26 @@ async function handlePut(req: VercelRequest, res: VercelResponse, restaurantId: 
     const { permissions } = req.body;
 
     if (id && subresource === 'permissoes' && Array.isArray(permissions)) {
+        const roleId = id as string;
+
         // Delete existing permissions for the role
-        const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', id as string);
+        const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
         if (deleteError) throw deleteError;
 
         // Insert new permissions if any
         if (permissions.length > 0) {
             const permissionsToInsert = permissions.map(key => ({
-                role_id: id as string,
+                role_id: roleId,
                 permission_key: key,
                 user_id: restaurantId,
             }));
             const { error: insertError } = await supabase.from('role_permissions').insert(permissionsToInsert);
             if (insertError) throw insertError;
         }
+
+        // Invalidate cached role permissions
+        await invalidateCachePattern(`role_permissions:${roleId}*`);
+        await invalidateCachePattern(`roles:${restaurantId}*`);
         
         return res.status(200).json({ success: true, message: "Permissions updated." });
     }

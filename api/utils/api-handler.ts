@@ -94,9 +94,12 @@ export function withAuth(handler: ApiHandler) {
 
         const restaurantId = authResult.restaurantId;
 
-        // Rate limit check based on IP + restaurantId
+        // Rate limit check based on hashed API Key (or fallback to IP + restaurantId)
         const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-        const limitKey = `${clientIp}_${restaurantId}`;
+        const limitKey = authResult.apiKeyHash
+            ? `apikey:${authResult.apiKeyHash}`
+            : `ip:${clientIp}_${restaurantId}`;
+
         const { allowed, remaining, resetMs, isRedis } = await checkRateLimit(limitKey, MAX_REQUESTS_PER_WINDOW, 60);
 
         res.setHeader('X-RateLimit-Limit', MAX_REQUESTS_PER_WINDOW);

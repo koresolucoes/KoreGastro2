@@ -119,6 +119,16 @@ export class SupabaseStateService {
 
   // --- 1. CORE DATA (Required for basic app structure) ---
   public async loadCoreData(userId: string) {
+    const permCacheKey = `chefos_role_perms_${userId}`;
+    const cachedPerms = localStorage.getItem(permCacheKey);
+    if (cachedPerms) {
+      try {
+        this.hrState.rolePermissions.set(JSON.parse(cachedPerms));
+      } catch {
+        // ignore invalid cache
+      }
+    }
+
     const [
         companyProfile, roles, rolePermissions,
         employees, webhooks
@@ -132,7 +142,11 @@ export class SupabaseStateService {
 
     this.settingsState.companyProfile.set(companyProfile.data || null);
     this.hrState.roles.set(roles.data || []);
-    this.hrState.rolePermissions.set(rolePermissions.data || []);
+    
+    const freshPerms = rolePermissions.data || [];
+    this.hrState.rolePermissions.set(freshPerms);
+    localStorage.setItem(permCacheKey, JSON.stringify(freshPerms));
+
     this.hrState.employees.set(employees.data || []);
     this.settingsState.webhooks.set(webhooks.data || []);
   }

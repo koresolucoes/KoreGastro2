@@ -39,6 +39,12 @@ export class OperationalAuthService {
   activeShift = signal<TimeClockEntry | null>(null);
   operatorAuthInitialized = signal(false);
 
+  private permissionCache = new Map<string, boolean>();
+
+  public clearPermissionCache() {
+    this.permissionCache.clear();
+  }
+
   constructor() {
     this.initializeOperator();
 
@@ -46,6 +52,14 @@ export class OperationalAuthService {
       if (this.demoService.isDemoMode() && !this.activeEmployee()) {
         this.loginAsDemoUser();
       }
+    });
+
+    // Invalidate local permissions cache when roles, active employee, or subscription permissions change
+    effect(() => {
+      this.hrState.rolePermissions();
+      this.subscriptionState.activeUserPermissions();
+      this.activeEmployee();
+      this.clearPermissionCache();
     });
 
     // Auto-reset operator session when switching to a different store context
@@ -392,41 +406,47 @@ export class OperationalAuthService {
     const pathOnly = url.split('?')[0];
     const routeKey = '/' + pathOnly.split('/')[1];
 
+    const cacheKey = `${employee.id}:${employee.role_id}:${routeKey}`;
+    if (this.permissionCache.has(cacheKey)) {
+      return this.permissionCache.get(cacheKey)!;
+    }
+
+    let allowed = false;
+
     // Special case for home: always allowed if logged in
     if (routeKey === '/home' || routeKey === '/support') {
-        return true;
+      allowed = true;
+    } else if (routeKey === '/tutorials') {
+      // Special case for tutorials: bypass subscription check, only role permission matters.
+      const rolePermissions = this.hrState.rolePermissions();
+      allowed = rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
+    } else {
+      // For all other routes, an active subscription is a prerequisite.
+      const hasActiveSub = this.subscriptionState.hasActiveSubscription();
+      if (!hasActiveSub) {
+        allowed = false;
+      } else if (routeKey === '/my-profile') {
+        // Special case for /my-profile: if subscription is active, access is granted.
+        allowed = true;
+      } else {
+        // For all other regular routes, both plan and role permissions are required.
+        let hasPlanPermission = this.subscriptionState.activeUserPermissions().has(routeKey);
+        const roleName = (employee.role || '').toLowerCase();
+        const isGerente = roleName.includes('gerente') || roleName.includes('admin');
+        let hasRolePermission = isGerente || this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
+
+        // Cross-reference: if they have access to settings, give them access to whatsapp-chats
+        if (routeKey === '/whatsapp-chats' && (!hasPlanPermission || !hasRolePermission)) {
+          hasPlanPermission = this.subscriptionState.activeUserPermissions().has('/settings');
+          hasRolePermission = isGerente || this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === '/settings');
+        }
+
+        allowed = hasPlanPermission && hasRolePermission;
+      }
     }
 
-    // Special case for tutorials: bypass subscription check, only role permission matters.
-    if (routeKey === '/tutorials') {
-        const rolePermissions = this.hrState.rolePermissions();
-        return rolePermissions.some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
-    }
-    
-    // For all other routes, an active subscription is a prerequisite.
-    const hasActiveSub = this.subscriptionState.hasActiveSubscription();
-    if (!hasActiveSub) {
-        return false;
-    }
-
-    // Special case for /my-profile: if subscription is active, access is granted.
-    if (routeKey === '/my-profile') {
-        return true; 
-    }
-
-    // For all other regular routes, both plan and role permissions are required.
-    let hasPlanPermission = this.subscriptionState.activeUserPermissions().has(routeKey);
-    const roleName = (employee.role || '').toLowerCase();
-    const isGerente = roleName.includes('gerente') || roleName.includes('admin');
-    let hasRolePermission = isGerente || this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === routeKey);
-    
-    // Cross-reference: if they have access to settings, give them access to whatsapp-chats
-    if (routeKey === '/whatsapp-chats' && (!hasPlanPermission || !hasRolePermission)) {
-        hasPlanPermission = this.subscriptionState.activeUserPermissions().has('/settings');
-        hasRolePermission = isGerente || this.hrState.rolePermissions().some(p => p.role_id === employee.role_id && p.permission_key === '/settings');
-    }
-
-    return hasPlanPermission && hasRolePermission;
+    this.permissionCache.set(cacheKey, allowed);
+    return allowed;
   }
 
   getDefaultRoute(): string {

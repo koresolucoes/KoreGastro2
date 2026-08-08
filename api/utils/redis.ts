@@ -38,6 +38,28 @@ if (isRedisConfigured) {
 const memoryCache = new Map<string, { value: any; expiresAt: number }>();
 const memoryRateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
+// Periodic cleanup for global memory maps every 60s to prevent memory leaks
+const CLEANUP_INTERVAL_MS = 60 * 1000;
+const memoryCleanupTimer = setInterval(() => {
+  const now = Date.now();
+
+  for (const [key, entry] of memoryCache.entries()) {
+    if (now > entry.expiresAt) {
+      memoryCache.delete(key);
+    }
+  }
+
+  for (const [key, entry] of memoryRateLimitMap.entries()) {
+    if (now > entry.resetTime) {
+      memoryRateLimitMap.delete(key);
+    }
+  }
+}, CLEANUP_INTERVAL_MS);
+
+if (memoryCleanupTimer.unref) {
+  memoryCleanupTimer.unref();
+}
+
 /**
  * Distributed Rate Limiter with Upstash Redis + In-Memory Fallback
  */
@@ -111,6 +133,7 @@ export async function getCache<T>(key: string): Promise<T | null> {
 
 /**
  * Set item in Cache (Redis or Memory)
+ * Only saves to memory fallback if Redis is unconfigured or setting in Redis fails.
  */
 export async function setCache<T>(key: string, value: T, ttlSeconds: number = 300): Promise<void> {
   const fullKey = `chefos:cache:${key}`;
@@ -122,12 +145,13 @@ export async function setCache<T>(key: string, value: T, ttlSeconds: number = 30
       } else {
         await redisClient.set(fullKey, value);
       }
+      return;
     } catch (err) {
       Logger.warn(`Redis setCache failed for key ${key}, saving to memory fallback`, err);
     }
   }
 
-  // Save to memory cache as well for ultra-fast local fallback
+  // Save to memory cache ONLY as fallback when Redis is unavailable or failed
   memoryCache.set(fullKey, {
     value,
     expiresAt: Date.now() + ttlSeconds * 1000,
@@ -154,15 +178,41 @@ export async function deleteCache(keys: string | string[]): Promise<void> {
 
 /**
  * Invalidate cache keys matching pattern (e.g. "catalog:*", "restaurant:123:*")
+ * Uses non-blocking SCAN instead of blocking keys() in Redis.
  */
 export async function invalidateCachePattern(pattern: string): Promise<void> {
   const fullPattern = `chefos:cache:${pattern}`;
 
   if (redisClient) {
     try {
-      const keys = await redisClient.keys(fullPattern);
-      if (keys && keys.length > 0) {
-        await redisClient.del(...keys);
+      let cursor: string | number = '0';
+      const keysToDelete: string[] = [];
+
+      do {
+        const scanResult = await redisClient.scan(cursor, {
+          match: fullPattern,
+          count: 100,
+        });
+
+        if (Array.isArray(scanResult)) {
+          cursor = scanResult[0];
+          const keysFound = scanResult[1] || [];
+          if (keysFound.length > 0) {
+            keysToDelete.push(...keysFound);
+          }
+        } else if (scanResult && typeof scanResult === 'object') {
+          cursor = (scanResult as any).cursor ?? '0';
+          const keysFound = (scanResult as any).keys ?? [];
+          if (keysFound.length > 0) {
+            keysToDelete.push(...keysFound);
+          }
+        } else {
+          break;
+        }
+      } while (cursor !== '0' && cursor !== 0);
+
+      if (keysToDelete.length > 0) {
+        await redisClient.del(...keysToDelete);
       }
     } catch (err) {
       Logger.warn(`Redis invalidateCachePattern failed for pattern ${pattern}`, err);
