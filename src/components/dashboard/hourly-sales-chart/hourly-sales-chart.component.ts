@@ -53,19 +53,20 @@ export class HourlySalesChartComponent {
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
       
-    const x = d3.scaleBand()
-      .domain(data.map(d => d.hour))
+    const x = d3.scaleBand<string>()
+      .domain(data.map(d => String(d.hour)))
       .range([0, width])
       .padding(0.2);
 
+    const maxSales = d3.max(data, d => d.sales) || 0;
     const y = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.sales) * 1.1])
+      .domain([0, maxSales * 1.1])
       .range([height, 0]);
 
     // X-axis
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x).tickValues(x.domain().filter((d: any, i: number) => i % 2 === 0)).tickFormat((d: any) => `${d}h`))
+      .call(d3.axisBottom(x).tickValues(x.domain().filter((_, i) => i % 2 === 0)).tickFormat((d) => `${d}h`))
       .selectAll("text")
       .style("fill", "var(--text-muted)");
 
@@ -84,7 +85,7 @@ export class HourlySalesChartComponent {
       .data(data)
       .enter().append("rect")
       .attr("class", "bar")
-      .attr("x", (d: any) => x(d.hour))
+      .attr("x", (d: any) => x(String(d.hour)) ?? 0)
       .attr("y", (d: any) => y(d.sales))
       .attr("width", x.bandwidth())
       .attr("height", (d: any) => height - y(d.sales))

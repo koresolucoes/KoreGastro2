@@ -54,25 +54,33 @@ export class SalesCogsChartComponent {
       .attr('transform', `translate(${margin.left},${margin.top})`);
       
     const parseDate = d3.timeParse('%Y-%m-%d');
-    const processedData = data.map(d => ({
-        date: parseDate(d.date),
-        sales: d.sales,
-        cogs: d.cogs
-    }));
+    const processedData = data.map(d => {
+        const parsed = parseDate(d.date);
+        return {
+            dateStr: d.date,
+            dateLabel: parsed ? d3.timeFormat('%d/%m')(parsed) : d.date,
+            sales: d.sales,
+            cogs: d.cogs
+        };
+    });
 
-    const x = d3.scaleBand()
-      .domain(processedData.map(d => d.date))
+    const x = d3.scaleBand<string>()
+      .domain(processedData.map(d => d.dateStr))
       .range([0, width])
       .padding(0.2);
 
+    const maxVal = d3.max(processedData, d => Math.max(d.sales, d.cogs)) || 0;
     const y = d3.scaleLinear()
-      .domain([0, d3.max(processedData, d => Math.max(d.sales, d.cogs)) * 1.1])
+      .domain([0, maxVal * 1.1])
       .range([height, 0]);
 
     // X-axis
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x).tickFormat(d3.timeFormat('%d/%m')).tickValues(x.domain().filter((d: any, i: number) => i % (Math.ceil(data.length / 7)) === 0)))
+      .call(d3.axisBottom(x).tickFormat((d) => {
+        const item = processedData.find(pd => pd.dateStr === d);
+        return item ? item.dateLabel : d;
+      }).tickValues(x.domain().filter((_, i) => i % (Math.ceil(data.length / 7)) === 0)))
       .selectAll("text")
       .style("fill", "var(--text-muted)");
 
@@ -91,7 +99,7 @@ export class SalesCogsChartComponent {
       .data(processedData)
       .enter().append("rect")
       .attr("class", "bar-sales")
-      .attr("x", (d: any) => x(d.date))
+      .attr("x", (d: any) => (x(d.dateStr) ?? 0))
       .attr("y", (d: any) => y(d.sales))
       .attr("width", x.bandwidth() / 2)
       .attr("height", (d: any) => height - y(d.sales))
@@ -99,14 +107,14 @@ export class SalesCogsChartComponent {
       .on("mouseover", (event: any, d: any) => {
         tooltip.transition().duration(200).style("opacity", .9);
         tooltip.html(`
-            <strong>${this.datePipe.transform(d.date, 'dd/MM/yyyy')}</strong><br/>
+            <strong>${d.dateLabel}</strong><br/>
             Vendas: <strong>${this.currencyPipe.transform(d.sales, 'BRL')}</strong><br/>
             CMV: ${this.currencyPipe.transform(d.cogs, 'BRL')}
         `)
             .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 28) + "px");
         })
-      .on("mouseout", (d: any) => {
+      .on("mouseout", () => {
           tooltip.transition().duration(500).style("opacity", 0);
       });
 
@@ -115,7 +123,7 @@ export class SalesCogsChartComponent {
       .data(processedData)
       .enter().append("rect")
       .attr("class", "bar-cogs")
-      .attr("x", (d: any) => x(d.date) + x.bandwidth() / 2)
+      .attr("x", (d: any) => (x(d.dateStr) ?? 0) + x.bandwidth() / 2)
       .attr("y", (d: any) => y(d.cogs))
       .attr("width", x.bandwidth() / 2)
       .attr("height", (d: any) => height - y(d.cogs))

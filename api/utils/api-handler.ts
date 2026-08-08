@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { Logger } from './logger.js';
 import { validateApiKey } from './api-key-auth.js';
+import { checkRateLimit } from './redis.js';
 
 // Initialize Supabase client once
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -19,27 +20,7 @@ export const supabase = createClient(
 // Define the type for our business logic handlers
 export type ApiHandler = (req: VercelRequest, res: VercelResponse, restaurantId: string) => Promise<VercelResponse | void>;
 
-// Rate Limiting Storage (Sliding Window in-memory)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 120; // 120 requests per minute per restaurant/key
-
-function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetMs: number } {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - 1, resetMs: RATE_LIMIT_WINDOW_MS };
-  }
-
-  if (entry.count >= MAX_REQUESTS_PER_WINDOW) {
-    return { allowed: false, remaining: 0, resetMs: entry.resetTime - now };
-  }
-
-  entry.count += 1;
-  return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - entry.count, resetMs: entry.resetTime - now };
-}
 
 /**
  * Configure standard CORS headers restricted to app.chefos.online and authorized dev environments.
@@ -116,11 +97,12 @@ export function withAuth(handler: ApiHandler) {
         // Rate limit check based on IP + restaurantId
         const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown';
         const limitKey = `${clientIp}_${restaurantId}`;
-        const { allowed, remaining, resetMs } = checkRateLimit(limitKey);
+        const { allowed, remaining, resetMs, isRedis } = await checkRateLimit(limitKey, MAX_REQUESTS_PER_WINDOW, 60);
 
         res.setHeader('X-RateLimit-Limit', MAX_REQUESTS_PER_WINDOW);
         res.setHeader('X-RateLimit-Remaining', remaining);
         res.setHeader('X-RateLimit-Reset', Math.ceil(resetMs / 1000));
+        res.setHeader('X-RateLimit-Provider', isRedis ? 'Upstash-Redis' : 'Memory-Fallback');
 
         if (!allowed) {
             res.setHeader('Retry-After', Math.ceil(resetMs / 1000));

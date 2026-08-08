@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-
 import { withAuth, supabase } from '../utils/api-handler.js';
+import { remember, deleteCache, invalidateCachePattern } from '../utils/redis.js';
 import { z } from 'zod';
 
 const menuItemPatchSchema = z.object({
@@ -26,30 +25,46 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
 });
 
 async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: string) {
-    const { itemId, isAvailable, categoryId } = req.query;
+    const { itemId, isAvailable, categoryId, nocache } = req.query;
 
     if (itemId && typeof itemId === 'string') {
-        const { data, error } = await supabase.from('recipes').select('*, categories(name)').eq('store_id', restaurantId).eq('id', itemId).single();
-        if (error) {
-            if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Menu item with id "${itemId}" not found.` });
-            throw error;
+        const cacheKey = `menu_item:${restaurantId}:${itemId}`;
+        const fetcher = async () => {
+            const { data, error } = await supabase.from('recipes').select('*, categories(name)').eq('store_id', restaurantId).eq('id', itemId).single();
+            if (error) {
+                if (error.code === 'PGRST116') return null;
+                throw error;
+            }
+            return data;
+        };
+
+        const item = nocache === 'true' ? await fetcher() : await remember(cacheKey, 300, fetcher);
+        if (!item) {
+            return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Menu item with id "${itemId}" not found.` });
         }
-        return res.status(200).json(data);
+        return res.status(200).json(item);
     }
     
     // --- List all menu items with stock status using RPC ---
     const p_is_available = isAvailable === 'true' ? true : (isAvailable === 'false' ? false : null);
     const p_category_id = typeof categoryId === 'string' ? categoryId : null;
 
-    const { data: detailedMenu, error } = await supabase.rpc('get_menu_with_stock', {
-        p_store_id: restaurantId,
-        p_is_available: p_is_available,
-        p_category_id: p_category_id
-    });
+    const listCacheKey = `menu_items:${restaurantId}:${p_is_available}:${p_category_id}`;
 
-    if (error) {
-        throw new Error(`Failed to fetch menu data: ${error.message}`);
-    }
+    const fetchList = async () => {
+        const { data: detailedMenu, error } = await supabase.rpc('get_menu_with_stock', {
+            p_store_id: restaurantId,
+            p_is_available: p_is_available,
+            p_category_id: p_category_id
+        });
+
+        if (error) {
+            throw new Error(`Failed to fetch menu data: ${error.message}`);
+        }
+        return detailedMenu;
+    };
+
+    const detailedMenu = nocache === 'true' ? await fetchList() : await remember(listCacheKey, 180, fetchList);
 
     return res.status(200).json(detailedMenu);
 }
@@ -73,5 +88,13 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Menu item with id "${itemId}" not found.` });
         throw error;
     }
+
+    // Invalidate menu & catalog caches for this restaurant
+    await Promise.all([
+        deleteCache(`menu_item:${restaurantId}:${itemId}`),
+        deleteCache(`catalog:${restaurantId}`),
+        invalidateCachePattern(`menu_items:${restaurantId}:*`),
+    ]);
+
     return res.status(200).json(data);
 }

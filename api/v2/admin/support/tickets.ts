@@ -78,11 +78,13 @@ export default async function handler(req: any, res: any) {
       const formattedData = data.map((t: any) => ({
           ...t,
           client_name: usersMap.get(t.client_id) || 'Cliente',
-          messages: (t.messages || []).map((m: any) => ({
-             sender: m.sender_type,
-             text: m.text,
-             time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          })).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+          messages: (t.messages || [])
+             .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+             .map((m: any) => ({
+                sender: m.sender_type,
+                text: m.text,
+                time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+             }))
       }));
 
       return res.status(200).json({ data: formattedData });

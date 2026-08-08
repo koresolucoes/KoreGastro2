@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { withAuth, supabase } from '../utils/api-handler.js';
+import { remember } from '../utils/redis.js';
 
 export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
     if (req.method !== 'GET') {
@@ -8,102 +9,106 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
     }
 
     try {
-        // Fetch all categories for this restaurant
-        const { data: categoriesData, error: catError } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('user_id', restaurantId);
+        const cacheKey = `catalog:${restaurantId}`;
+        const bypassCache = req.query?.nocache === 'true';
 
-        // Even though recipes also returns categories, querying them directly helps to get all of them.
-        // But let's check `get_menu_with_stock` first
-        const { data: menuData, error: menuError } = await supabase.rpc('get_menu_with_stock', {
-            p_restaurant_id: restaurantId,
-            p_is_available: true,
-            p_category_id: null
-        });
+        const catalogFetcher = async () => {
+            // Fetch all categories for this restaurant
+            const { data: categoriesData } = await supabase
+                .from('categories')
+                .select('*')
+                .eq('user_id', restaurantId);
 
-        if (menuError) {
-            throw new Error(`Failed to fetch menu data: ${menuError.message}`);
-        }
-
-        // Fetch options and groups for customization
-        const { data: optionGroups, error: optionsError } = await supabase
-             .from('ifood_option_groups')
-             .select('*, ifood_options(*)');
-
-        const groupsByRecipe = new Map();
-        if (optionGroups) {
-            for (const group of optionGroups) {
-                 if (group.recipe_id) {
-                     const groups = groupsByRecipe.get(group.recipe_id) || [];
-                     groups.push(group);
-                     groupsByRecipe.set(group.recipe_id, groups);
-                 }
-            }
-        }
-
-        // Group items by category
-        const catalogMap = new Map();
-
-        // Initialize with predefined categories if they exist (to preserve order or empty categories)
-        if (categoriesData) {
-            categoriesData.forEach(cat => {
-                catalogMap.set(cat.id, {
-                    id: cat.id,
-                    name: cat.name,
-                    items: []
-                });
+            const { data: menuData, error: menuError } = await supabase.rpc('get_menu_with_stock', {
+                p_restaurant_id: restaurantId,
+                p_is_available: true,
+                p_category_id: null
             });
-        }
 
-        const items = menuData || [];
-        for (const item of items) {
-            const catId = item.category_id;
-            
-            // Attach nested options
-            const customizations = groupsByRecipe.get(item.id) || [];
-
-            const catalogItem = {
-                id: item.id,
-                name: item.name,
-                description: item.description,
-                price: item.price,
-                imageUrl: item.image_url,
-                isAvailable: item.is_available,
-                hasStock: item.has_stock,
-                cost: item.estimated_cost,
-                customizations: customizations.map((g: any) => ({
-                    id: g.id,
-                    name: g.name,
-                    min: g.min,
-                    max: g.max,
-                    options: (g.ifood_options || []).map((o: any) => ({
-                        id: o.id,
-                        name: o.name,
-                        price: o.price,
-                        productId: o.ifood_product_id
-                    }))
-                }))
-            };
-
-            if (catId) {
-                if (!catalogMap.has(catId)) {
-                    catalogMap.set(catId, { id: catId, name: item.categories?.name || 'Sem Categoria', items: [] });
-                }
-                catalogMap.get(catId).items.push(catalogItem);
-            } else {
-                let uncat = catalogMap.get('uncategorized');
-                if (!uncat) {
-                    uncat = { id: 'uncategorized', name: 'Sem Categoria', items: [] };
-                    catalogMap.set('uncategorized', uncat);
-                }
-                uncat.items.push(catalogItem);
+            if (menuError) {
+                throw new Error(`Failed to fetch menu data: ${menuError.message}`);
             }
-        }
 
-        // Convert map to array and remove empty categories if desired (optional)
-        const categories = Array.from(catalogMap.values()).filter(cat => cat.items.length > 0);
+            // Fetch options and groups for customization
+            const { data: optionGroups } = await supabase
+                 .from('ifood_option_groups')
+                 .select('*, ifood_options(*)');
 
+            const groupsByRecipe = new Map();
+            if (optionGroups) {
+                for (const group of optionGroups) {
+                     if (group.recipe_id) {
+                         const groups = groupsByRecipe.get(group.recipe_id) || [];
+                         groups.push(group);
+                         groupsByRecipe.set(group.recipe_id, groups);
+                     }
+                }
+            }
+
+            // Group items by category
+            const catalogMap = new Map();
+
+            if (categoriesData) {
+                categoriesData.forEach(cat => {
+                    catalogMap.set(cat.id, {
+                        id: cat.id,
+                        name: cat.name,
+                        items: []
+                    });
+                });
+            }
+
+            const items = menuData || [];
+            for (const item of items) {
+                const catId = item.category_id;
+                const customizations = groupsByRecipe.get(item.id) || [];
+
+                const catalogItem = {
+                    id: item.id,
+                    name: item.name,
+                    description: item.description,
+                    price: item.price,
+                    imageUrl: item.image_url,
+                    isAvailable: item.is_available,
+                    hasStock: item.has_stock,
+                    cost: item.estimated_cost,
+                    customizations: customizations.map((g: any) => ({
+                        id: g.id,
+                        name: g.name,
+                        min: g.min,
+                        max: g.max,
+                        options: (g.ifood_options || []).map((o: any) => ({
+                            id: o.id,
+                            name: o.name,
+                            price: o.price,
+                            productId: o.ifood_product_id
+                        }))
+                    }))
+                };
+
+                if (catId) {
+                    if (!catalogMap.has(catId)) {
+                        catalogMap.set(catId, { id: catId, name: item.categories?.name || 'Sem Categoria', items: [] });
+                    }
+                    catalogMap.get(catId).items.push(catalogItem);
+                } else {
+                    let uncat = catalogMap.get('uncategorized');
+                    if (!uncat) {
+                        uncat = { id: 'uncategorized', name: 'Sem Categoria', items: [] };
+                        catalogMap.set('uncategorized', uncat);
+                    }
+                    uncat.items.push(catalogItem);
+                }
+            }
+
+            return Array.from(catalogMap.values()).filter(cat => cat.items.length > 0);
+        };
+
+        const categories = bypassCache
+            ? await catalogFetcher()
+            : await remember(cacheKey, 300, catalogFetcher); // 5 minutes cache
+
+        res.setHeader('X-Cache-Key', cacheKey);
         return res.status(200).json({
             restaurantId,
             catalog: categories
