@@ -3,14 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { Customer } from '../../src/models/db.models.js';
 import bcrypt from 'bcryptjs';
-import DOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
 import { triggerWebhook } from '../webhook-emitter.js';
 
 import { withAuth, supabase } from '../utils/api-handler.js';
 
-const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Parameters<typeof DOMPurify>[0]);
+const purify = {
+  sanitize: (val: string | null | undefined): string => {
+    if (!val) return '';
+    return val.replace(/<[^>]*>?/gm, '').trim();
+  }
+};
 
 const PUBLIC_CUSTOMER_COLUMNS = 'id, name, phone, email, cpf, notes, loyalty_points, user_id, created_at, address, latitude, longitude';
 

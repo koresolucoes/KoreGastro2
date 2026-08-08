@@ -19,14 +19,36 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
                 .select('*')
                 .eq('user_id', restaurantId);
 
-            const { data: menuData, error: menuError } = await supabase.rpc('get_menu_with_stock', {
-                p_restaurant_id: restaurantId,
+            let menuData: any[] = [];
+            const { data: rpcData1, error: rpcErr1 } = await supabase.rpc('get_menu_with_stock', {
+                p_store_id: restaurantId,
                 p_is_available: true,
                 p_category_id: null
             });
 
-            if (menuError) {
-                throw new Error(`Failed to fetch menu data: ${menuError.message}`);
+            if (!rpcErr1 && rpcData1) {
+                menuData = rpcData1;
+            } else {
+                const { data: rpcData2, error: rpcErr2 } = await supabase.rpc('get_menu_with_stock', {
+                    p_restaurant_id: restaurantId,
+                    p_is_available: true,
+                    p_category_id: null
+                });
+                if (!rpcErr2 && rpcData2) {
+                    menuData = rpcData2;
+                } else {
+                    const { data: fallbackRecipes } = await supabase
+                        .from('recipes')
+                        .select('*, categories(name)')
+                        .or(`store_id.eq.${restaurantId},user_id.eq.${restaurantId}`)
+                        .eq('is_available', true);
+
+                    menuData = (fallbackRecipes || []).map((r: any) => ({
+                        ...r,
+                        has_stock: true,
+                        estimated_cost: r.operational_cost || 0
+                    }));
+                }
             }
 
             // Fetch options and groups for customization

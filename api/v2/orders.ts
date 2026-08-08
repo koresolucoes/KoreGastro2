@@ -4,13 +4,15 @@ import { z } from 'zod';
 import { OrderItem, OrderItemStatus, Recipe, RecipePreparation } from '../../src/models/db.models.js';
 import { v4 as uuidv4 } from 'uuid';
 import { triggerWebhook } from '../webhook-emitter.js';
-import DOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
 
 import { withAuth, supabase } from '../utils/api-handler.js';
 
-const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Parameters<typeof DOMPurify>[0]);
+const purify = {
+  sanitize: (val: string | null | undefined): string => {
+    if (!val) return '';
+    return val.replace(/<[^>]*>?/gm, '').trim();
+  }
+};
 
 interface RequestItem {
   externalCode: string;

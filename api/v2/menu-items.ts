@@ -52,14 +52,31 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     const listCacheKey = `menu_items:${restaurantId}:${p_is_available}:${p_category_id}`;
 
     const fetchList = async () => {
-        const { data: detailedMenu, error } = await supabase.rpc('get_menu_with_stock', {
+        let detailedMenu: any[] = [];
+        const { data: rpcData1, error: rpcErr1 } = await supabase.rpc('get_menu_with_stock', {
             p_store_id: restaurantId,
             p_is_available: p_is_available,
             p_category_id: p_category_id
         });
 
-        if (error) {
-            throw new Error(`Failed to fetch menu data: ${error.message}`);
+        if (!rpcErr1 && rpcData1) {
+            detailedMenu = rpcData1;
+        } else {
+            const { data: rpcData2, error: rpcErr2 } = await supabase.rpc('get_menu_with_stock', {
+                p_restaurant_id: restaurantId,
+                p_is_available: p_is_available,
+                p_category_id: p_category_id
+            });
+            if (!rpcErr2 && rpcData2) {
+                detailedMenu = rpcData2;
+            } else {
+                let query = supabase.from('recipes').select('*, categories(name)').or(`store_id.eq.${restaurantId},user_id.eq.${restaurantId}`);
+                if (p_is_available !== null) query = query.eq('is_available', p_is_available);
+                if (p_category_id) query = query.eq('category_id', p_category_id);
+                const { data: recipesData, error: recipesError } = await query;
+                if (recipesError) throw new Error(`Failed to fetch menu items: ${recipesError.message}`);
+                detailedMenu = (recipesData || []).map((r: any) => ({ ...r, has_stock: true }));
+            }
         }
         return detailedMenu;
     };

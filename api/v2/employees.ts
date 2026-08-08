@@ -10,7 +10,7 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
     const { id } = req.query;
 
     if (id && typeof id === 'string') {
-        const { data, error } = await supabase.from('employees').select('id, name, role_id, created_at, user_id, current_clock_in_id, email').eq('user_id', restaurantId).eq('id', id).single();
+        const { data, error } = await supabase.from('employees').select('id, name, role_id, created_at, user_id, current_clock_in_id').eq('user_id', restaurantId).eq('id', id).single();
         if (error) {
             if (error.code === 'PGRST116') return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: `Employee with id "${id}" not found.` });
             throw error;
@@ -18,7 +18,7 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
         return res.status(200).json(data);
     }
 
-    const { data, error } = await supabase.from('employees').select('id, name, role_id, created_at, user_id, current_clock_in_id, email').eq('user_id', restaurantId).order('name', { ascending: true });
+    const { data, error } = await supabase.from('employees').select('id, name, role_id, created_at, user_id, current_clock_in_id').eq('user_id', restaurantId).order('name', { ascending: true });
     if (error) throw error;
     return res.status(200).json(data || []);
 });

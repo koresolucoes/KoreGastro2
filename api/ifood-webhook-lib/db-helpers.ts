@@ -2,11 +2,12 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { OrderItem, OrderStatus, OrderType, IfoodOrderDelivery, Customer } from '../../src/models/db.models.js';
 import { getOrderIdFromPayload } from './ifood-utils.js';
 import { v4 as uuidv4 } from 'uuid';
-import DOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
-
-const window = new JSDOM('').window;
-const purify = DOMPurify(window as unknown as Parameters<typeof DOMPurify>[0]);
+const purify = {
+  sanitize: (val: string | null | undefined): string => {
+    if (!val) return '';
+    return val.replace(/<[^>]*>?/gm, '').trim();
+  }
+};
 
 // --- LOGGING ---
 
