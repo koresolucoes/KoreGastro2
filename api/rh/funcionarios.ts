@@ -32,9 +32,24 @@ async function authenticate(req: VercelRequest): Promise<{ restaurantId: string 
         return { restaurantId: null, error: { message: 'Invalid or expired token.' }, status: 401 };
     }
     
-    const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
-    // ... (rest of the existing Supabase Auth logic)
-    return { restaurantId, isApiKey: false };
+    const requestedRestaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
+    const targetRestaurantId = requestedRestaurantId || user.id;
+
+    if (user.id !== targetRestaurantId) {
+        // Verify if user is an employee/manager in the target restaurant
+        const { data: employee } = await supabase
+            .from('employees')
+            .select('id')
+            .eq('user_id', targetRestaurantId)
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+
+        if (!employee) {
+            return { restaurantId: null, error: { message: 'Acesso negado para o restaurante informado.' }, status: 403 };
+        }
+    }
+
+    return { restaurantId: targetRestaurantId, isApiKey: false };
 }
 
 export default async function handler(req: any, res: any) {

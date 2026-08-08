@@ -21,12 +21,12 @@ const requestBodySchema = z.object({
 export default withAuth(async function handler(req: any, res: any, restaurantId: string) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ error: "An error occurred" });
+    return res.status(405).json({ error: "Método não permitido. Use POST." });
   }
 
   const parsedBody = requestBodySchema.safeParse(req.body);
   if (!parsedBody.success) {
-      return res.status(400).json({ error: "An error occurred" });
+      return res.status(400).json({ error: "Dados de pagamento inválidos", details: parsedBody.error.flatten() });
   }
 
   const { orderId, payments, tip } = parsedBody.data;
@@ -41,7 +41,7 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
     const { data: profile } = profileResponse;
 
     if (orderError) {
-      if (orderError.code === 'PGRST116') return res.status(404).json({ error: "An error occurred" });
+      if (orderError.code === 'PGRST116') return res.status(404).json({ error: "Pedido não encontrado ou já finalizado" });
       throw orderError;
     }
     
@@ -50,7 +50,7 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
     if (validMethods && Array.isArray(validMethods) && validMethods.length > 0) {
         const invalidPayments = payments.filter(p => !validMethods.includes(p.method));
         if (invalidPayments.length > 0) {
-            return res.status(400).json({ error: "An error occurred" });
+            return res.status(400).json({ error: `Métodos de pagamento não permitidos: ${invalidPayments.map(p => p.method).join(', ')}` });
         }
     }
     
@@ -59,7 +59,7 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
     const totalPaidCents = payments.reduce((sum, p) => sum + Math.round((p.amount || 0) * 100), 0);
     
     if (totalPaidCents < orderTotalCents - 1) { // 1 cent rounding tolerance
-      return res.status(400).json({ error: "An error occurred" });
+      return res.status(400).json({ error: `Valor pago (R$ ${(totalPaidCents/100).toFixed(2)}) é inferior ao total do pedido (R$ ${(orderTotalCents/100).toFixed(2)})` });
     }
 
     // 2. Identify Table ID (if applicable)

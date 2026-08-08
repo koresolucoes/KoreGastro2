@@ -10,7 +10,7 @@ import { JSDOM } from 'jsdom';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
 const window = new JSDOM('').window;
-const purify = DOMPurify(window as any);
+const purify = DOMPurify(window as unknown as Window);
 
 interface RequestItem {
   externalCode: string;
