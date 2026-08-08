@@ -15,16 +15,10 @@
 
   <!-- Right Actions -->
   <div class="flex items-center gap-2 md:gap-3 ml-4">
-    <!-- Portal Indicator Tag -->
-    <div class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold" [ngClass]="portalInfo().color">
-      <span translate="no" class="notranslate material-symbols-outlined text-[16px]">{{ portalInfo().icon }}</span>
-      <span>{{ portalInfo().badge }}</span>
-    </div>
-
     <!-- Store Unit Selector in Top Nav -->
     <div class="relative top-dropdown hidden md:block">
-      <button (click)="toggleDropdown('unit', $event)" class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-subtle hover:border-strong rounded-lg text-title text-xs font-semibold transition-all">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
+      <button (click)="toggleDropdown('unit', $event)" class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-subtle hover:border-strong rounded-lg text-title text-xs font-semibold transition-all shadow-sm">
+        <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-muted shrink-0">store</span>
         <span class="max-w-[80px] sm:max-w-[130px] md:max-w-[180px] truncate">{{ currentUnitName() || 'Matriz' }}</span>
         <span translate="no" class="notranslate material-symbols-outlined text-[16px] text-muted">arrow_drop_down</span>
       </button>
@@ -52,11 +46,18 @@
     </div>
 
     <!-- Theme Toggle -->
-    <button (click)="themeService.toggleTheme()" class="text-muted hover:text-title p-2 rounded-full hover:bg-surface transition-colors focus:outline-none hidden sm:block" title="Alternar Tema">
-        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">
-            {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
-        </span>
-    </button>
+    <div class="hidden sm:flex items-center bg-surface border border-strong rounded-full p-1 shadow-sm">
+      <button (click)="themeService.currentTheme() === 'dark' ? themeService.toggleTheme() : null" type="button" 
+        class="p-1.5 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+        [ngClass]="themeService.currentTheme() === 'light' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
+        <span translate="no" class="notranslate material-symbols-outlined text-[18px]">light_mode</span>
+      </button>
+      <button (click)="themeService.currentTheme() === 'light' ? themeService.toggleTheme() : null" type="button" 
+        class="p-1.5 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+        [ngClass]="themeService.currentTheme() === 'dark' ? 'bg-surface-elevated text-title shadow-sm' : 'text-muted hover:text-title'">
+        <span translate="no" class="notranslate material-symbols-outlined text-[18px]">dark_mode</span>
+      </button>
+    </div>
 
     <!-- Notifications Center Dropdown -->
     <div class="relative top-dropdown">
@@ -294,22 +295,22 @@
 
       <!-- User Dropdown -->
       @if (openDropdown() === 'user') {
-        <div class="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl bg-surface-elevated border border-strong py-1 z-50 animate-in slide-in-from-top-2">
-          <div class="px-4 py-3 border-b border-subtle block md:hidden">
+        <div class="absolute right-0 mt-2 w-64 rounded-xl shadow-2xl bg-surface-elevated border border-strong p-2 z-50 flex flex-col gap-1 animate-in slide-in-from-top-2">
+          <div class="px-2 py-2 border-b border-subtle block md:hidden mb-1">
             <p class="text-sm font-bold text-title truncate">{{ activeEmployee()?.name }}</p>
             <p class="text-xs text-muted uppercase font-bold tracking-widest mt-0.5">{{ activeEmployee()?.role }}</p>
           </div>
-          <a routerLink="/my-profile" (click)="handleLinkClick()" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold hover:bg-surface transition-colors">
+          <a routerLink="/my-profile" (click)="handleLinkClick()" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-title bg-surface border border-transparent hover:border-strong rounded-lg shadow-sm transition-all">
               <span translate="no" class="notranslate material-symbols-outlined text-[18px]">person</span> Meu Perfil
           </a>
-          <button (click)="handleShiftAction(); $event.stopPropagation()" class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors" [class]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
+          <button (click)="handleShiftAction(); $event.stopPropagation()" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm font-semibold bg-surface border border-transparent hover:border-strong rounded-lg shadow-sm transition-all" [ngClass]="shiftButtonState().className" [disabled]="shiftButtonState().disabled">
             <span translate="no" class="notranslate material-symbols-outlined text-[18px]">schedule</span> {{ shiftButtonState().text }}
           </button>
-          <button (click)="switchEmployee()" class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm font-semibold hover:bg-surface transition-colors">
+          <button (click)="switchEmployee()" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm font-semibold text-title bg-surface border border-transparent hover:border-strong rounded-lg shadow-sm transition-all">
             <span translate="no" class="notranslate material-symbols-outlined text-[18px]">swap_horiz</span> Trocar Operador
           </button>
           <div class="border-t border-subtle mt-1 pt-1">
-              <button (click)="signOut()" class="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm text-danger font-semibold hover:bg-danger/5 transition-colors">
+              <button (click)="signOut()" class="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-danger font-semibold bg-surface border border-transparent hover:border-danger/30 hover:bg-danger/5 rounded-lg shadow-sm transition-all">
                 <span translate="no" class="notranslate material-symbols-outlined text-[18px]">logout</span> Sair do Sistema
               </button>
           </div>

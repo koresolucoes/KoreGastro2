@@ -25,8 +25,7 @@
   <!-- Portal Context Badge / Selector -->
   <div class="p-3 border-b border-subtle shrink-0 relative portal-selector">
     <button (click)="togglePortalSelector($event)" 
-      class="w-full flex items-center justify-between p-2 rounded-xl transition-all border text-left"
-      [ngClass]="portalInfo().color"
+      class="w-full flex items-center justify-between p-2 rounded-xl transition-all border text-left bg-surface border-strong hover:bg-surface-elevated text-title shadow-sm"
       [title]="isCollapsed() ? portalInfo().name : ''">
       <div class="flex items-center gap-2 overflow-hidden min-w-0">
         <span translate="no" class="notranslate material-symbols-outlined text-lg shrink-0">{{ portalInfo().icon }}</span>
@@ -48,23 +47,23 @@
         <div class="p-2.5 border-b border-subtle bg-surface/80 flex items-center justify-between">
           <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Alternar Ambientes</p>
           @if (!isDomainLocked()) {
-            <span class="text-[9px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded font-bold uppercase">Simulação Dev</span>
+            <span class="text-[9px] bg-surface border border-strong text-title px-1.5 py-0.5 rounded shadow-sm font-bold uppercase">Simulação Dev</span>
           } @else {
-            <span class="text-[9px] bg-brand/10 text-brand px-1.5 py-0.5 rounded font-bold uppercase">Produção</span>
+            <span class="text-[9px] bg-brand/10 text-brand border border-brand/20 px-1.5 py-0.5 rounded font-bold uppercase">Produção</span>
           }
         </div>
 
         <div class="p-1.5 space-y-1">
           <!-- Gestão Option -->
           <button (click)="switchPortalMode('gestao', $event)"
-            class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface"
-            [class.bg-emerald-500\/10]="currentPortalMode() === 'gestao'">
-            <span translate="no" class="notranslate material-symbols-outlined text-emerald-500 text-lg">analytics</span>
+            class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface border"
+            [class.bg-surface-elevated]="currentPortalMode() === 'gestao'" [class.border-strong]="currentPortalMode() === 'gestao'" [class.shadow-sm]="currentPortalMode() === 'gestao'" [class.border-transparent]="currentPortalMode() !== 'gestao'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg" [class.text-brand]="currentPortalMode() === 'gestao'" [class.text-muted]="currentPortalMode() !== 'gestao'">analytics</span>
             <div class="flex flex-col min-w-0 flex-1">
               <span class="text-xs font-bold text-title flex items-center justify-between">
                 Portal Gestão & RH
                 @if (currentPortalMode() === 'gestao') {
-                  <span translate="no" class="notranslate material-symbols-outlined text-emerald-500 text-xs">check_circle</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand text-xs">check_circle</span>
                 }
               </span>
               <span class="text-[10px] text-muted font-mono">portal.chefos.online</span>
@@ -73,14 +72,14 @@
 
           <!-- Operacao Option -->
           <button (click)="switchPortalMode('operacao', $event)"
-            class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface"
-            [class.bg-amber-500\/10]="currentPortalMode() === 'operacao'">
-            <span translate="no" class="notranslate material-symbols-outlined text-amber-500 text-lg">point_of_sale</span>
+            class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface border"
+            [class.bg-surface-elevated]="currentPortalMode() === 'operacao'" [class.border-strong]="currentPortalMode() === 'operacao'" [class.shadow-sm]="currentPortalMode() === 'operacao'" [class.border-transparent]="currentPortalMode() !== 'operacao'">
+            <span translate="no" class="notranslate material-symbols-outlined text-lg" [class.text-brand]="currentPortalMode() === 'operacao'" [class.text-muted]="currentPortalMode() !== 'operacao'">point_of_sale</span>
             <div class="flex flex-col min-w-0 flex-1">
               <span class="text-xs font-bold text-title flex items-center justify-between">
                 App Operacional
                 @if (currentPortalMode() === 'operacao') {
-                  <span translate="no" class="notranslate material-symbols-outlined text-amber-500 text-xs">check_circle</span>
+                  <span translate="no" class="notranslate material-symbols-outlined text-brand text-xs">check_circle</span>
                 }
               </span>
               <span class="text-[10px] text-muted font-mono">app.chefos.online</span>
@@ -90,14 +89,14 @@
           <!-- All / Unified Option (Dev) -->
           @if (!isDomainLocked()) {
             <button (click)="switchPortalMode('all', $event)"
-              class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface"
-              [class.bg-indigo-500\/10]="currentPortalMode() === 'all'">
-              <span translate="no" class="notranslate material-symbols-outlined text-indigo-500 text-lg">hub</span>
+              class="w-full p-2 rounded-lg text-left transition-colors flex items-center gap-2.5 hover:bg-surface border"
+              [class.bg-surface-elevated]="currentPortalMode() === 'all'" [class.border-strong]="currentPortalMode() === 'all'" [class.shadow-sm]="currentPortalMode() === 'all'" [class.border-transparent]="currentPortalMode() !== 'all'">
+              <span translate="no" class="notranslate material-symbols-outlined text-lg" [class.text-brand]="currentPortalMode() === 'all'" [class.text-muted]="currentPortalMode() !== 'all'">hub</span>
               <div class="flex flex-col min-w-0 flex-1">
                 <span class="text-xs font-bold text-title flex items-center justify-between">
                   Modo Unificado (Dev)
                   @if (currentPortalMode() === 'all') {
-                    <span translate="no" class="notranslate material-symbols-outlined text-indigo-500 text-xs">check_circle</span>
+                    <span translate="no" class="notranslate material-symbols-outlined text-brand text-xs">check_circle</span>
                   }
                 </span>
                 <span class="text-[10px] text-muted font-mono">Todos os módulos</span>
