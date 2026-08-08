@@ -4,6 +4,7 @@ import { LeaveRequest } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
+import { getApiBaseUrl } from './api-client.service';
 
 @Injectable({
   providedIn: 'root',
@@ -42,7 +43,8 @@ export class LeaveDataService {
     }
 
     try {
-      const response = await fetch('https://app.chefos.online/api/rh/ausencias', {
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/rh/ausencias`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +75,8 @@ export class LeaveDataService {
     }
 
     try {
-      const response = await fetch(`https://app.chefos.online/api/rh/ausencias?restaurantId=${restaurantId}&id=${id}`, {
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/rh/ausencias?restaurantId=${restaurantId}&id=${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -1,11 +1,22 @@
 import { Injectable } from '@angular/core';
 import { supabase } from './supabase-client';
 
+export function getApiBaseUrl(): string {
+  const origin = window.location.origin;
+  if (origin.includes('localhost') || origin.includes('.run.app') || origin.includes('webcontainer')) {
+    if (origin.includes('localhost') && !origin.includes(':3000')) {
+      return 'http://localhost:3000';
+    }
+    return origin;
+  }
+  return 'https://app.chefos.online';
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ApiClientService {
-  private baseUrl = window.location.origin.includes('localhost') ? 'http://localhost:3000' : 'https://app.chefos.online';
+  private baseUrl = getApiBaseUrl();
 
   async get<T>(path: string, params?: Record<string, string>): Promise<{ data?: T; error?: any }> {
     return this.request<T>('GET', path, undefined, params);

@@ -5,6 +5,7 @@ import { Recipe } from '../models/db.models';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
 import { UnitContextService } from './unit-context.service';
+import { getApiBaseUrl } from './api-client.service';
 
 export interface IfoodCancellationReason {
   code: string;
@@ -174,7 +175,8 @@ export class IfoodMenuService {
     }
 
     try {
-      const response = await fetch('https://app.chefos.online/api/ifood-catalog', {
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/ifood-catalog`, {
         method: 'POST', // The proxy itself is always called with POST
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ method, endpoint: fullEndpoint, payload: body, isImageUpload, merchantId })
