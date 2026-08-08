@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { OperationalAuthService } from '../../services/operational-auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { PortalContextService, PortalType } from '../../services/portal-context.service';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../services/notification.service';
@@ -23,8 +24,13 @@ export class LoginComponent {
   authService = inject(AuthService);
   operationalAuth = inject(OperationalAuthService);
   themeService = inject(ThemeService);
+  portalContext = inject(PortalContextService);
   router: Router = inject(Router);
   notificationService = inject(NotificationService);
+
+  portalInfo = this.portalContext.portalInfo;
+  currentPortalMode = this.portalContext.currentMode;
+  isDomainLocked = this.portalContext.isDomainLocked;
 
   isRegistering = signal(false);
 
@@ -33,6 +39,10 @@ export class LoginComponent {
   confirmPassword = signal('');
   authState = signal<AuthState>('idle');
   errorMessage = signal('');
+
+  switchPortal(mode: PortalType) {
+    this.portalContext.setPortalMode(mode);
+  }
 
   passwordStrength = computed(() => {
     const pwd = this.password();

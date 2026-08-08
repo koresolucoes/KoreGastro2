@@ -1,13 +1,44 @@
 <div class="flex min-h-screen bg-app items-center justify-center p-4 relative overflow-hidden">
-  <!-- Theme Toggle Floating Button -->
-  <div class="absolute top-4 right-4 z-30">
-    <button (click)="toggleTheme()" type="button" 
-            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-elevated/80 border border-strong text-muted hover:text-title hover:border-brand/40 transition-all shadow-sm active:scale-95 text-xs font-bold">
-      <span translate="no" class="notranslate material-symbols-outlined text-lg text-brand">
-        {{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}
-      </span>
-      <span class="hidden sm:inline">{{ themeService.currentTheme() === 'dark' ? 'Modo Claro' : 'Modo Escuro' }}</span>
-    </button>
+  <!-- Top Bar Controls: Portal Selector + Theme Toggle -->
+  <div class="absolute top-4 left-4 right-4 z-30 flex items-center justify-between">
+    <!-- Portal Indicator / Dev Switcher -->
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md shadow-sm transition-all" [ngClass]="portalInfo().color">
+        <span translate="no" class="notranslate material-symbols-outlined text-base">{{ portalInfo().icon }}</span>
+        <span class="text-xs font-bold">{{ portalInfo().badge }}</span>
+        <span class="text-[10px] opacity-70 font-mono hidden sm:inline">({{ portalInfo().domain }})</span>
+      </div>
+
+      <!-- Dev Switcher Tabs if not domain-locked -->
+      @if (!isDomainLocked()) {
+        <div class="hidden sm:flex items-center bg-gray-100/90 dark:bg-zinc-800/90 rounded-full p-1 gap-1 text-sm font-medium shadow-inner backdrop-blur-md">
+          <button (click)="switchPortal('gestao')" type="button" 
+            class="px-4 py-1.5 rounded-full transition-all duration-300 ease-out flex items-center gap-1.5"
+            [ngClass]="currentPortalMode() === 'gestao' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+            Gestão
+          </button>
+          <button (click)="switchPortal('operacao')" type="button" 
+            class="px-4 py-1.5 rounded-full transition-all duration-300 ease-out flex items-center gap-1.5"
+            [ngClass]="currentPortalMode() === 'operacao' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+            Operação
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Theme Toggle Floating Button -->
+    <div class="flex items-center bg-gray-100/90 dark:bg-zinc-800/90 rounded-full p-1 shadow-inner backdrop-blur-md">
+      <button (click)="themeService.currentTheme() === 'dark' ? toggleTheme() : null" type="button" 
+        class="p-2 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+        [ngClass]="themeService.currentTheme() === 'light' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">light_mode</span>
+      </button>
+      <button (click)="themeService.currentTheme() === 'light' ? toggleTheme() : null" type="button" 
+        class="p-2 rounded-full transition-all duration-300 ease-out flex items-center justify-center"
+        [ngClass]="themeService.currentTheme() === 'dark' ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'">
+        <span translate="no" class="notranslate material-symbols-outlined text-[20px]">dark_mode</span>
+      </button>
+    </div>
   </div>
 
   <!-- Liquid Glow Background Orbs -->
@@ -17,19 +48,39 @@
   </div>
 
   <!-- Main Container -->
-  <div class="relative w-full max-w-5xl min-h-[750px] bg-surface-elevated/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden flex flex-col lg:flex-row z-10">
+  <div class="relative w-full max-w-5xl min-h-[750px] bg-surface-elevated/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-strong overflow-hidden flex flex-col lg:flex-row z-10 mt-12 sm:mt-0">
     
     <!-- Login Form (Left Side Desktop, Toggleable Mobile) -->
     <div class="w-full lg:w-1/2 h-full lg:absolute lg:top-0 lg:left-0 flex flex-col justify-center p-8 sm:p-12 transition-all duration-500"
          [ngClass]="{'hidden lg:flex opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto': isRegistering(), 'flex opacity-100 pointer-events-auto': !isRegistering()}">
       
       <div class="max-w-md w-full mx-auto">
-        <div class="text-center lg:text-left mb-10 flex flex-col items-center lg:items-start">
+        <div class="text-center lg:text-left mb-8 flex flex-col items-center lg:items-start">
           <div class="flex items-center justify-center lg:justify-start gap-3 mb-4 lg:hidden">
             <img src="/logo.svg" alt="ChefOS Logo" class="h-16 w-auto">
           </div>
-          <h2 class="text-3xl font-bold text-title tracking-tight">Acesse sua conta</h2>
-          <p class="mt-2 text-sm text-muted font-medium">Entre com seu e-mail e senha para continuar.</p>
+          
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold mb-3" [ngClass]="portalInfo().color">
+            <span translate="no" class="notranslate material-symbols-outlined text-sm">{{ portalInfo().icon }}</span>
+            <span>{{ portalInfo().badge }}</span>
+          </div>
+
+          <h2 class="text-3xl font-bold text-title tracking-tight">
+            @if (currentPortalMode() === 'operacao') {
+              Acesso Operacional
+            } @else if (currentPortalMode() === 'gestao') {
+              Acesso Gestão & RH
+            } @else {
+              Acesse sua conta
+            }
+          </h2>
+          <p class="mt-2 text-sm text-muted font-medium">
+            @if (currentPortalMode() === 'operacao') {
+              Entre com seu e-mail e senha para gerenciar o PDV, caixa, mesas e pedidos de cozinha.
+            } @else {
+              Entre com seu e-mail e senha para gerenciar o financeiro, estoque, equipe e relatórios.
+            }
+          </p>
         </div>
         
         <form class="space-y-6" (ngSubmit)="handleLogin()" novalidate>
@@ -222,7 +273,11 @@
           </div>
           <h2 class="text-3xl font-bold mb-4 drop-shadow-md">Bem-vindo(a) de volta!</h2>
           <p class="text-lg font-medium text-white/80 mb-10 max-w-sm">
-            Pronto para revolucionar a gestão do seu restaurante hoje?
+            @if (currentPortalMode() === 'operacao') {
+              Agilidade no PDV, atendimento de mesas e telas de cozinha em tempo real.
+            } @else {
+              Gestão financeira, controle de estoque, folha de pagamento e relatórios em tempo real.
+            }
           </p>
           <p class="text-sm font-medium mb-4 uppercase tracking-widest text-white/60">Ainda não tem conta?</p>
           <button (click)="toggleMode()" 

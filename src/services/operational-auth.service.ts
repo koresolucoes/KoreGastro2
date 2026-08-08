@@ -14,6 +14,7 @@ import { SettingsStateService } from './settings-state.service';
 import { TimeClockReceiptService, TimeClockReceipt } from './time-clock-receipt.service';
 import { NtpService } from './ntp.service';
 import { UnitContextService } from './unit-context.service';
+import { PortalContextService } from './portal-context.service';
 
 const EMPLOYEE_STORAGE_KEY = 'active_employee';
 
@@ -449,30 +450,41 @@ export class OperationalAuthService {
     return allowed;
   }
 
+  private portalContext = inject(PortalContextService);
+
   getDefaultRoute(): string {
     const employee = this.activeEmployee();
     if (!employee) return '/employee-selection';
 
-    // Verify if dashboard is explicitly accessible
-    if (this.hasPermission('/dashboard')) return '/dashboard';
+    const mode = this.portalContext.currentMode();
+
+    if (mode === 'operacao') {
+      if (this.hasPermission('/pos') && this.portalContext.isRouteAllowedInCurrentPortal('/pos')) return '/pos';
+      if (this.hasPermission('/kds') && this.portalContext.isRouteAllowedInCurrentPortal('/kds')) return '/kds';
+      if (this.hasPermission('/cashier') && this.portalContext.isRouteAllowedInCurrentPortal('/cashier')) return '/cashier';
+      if (this.hasPermission('/delivery') && this.portalContext.isRouteAllowedInCurrentPortal('/delivery')) return '/delivery';
+    }
+
+    // Verify if dashboard is explicitly accessible in gestao
+    if (this.hasPermission('/dashboard') && this.portalContext.isRouteAllowedInCurrentPortal('/dashboard')) return '/dashboard';
 
     // Common operational screens
-    if (this.hasPermission('/pos')) return '/pos';
-    if (this.hasPermission('/kds')) return '/kds';
-    if (this.hasPermission('/cashier')) return '/cashier';
-    if (this.hasPermission('/delivery')) return '/delivery';
+    if (this.hasPermission('/pos') && this.portalContext.isRouteAllowedInCurrentPortal('/pos')) return '/pos';
+    if (this.hasPermission('/kds') && this.portalContext.isRouteAllowedInCurrentPortal('/kds')) return '/kds';
+    if (this.hasPermission('/cashier') && this.portalContext.isRouteAllowedInCurrentPortal('/cashier')) return '/cashier';
+    if (this.hasPermission('/delivery') && this.portalContext.isRouteAllowedInCurrentPortal('/delivery')) return '/delivery';
 
     // Fallbacks
     const roleName = (employee.role || '').toLowerCase();
     const isGerente = roleName.includes('gerente') || roleName.includes('admin');
     
-    if (isGerente) return '/dashboard';
+    if (isGerente && mode !== 'operacao') return '/dashboard';
 
-    const rolePerms = this.hrState.rolePermissions().filter(p => p.role_id === employee.role_id);
+    const rolePerms = this.hrState.rolePermissions().filter(p => p.role_id === employee.role_id && this.portalContext.isRouteAllowedInCurrentPortal(p.permission_key));
     if (rolePerms.length > 0) {
         return rolePerms[0].permission_key;
     }
 
-    return '/tutorials';
+    return this.portalContext.getPortalDefaultRoute(mode === 'operacao' ? 'operacao' : 'gestao');
   }
 }
