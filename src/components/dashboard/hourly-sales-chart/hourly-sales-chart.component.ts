@@ -8,7 +8,7 @@ import * as d3 from 'd3';
   selector: 'app-hourly-sales-chart',
   standalone: true,
   imports: [CommonModule],
-  template: `<div #chartContainer class="w-full h-full"></div>`,
+  template: `<div #chartContainer class="w-full h-full relative"></div>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [CurrencyPipe]
 })
@@ -93,12 +93,13 @@ export class HourlySalesChartComponent {
       .on("mouseover", (event: any, d: any) => {
         d3.select(event.currentTarget).attr('fill', "var(--brand-hover)");
         tooltip.transition().duration(200).style("opacity", .9);
+        const [xPos, yPos] = d3.pointer(event, containerEl);
         tooltip.html(`
             <strong>${d.hour}:00 - ${d.hour + 1}:00</strong><br/>
             Vendas: <strong>${this.currencyPipe.transform(d.sales, 'BRL')}</strong>
         `)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
+            .style("left", (xPos + 10) + "px")
+            .style("top", (yPos - 28) + "px");
         })
       .on("mouseout", (event, d) => {
           d3.select(event.currentTarget).attr('fill', '#2563eb');

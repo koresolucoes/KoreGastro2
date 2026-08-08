@@ -8,7 +8,7 @@ import * as d3 from 'd3';
   selector: 'app-sales-cogs-chart',
   standalone: true,
   imports: [CommonModule],
-  template: `<div #chartContainer class="w-full h-full"></div>`,
+  template: `<div #chartContainer class="w-full h-full relative"></div>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DatePipe, CurrencyPipe]
 })
@@ -105,14 +105,15 @@ export class SalesCogsChartComponent {
       .attr("height", (d: any) => height - y(d.sales))
       .attr("fill", "var(--brand-primary)") // primary
       .on("mouseover", (event: any, d: any) => {
+        const [xPos, yPos] = d3.pointer(event, containerEl);
         tooltip.transition().duration(200).style("opacity", .9);
         tooltip.html(`
             <strong>${d.dateLabel}</strong><br/>
             Vendas: <strong>${this.currencyPipe.transform(d.sales, 'BRL')}</strong><br/>
             CMV: ${this.currencyPipe.transform(d.cogs, 'BRL')}
         `)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
+            .style("left", (xPos + 10) + "px")
+            .style("top", (yPos - 28) + "px");
         })
       .on("mouseout", () => {
           tooltip.transition().duration(500).style("opacity", 0);
@@ -129,14 +130,15 @@ export class SalesCogsChartComponent {
       .attr("height", (d: any) => height - y(d.cogs))
       .attr("fill", "var(--accent-warning)") // warning
        .on("mouseover", (event: any, d: any) => {
+        const [xPos, yPos] = d3.pointer(event, containerEl);
         tooltip.transition().duration(200).style("opacity", .9);
         tooltip.html(`
             <strong>${this.datePipe.transform(d.date, 'dd/MM/yyyy')}</strong><br/>
             Vendas: ${this.currencyPipe.transform(d.sales, 'BRL')}<br/>
             CMV: <strong>${this.currencyPipe.transform(d.cogs, 'BRL')}</strong>
         `)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
+            .style("left", (xPos + 10) + "px")
+            .style("top", (yPos - 28) + "px");
         })
       .on("mouseout", d => {
           tooltip.transition().duration(500).style("opacity", 0);
