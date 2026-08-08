@@ -25,7 +25,7 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
 
     const { data: originalIngredient, error: fetchError } = await supabase
         .from('ingredients')
-        .select('name, stock, unit, version')
+        .select('name, stock, unit')
         .eq('id', ingredientId)
         .eq('user_id', restaurantId)
         .single();
@@ -48,13 +48,11 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
         console.error("RPC adjust_stock_by_lot failed:", error);
         // Fallback: manually update existing stock if RPC throws FK violation or similar.
         const newStock = originalIngredient.stock + quantityChange;
-        const currentVersion = originalIngredient.version || 1;
         
         const { data: updatedData, error: fallbackError } = await supabase.from('ingredients')
-                                          .update({ stock: newStock, updated_at: new Date().toISOString(), version: currentVersion + 1 })
+                                          .update({ stock: newStock, updated_at: new Date().toISOString() })
                                           .eq('id', ingredientId)
                                           .eq('user_id', restaurantId)
-                                          .eq('version', currentVersion)
                                           .select('id');
                                           
         if (fallbackError || !updatedData || updatedData.length === 0) {
