@@ -147,11 +147,26 @@ export class OperationalAuthService {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       
+      let location: { latitude: number; longitude: number } | undefined = undefined;
+      const profile = this.settingsState.companyProfile();
+      const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius);
+
+      try {
+        location = await this.getCurrentLocation();
+      } catch (e: any) {
+        if (isLocationRequired) {
+          this.notificationService.show(e.message || 'Erro ao obter localização obrigatória.', 'error', 8000);
+          return;
+        }
+      }
+
       try {
         const res = await firstValueFrom(this.http.post<any>('/api/rh/ponto/bater-ponto', {
           employeeId: employee.id,
           pin: employee.pin,
           restaurantId: employee.user_id,
+          latitude: location?.latitude,
+          longitude: location?.longitude
         }, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         }));
@@ -172,11 +187,21 @@ export class OperationalAuthService {
   private getCurrentLocation(): Promise<{ latitude: number; longitude: number }> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocalização não suportada'));
+        reject(new Error('Geolocalização não suportada pelo seu dispositivo ou navegador.'));
       } else {
         navigator.geolocation.getCurrentPosition(
           pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-          err => reject(err),
+          err => {
+            let msg = 'Não foi possível obter sua localização.';
+            if (err.code === err.PERMISSION_DENIED) {
+              msg = 'Permissão de geolocalização negada. Por favor, ative a localização nas configurações do seu navegador para bater ponto.';
+            } else if (err.code === err.POSITION_UNAVAILABLE) {
+              msg = 'A informação de localização está indisponível.';
+            } else if (err.code === err.TIMEOUT) {
+              msg = 'Tempo limite esgotado ao tentar obter a localização.';
+            }
+            reject(new Error(msg));
+          },
           { timeout: 10000 }
         );
       }
@@ -187,10 +212,15 @@ export class OperationalAuthService {
     if (this.demoService.isDemoMode()) return { success: true, error: null };
     
     if (!location) {
+      const profile = this.settingsState.companyProfile();
+      const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius);
       try {
         location = await this.getCurrentLocation();
-      } catch (e) {
-        // Ignora erro se não for obrigatório
+      } catch (e: any) {
+        if (isLocationRequired) {
+          this.notificationService.show(e.message || 'Erro ao obter localização obrigatória.', 'error', 8000);
+          return { success: false, error: e };
+        }
       }
     }
     
@@ -235,11 +265,26 @@ export class OperationalAuthService {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       
+      let location: { latitude: number; longitude: number } | undefined = undefined;
+      const profile = this.settingsState.companyProfile();
+      const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius);
+
+      try {
+        location = await this.getCurrentLocation();
+      } catch (e: any) {
+        if (isLocationRequired) {
+          this.notificationService.show(e.message || 'Erro ao obter localização obrigatória.', 'error', 8000);
+          return { success: false, error: e };
+        }
+      }
+
       try {
         await firstValueFrom(this.http.post<any>('/api/rh/ponto/bater-ponto', {
           employeeId: employee.id,
           pin: employee.pin,
           restaurantId: employee.user_id,
+          latitude: location?.latitude,
+          longitude: location?.longitude
         }, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         }));
