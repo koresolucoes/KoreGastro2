@@ -8,8 +8,6 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req: any, res: any) {
-  return res.status(403).json({ error: "Endpoint temporariamente desabilitado por segurança" });
-  return res.status(403).json({ error: "Endpoint temporariamente desabilitado por segurança" });
     if (req.method !== 'POST') {
         return res.status(405).end();
     }
@@ -72,7 +70,7 @@ export default async function handler(req: any, res: any) {
         const { data: config, error: configError } = await supabase
             .from('whatsapp_configs')
             .select('phone_number_id, access_token')
-            .eq('store_id', chat.store_id)
+            .eq('store_id', chat!.store_id)
             .eq('is_active', true)
             .single();
 
@@ -80,17 +78,17 @@ export default async function handler(req: any, res: any) {
 
         if (configError || !config) throw new Error('Config not found for store');
 
-        console.log("Sending message to:", chat.customer_phone, "text:", text);
+        console.log("Sending message to:", chat!.customer_phone, "text:", text);
         // Send to Facebook
-        const fbRes = await fetch(`https://graph.facebook.com/v19.0/${config.phone_number_id}/messages`, {
+        const fbRes = await fetch(`https://graph.facebook.com/v19.0/${config!.phone_number_id}/messages`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${config.access_token}`,
+                'Authorization': `Bearer ${config!.access_token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 messaging_product: "whatsapp",
-                to: chat.customer_phone,
+                to: chat!.customer_phone,
                 type: "text",
                 text: { body: text }
             })
@@ -104,7 +102,7 @@ export default async function handler(req: any, res: any) {
         await supabase
             .from('whatsapp_messages')
             .insert({
-                chat_id: chat.id,
+                chat_id: chat!.id,
                 wa_message_id: msgId,
                 sender_type: 'bot',
                 content: text

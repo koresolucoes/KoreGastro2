@@ -38,39 +38,31 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` and `action` are required.' });
         }
 
-        
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('company_profile')
-            .select('cnpj')
+            .select('external_api_key, focusnfe_token, cnpj')
             .eq('user_id', restaurantId)
             .single();
-
-        const { data: creds, error: credsError } = await supabase
-            .from('store_integration_credentials')
-            .select('external_api_key, focusnfe_token')
-            .eq('store_id', restaurantId)
-            .single();
             
-        if (credsError || !creds || !creds.external_api_key) {
-
+        if (profileError || !profile || !profile.external_api_key) {
             return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid `restaurantId` or API key not configured.' });
         }
-        if (providedApiKey !== creds.external_api_key) {
+        if (providedApiKey !== profile.external_api_key) {
             return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid API key.' });
         }
 
         switch (action as FocusNFeAction) {
             case 'save_settings':
-                await handleSaveSettings(res, restaurantId, profile.cnpj, creds.focusnfe_token, payload);
+                await handleSaveSettings(res, restaurantId, profile!.cnpj, profile!.focusnfe_token, payload);
                 break;
             case 'emit_nfce':
-                await handleEmitNfce(res, restaurantId, profile.cnpj, creds.focusnfe_token, payload);
+                await handleEmitNfce(res, restaurantId, profile!.cnpj, profile!.focusnfe_token, payload);
                 break;
              case 'cancel_nfce':
-                await handleCancelNfce(res, restaurantId, creds.focusnfe_token, payload);
+                await handleCancelNfce(res, restaurantId, profile!.focusnfe_token, payload);
                 break;
             case 'consultar_cnpj':
-                await handleConsultarCnpj(res, creds.focusnfe_token, payload);
+                await handleConsultarCnpj(res, profile!.focusnfe_token, payload);
                 break;
             default:
                 return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Unknown action: ${action}` });
@@ -95,7 +87,7 @@ async function handleSaveSettings(res: VercelResponse, userId: string, cnpj: str
     
     // Always save the token in our DB if a new one is provided.
     if (token) {
-        await supabase.from("store_integration_credentials").update({ focusnfe_token: token }).eq("store_id", userId);
+        await supabase.from('company_profile').update({ focusnfe_token: token }).eq('user_id', userId);
     }
     
     let certValidUntil: string | null = null;
@@ -125,7 +117,7 @@ async function handleSaveSettings(res: VercelResponse, userId: string, cnpj: str
         
         certValidUntil = responseBody?.certificado_valido_ate || null;
         if (certValidUntil) {
-            await supabase.from("store_integration_credentials").update({ focusnfe_cert_valid_until: certValidUntil }).eq("store_id", userId);
+            await supabase.from('company_profile').update({ focusnfe_cert_valid_until: certValidUntil }).eq('user_id', userId);
         }
     }
 
@@ -199,16 +191,16 @@ async function handleEmitNfce(res: VercelResponse, userId: string, cnpj: string 
     const fetchRes = await callFocusNFeApi('POST', `/v2/nfce?ref=${orderId}`, token, nfcePayload, focusNFeHomologacaoUrl);
     
     const updatePayload = {
-        nfce_status: fetchRes?.status || "200",
+        nfce_status: res.status,
         nfce_url: fetchRes.caminho_danfe ? `${focusNFeHomologacaoUrl}${fetchRes.caminho_danfe}` : null,
         nfce_xml_path: fetchRes.caminho_xml_nota_fiscal ? `${focusNFeHomologacaoUrl}${fetchRes.caminho_xml_nota_fiscal}` : null,
         nfce_chave: fetchRes.chave_nfe,
-        nfce_last_response: fetchRes as any
+        nfce_last_response: res as any
     };
 
     await supabase.from('orders').update(updatePayload).eq('id', orderId).eq('user_id', userId);
     
-    return res.status(200).json({ data: fetchRes });
+    return res.status(200).json({ data: res });
 }
 
 async function handleCancelNfce(res: VercelResponse, userId: string, token: string | null, payload: any) {
@@ -223,14 +215,14 @@ async function handleCancelNfce(res: VercelResponse, userId: string, token: stri
     const fetchRes = await callFocusNFeApi('DELETE', `/v2/nfce/${order.nfce_ref}`, token, { justificativa: justification }, focusNFeHomologacaoUrl);
     
     const updatePayload = {
-        nfce_status: fetchRes?.status || "200",
-        nfce_last_response: fetchRes as any,
+        nfce_status: res.status,
+        nfce_last_response: res as any,
         nfce_xml_path: fetchRes.caminho_xml_cancelamento ? `${focusNFeHomologacaoUrl}${fetchRes.caminho_xml_cancelamento}` : null,
     };
     
     await supabase.from('orders').update(updatePayload).eq('id', orderId).eq('user_id', userId);
 
-    return res.status(200).json({ data: fetchRes });
+    return res.status(200).json({ data: res });
 }
 
 async function handleConsultarCnpj(res: VercelResponse, token: string | null, payload: any) {
