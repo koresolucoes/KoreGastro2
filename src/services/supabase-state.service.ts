@@ -24,6 +24,11 @@ import * as mockData from '../data/mock-data';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { DeliveryStateService } from './delivery-state.service';
 import { BootstrapStatus, BootstrapStage, BootstrapError, sanitizeBootstrapErrorMessage } from '../models/bootstrap-state.model';
+import { CoreDataLoaderService } from './data-loaders/core-data-loader.service';
+import { PosDataLoaderService } from './data-loaders/pos-data-loader.service';
+import { CatalogDataLoaderService } from './data-loaders/catalog-data-loader.service';
+import { InventoryDataLoaderService } from './data-loaders/inventory-data-loader.service';
+import { OperationsDataLoaderService } from './data-loaders/operations-data-loader.service';
 
 @Injectable({
   providedIn: 'root',
@@ -48,6 +53,12 @@ export class SupabaseStateService {
   private demoService = inject(DemoService);
   private deliveryState = inject(DeliveryStateService);
   private notificationService = inject(NotificationService);
+
+  private coreDataLoader = inject(CoreDataLoaderService);
+  private posDataLoader = inject(PosDataLoaderService);
+  private catalogDataLoader = inject(CatalogDataLoaderService);
+  private inventoryDataLoader = inject(InventoryDataLoaderService);
+  private operationsDataLoader = inject(OperationsDataLoaderService);
 
   private currentUser = this.authService.currentUser;
   private realtimeChannel: any | null = null;
@@ -160,14 +171,6 @@ export class SupabaseStateService {
     });
   }
 
-  private assertCriticalResult<T>(result: { data: T | null; error: any }, entityName: string): T {
-    if (result.error) {
-      console.error(`Critical bootstrap query failed for '${entityName}':`, result.error);
-      throw new Error(`Critical bootstrap query failed for '${entityName}': ${result.error.message || JSON.stringify(result.error)}`);
-    }
-    return result.data!;
-  }
-
   // --- 1. CORE DATA (Required for basic app structure) ---
   public async loadCoreData(userId: string) {
     return this.loadCoreDataForGeneration(userId, this.bootstrapGeneration);
@@ -184,35 +187,18 @@ export class SupabaseStateService {
       }
     }
 
-    const [
-        companyProfileRes, rolesRes, rolePermissionsRes,
-        employeesRes, webhooksRes
-    ] = await Promise.all([
-        supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('role_permissions').select('*').eq('user_id', userId),
-        supabase.from('employees').select('*').eq('user_id', userId),
-        supabase.from('webhooks').select('*').eq('user_id', userId),
-    ]);
+    const coreData = await this.coreDataLoader.load(userId);
 
     if (generation !== this.bootstrapGeneration) return;
 
-    const companyProfile = this.assertCriticalResult(companyProfileRes, 'company_profile');
-    const roles = this.assertCriticalResult(rolesRes, 'roles') || [];
-    const rolePermissions = this.assertCriticalResult(rolePermissionsRes, 'role_permissions') || [];
-    const employees = this.assertCriticalResult(employeesRes, 'employees') || [];
-    const webhooks = webhooksRes.error ? [] : (webhooksRes.data || []);
-
-    if (generation !== this.bootstrapGeneration) return;
-
-    this.settingsState.companyProfile.set(companyProfile || null);
-    this.hrState.roles.set(roles);
+    this.settingsState.companyProfile.set(coreData.companyProfile || null);
+    this.hrState.roles.set(coreData.roles);
     
-    this.hrState.rolePermissions.set(rolePermissions);
-    localStorage.setItem(permCacheKey, JSON.stringify(rolePermissions));
+    this.hrState.rolePermissions.set(coreData.rolePermissions);
+    localStorage.setItem(permCacheKey, JSON.stringify(coreData.rolePermissions));
 
-    this.hrState.employees.set(employees);
-    this.settingsState.webhooks.set(webhooks);
+    this.hrState.employees.set(coreData.employees);
+    this.settingsState.webhooks.set(coreData.webhooks);
   }
 
   // --- 2. ESSENTIAL DATA (Required for POS/KDS/Inventory to function) ---
@@ -221,118 +207,49 @@ export class SupabaseStateService {
   }
 
   private async loadEssentialDataForGeneration(userId: string, generation: number) {
-    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-
     const [
-        // Layout
-        hallsRes, tablesRes, stationsRes, 
-        // Menu & Stock Definition (Lightweight)
-        categoriesRes, recipesRes, promotionsRes, promotionRecipesRes, 
-        recipeIngredientsRes, recipePreparationsRes, recipeSubRecipesRes, storeCustomPricesRes,
-        ingredientsRes, ingredientCategoriesRes, suppliersRes, stationStocksRes,
-        // Active Operations
-        customersRes, ordersRes, deliveryDriversRes,
-        // Loyalty & Reservations & Payment Terminals
-        loyaltySettingsRes, loyaltyRewardsRes, reservationSettingsRes, paymentTerminalsRes,
-        ifoodWebhookLogsRes
+      posData,
+      catalogData,
+      inventoryData,
+      operationsData
     ] = await Promise.all([
-        supabase.from('halls').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('tables').select('*').eq('user_id', userId),
-        supabase.from('stations').select('*, employees(*)').eq('user_id', userId),
-        
-        supabase.from('categories').select('*').eq('user_id', userId),
-        supabase.from('recipes').select('*').eq('store_id', userId),
-        supabase.from('promotions').select('*').eq('user_id', userId),
-        supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
-        
-        supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
-        supabase.from('recipe_preparations').select('*').eq('user_id', userId),
-        supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
-        supabase.from('store_custom_prices').select('*').eq('store_id', userId),
-
-        supabase.from('ingredients').select('*, ingredient_categories(name), suppliers(name)').eq('user_id', userId),
-        supabase.from('ingredient_categories').select('*').eq('user_id', userId),
-        supabase.from('suppliers').select('*').eq('user_id', userId),
-        supabase.from('station_stocks').select('*, stations(name), ingredients(name, unit)').eq('user_id', userId),
-
-        supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        // Only load OPEN orders or recently closed ones to keep memory low
-        supabase.from('orders')
-          .select('*, order_items(*), customers(*), delivery_drivers(*), waiter:employees!created_by_employee_id(name)')
-          .eq('user_id', userId)
-          .or(`status.eq.OPEN,status.eq.PAYING,status.eq.AWAITING,and(status.eq.CANCELLED,completed_at.gte.${twelveHoursAgo})`),
-        supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true),
-        
-        // Settings
-        supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('points_cost', { ascending: true }),
-        supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('payment_terminals').select('*').eq('user_id', userId).eq('is_active', true),
-        
-        // Webhook logs for realtime ifood status
-        supabase.from('ifood_webhook_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
+      this.posDataLoader.load(userId),
+      this.catalogDataLoader.load(userId),
+      this.inventoryDataLoader.load(userId),
+      this.operationsDataLoader.load(userId)
     ]);
 
     if (generation !== this.bootstrapGeneration) return;
 
-    // Validate CRITICAL query results
-    const halls = this.assertCriticalResult(hallsRes, 'halls') || [];
-    const tables = this.assertCriticalResult(tablesRes, 'tables') || [];
-    const stations = this.assertCriticalResult(stationsRes, 'stations') || [];
-    const categories = this.assertCriticalResult(categoriesRes, 'categories') || [];
-    const recipes = this.assertCriticalResult(recipesRes, 'recipes') || [];
-    const recipeIngredients = this.assertCriticalResult(recipeIngredientsRes, 'recipe_ingredients') || [];
-    const recipePreparations = this.assertCriticalResult(recipePreparationsRes, 'recipe_preparations') || [];
-    const recipeSubRecipes = this.assertCriticalResult(recipeSubRecipesRes, 'recipe_sub_recipes') || [];
-    const storeCustomPrices = this.assertCriticalResult(storeCustomPricesRes, 'store_custom_prices') || [];
-    const ingredients = this.assertCriticalResult(ingredientsRes, 'ingredients') || [];
-    const ingredientCategories = this.assertCriticalResult(ingredientCategoriesRes, 'ingredient_categories') || [];
-    const suppliers = this.assertCriticalResult(suppliersRes, 'suppliers') || [];
-    const stationStocks = this.assertCriticalResult(stationStocksRes, 'station_stocks') || [];
-    const customers = this.assertCriticalResult(customersRes, 'customers') || [];
-    const orders = this.assertCriticalResult(ordersRes, 'orders') || [];
-    const deliveryDrivers = this.assertCriticalResult(deliveryDriversRes, 'delivery_drivers') || [];
-
-    // Extract OPTIONAL results
-    const promotions = promotionsRes.error ? [] : (promotionsRes.data || []);
-    const promotionRecipes = promotionRecipesRes.error ? [] : (promotionRecipesRes.data || []);
-    const loyaltySettings = loyaltySettingsRes.error ? null : (loyaltySettingsRes.data || null);
-    const loyaltyRewards = loyaltyRewardsRes.error ? [] : (loyaltyRewardsRes.data || []);
-    const reservationSettings = reservationSettingsRes.error ? null : (reservationSettingsRes.data || null);
-    const paymentTerminals = paymentTerminalsRes.error ? [] : (paymentTerminalsRes.data || []);
-    const ifoodWebhookLogs = ifoodWebhookLogsRes.error ? [] : (ifoodWebhookLogsRes.data || []);
-
-    if (generation !== this.bootstrapGeneration) return;
-
     // Populate State
-    this.posState.halls.set(halls);
-    this.posState.tables.set(tables);
-    this.posState.stations.set(stations);
+    this.posState.halls.set(posData.halls);
+    this.posState.tables.set(posData.tables);
+    this.posState.stations.set(posData.stations);
     
-    this.recipeState.categories.set(categories);
-    this.recipeState.recipes.set(recipes);
-    this.recipeState.promotions.set(promotions);
-    this.recipeState.promotionRecipes.set(promotionRecipes);
-    this.recipeState.recipeIngredients.set(recipeIngredients);
-    this.recipeState.recipePreparations.set(recipePreparations);
-    this.recipeState.recipeSubRecipes.set(recipeSubRecipes);
-    this.pricingService.customPrices.set(storeCustomPrices);
+    this.recipeState.categories.set(catalogData.categories);
+    this.recipeState.recipes.set(catalogData.recipes);
+    this.recipeState.promotions.set(catalogData.promotions);
+    this.recipeState.promotionRecipes.set(catalogData.promotionRecipes);
+    this.recipeState.recipeIngredients.set(catalogData.recipeIngredients);
+    this.recipeState.recipePreparations.set(catalogData.recipePreparations);
+    this.recipeState.recipeSubRecipes.set(catalogData.recipeSubRecipes);
+    this.pricingService.customPrices.set(catalogData.storeCustomPrices);
 
-    this.inventoryState.ingredients.set(ingredients);
-    this.inventoryState.ingredientCategories.set(ingredientCategories);
-    this.inventoryState.suppliers.set(suppliers);
-    this.inventoryState.stationStocks.set(stationStocks);
+    this.inventoryState.ingredients.set(inventoryData.ingredients);
+    this.inventoryState.ingredientCategories.set(inventoryData.ingredientCategories);
+    this.inventoryState.suppliers.set(inventoryData.suppliers);
+    this.inventoryState.stationStocks.set(inventoryData.stationStocks);
 
-    this.posState.customers.set(customers);
-    this.setOrdersWithPrices(orders);
-    this.deliveryState.deliveryDrivers.set(deliveryDrivers);
+    this.posState.customers.set(posData.customers);
+    this.setOrdersWithPrices(posData.orders);
+    this.deliveryState.deliveryDrivers.set(operationsData.deliveryDrivers);
     
-    this.settingsState.loyaltySettings.set(loyaltySettings);
-    this.settingsState.loyaltyRewards.set(loyaltyRewards);
-    this.settingsState.reservationSettings.set(reservationSettings);
-    this.settingsState.paymentTerminals.set(paymentTerminals);
+    this.settingsState.loyaltySettings.set(operationsData.loyaltySettings);
+    this.settingsState.loyaltyRewards.set(operationsData.loyaltyRewards);
+    this.settingsState.reservationSettings.set(operationsData.reservationSettings);
+    this.settingsState.paymentTerminals.set(operationsData.paymentTerminals);
     
-    this.ifoodState.ifoodWebhookLogs.set(ifoodWebhookLogs);
+    this.ifoodState.ifoodWebhookLogs.set(operationsData.ifoodWebhookLogs);
   }
 
   public async refetchRecipesData() {
