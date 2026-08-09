@@ -14,14 +14,20 @@ const supabaseKey =
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
+function getAiClient() {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is required.");
+  }
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        "User-Agent": "aistudio-build",
+      },
     },
-  },
-});
+  });
+}
 
 // Create submit_public_order function declaration
 const requestHumanHandoffFunc: FunctionDeclaration = {
@@ -392,7 +398,7 @@ Identificar o que o cliente quer (seja delivery, takeout ou reserva de mesa).
 - Para Pedidos: faça upsell leve e feche o pedido recolhendo Nome, Itens, Pagamento e Endereço/Retirada. Somente acione "submit_public_order" quando tiver tudo.
 - Para Reservas de Mesa: obtenha Nome, Data (YYYY-MM-DD), Hora (HH:MM) e número de pessoas. Confirme a disponibilidade e só então efetive a reserva.`;
 
-  const chatSession = ai.chats.create({
+  const chatSession = getAiClient().chats.create({
     model: "gemini-3.5-flash",
     config: {
       systemInstruction,
@@ -733,7 +739,7 @@ async function transcribeWhatsAppAudio(
     const base64Audio = Buffer.from(arrayBuffer).toString("base64");
     const mimeType = mediaData.mime_type || "audio/ogg";
 
-    const res = await ai.models.generateContent({
+    const res = await getAiClient().models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
