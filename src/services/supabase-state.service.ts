@@ -373,6 +373,24 @@ export class SupabaseStateService {
       });
   }
   
+  public resolveRealtimeStoreId(table: string, row: any): string | null {
+    if (!row) return null;
+
+    if (table === 'recipes' || table === 'store_custom_prices') {
+      return row.store_id || null;
+    }
+
+    if (row.user_id) {
+      return row.user_id;
+    }
+
+    if (row.store_id) {
+      return row.store_id;
+    }
+
+    return null;
+  }
+
   private handleChanges(payload: any, generation = this.bootstrapGeneration) {
     const userId = this.unitContextService.activeUnitId();
     if (!userId || generation !== this.bootstrapGeneration) return;
@@ -380,7 +398,7 @@ export class SupabaseStateService {
     // Safety: ignore updates from other units
     const relevantRow = payload.new || payload.old;
     if (relevantRow) {
-        const tenantId = payload.table === 'recipes' ? relevantRow.store_id : relevantRow.user_id;
+        const tenantId = this.resolveRealtimeStoreId(payload.table, relevantRow);
         if (tenantId && tenantId !== userId) return;
     }
 
