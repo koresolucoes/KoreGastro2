@@ -79,22 +79,24 @@
           <button
             (click)="activeReport.set('menuEngineering')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'menuEngineering'"
-            [class.text-surface]="activeReport() === 'menuEngineering'"
+            [class.bg-brand]="activeReport() === 'menuEngineering'"
+            [class.text-white]="activeReport() === 'menuEngineering'"
             [class.border-transparent]="activeReport() === 'menuEngineering'"
             [class.bg-surface]="activeReport() !== 'menuEngineering'"
             [class.text-muted]="activeReport() !== 'menuEngineering'"
             [class.border-strong]="activeReport() !== 'menuEngineering'"
             [class.hover:text-title]="activeReport() !== 'menuEngineering'"
           >
-            <span translate="no" class="notranslate material-symbols-outlined text-base">grid_goldenratio</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-base"
+              >grid_goldenratio</span
+            >
             Engenharia BCG
           </button>
           <button
             (click)="activeReport.set('customerBehavior')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'customerBehavior'"
-            [class.text-surface]="activeReport() === 'customerBehavior'"
+            [class.bg-brand]="activeReport() === 'customerBehavior'"
+            [class.text-white]="activeReport() === 'customerBehavior'"
             [class.border-transparent]="activeReport() === 'customerBehavior'"
             [class.bg-surface]="activeReport() !== 'customerBehavior'"
             [class.text-muted]="activeReport() !== 'customerBehavior'"
@@ -107,8 +109,8 @@
           <button
             (click)="activeReport.set('peakHours')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'peakHours'"
-            [class.text-surface]="activeReport() === 'peakHours'"
+            [class.bg-brand]="activeReport() === 'peakHours'"
+            [class.text-white]="activeReport() === 'peakHours'"
             [class.border-transparent]="activeReport() === 'peakHours'"
             [class.bg-surface]="activeReport() !== 'peakHours'"
             [class.text-muted]="activeReport() !== 'peakHours'"
@@ -123,8 +125,8 @@
           <button
             (click)="activeReport.set('summary')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'summary'"
-            [class.text-surface]="activeReport() === 'summary'"
+            [class.bg-emerald-500]="activeReport() === 'summary'"
+            [class.text-white]="activeReport() === 'summary'"
             [class.border-transparent]="activeReport() === 'summary'"
             [class.bg-surface]="activeReport() !== 'summary'"
             [class.text-muted]="activeReport() !== 'summary'"
@@ -137,15 +139,17 @@
           <button
             (click)="activeReport.set('comparative')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'comparative'"
-            [class.text-surface]="activeReport() === 'comparative'"
+            [class.bg-emerald-500]="activeReport() === 'comparative'"
+            [class.text-white]="activeReport() === 'comparative'"
             [class.border-transparent]="activeReport() === 'comparative'"
             [class.bg-surface]="activeReport() !== 'comparative'"
             [class.text-muted]="activeReport() !== 'comparative'"
             [class.border-strong]="activeReport() !== 'comparative'"
             [class.hover:text-title]="activeReport() !== 'comparative'"
           >
-            <span translate="no" class="notranslate material-symbols-outlined text-base">compare_arrows</span>
+            <span translate="no" class="notranslate material-symbols-outlined text-base"
+              >compare_arrows</span
+            >
             Conciliação DRE
           </button>
         }
@@ -153,8 +157,8 @@
           <button
             (click)="activeReport.set('audit')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'audit'"
-            [class.text-surface]="activeReport() === 'audit'"
+            [class.bg-indigo-500]="activeReport() === 'audit'"
+            [class.text-white]="activeReport() === 'audit'"
             [class.border-transparent]="activeReport() === 'audit'"
             [class.bg-surface]="activeReport() !== 'audit'"
             [class.text-muted]="activeReport() !== 'audit'"
@@ -167,8 +171,8 @@
           <button
             (click)="activeReport.set('systemLogs')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'systemLogs'"
-            [class.text-surface]="activeReport() === 'systemLogs'"
+            [class.bg-indigo-500]="activeReport() === 'systemLogs'"
+            [class.text-white]="activeReport() === 'systemLogs'"
             [class.border-transparent]="activeReport() === 'systemLogs'"
             [class.bg-surface]="activeReport() !== 'systemLogs'"
             [class.text-muted]="activeReport() !== 'systemLogs'"
@@ -183,8 +187,8 @@
           <button
             (click)="activeReport.set('lossReport')"
             class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 shadow-sm border"
-            [class.bg-title]="activeReport() === 'lossReport'"
-            [class.text-surface]="activeReport() === 'lossReport'"
+            [class.bg-amber-500]="activeReport() === 'lossReport'"
+            [class.text-white]="activeReport() === 'lossReport'"
             [class.border-transparent]="activeReport() === 'lossReport'"
             [class.bg-surface]="activeReport() !== 'lossReport'"
             [class.text-muted]="activeReport() !== 'lossReport'"
@@ -381,26 +385,26 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                       <div class="space-y-6">
                         <div
-                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-title/20 transition-all shadow-inner"
+                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-emerald-500/20 transition-all shadow-inner"
                         >
                           <span
                             class="text-[10px] font-black text-muted uppercase tracking-widest"
                             >Faturamento Bruto</span
                           >
                           <span
-                            class="text-2xl font-black text-title tracking-tight"
+                            class="text-2xl font-black text-emerald-500 tracking-tight"
                             >{{ report.grossRevenue | currency: "BRL" }}</span
                           >
                         </div>
                         <div
-                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-title/20 transition-all shadow-inner"
+                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-amber-500/20 transition-all shadow-inner"
                         >
                           <span
                             class="text-[10px] font-black text-muted uppercase tracking-widest"
                             >Custo de Mercadoria (CMV)</span
                           >
                           <span
-                            class="text-2xl font-black text-muted tracking-tight"
+                            class="text-2xl font-black text-amber-500 tracking-tight"
                             >- {{ report.cogs | currency: "BRL" }}</span
                           >
                         </div>
@@ -417,23 +421,38 @@
                           >
                         </div>
                         <div
-                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-title/20 transition-all shadow-inner"
+                          class="flex justify-between items-center bg-surface-elevated/40 p-6 rounded-2xl border border-strong group hover:border-red-500/20 transition-all shadow-inner"
                         >
                           <span
                             class="text-[10px] font-black text-muted uppercase tracking-widest"
                             >Despesas Totais</span
                           >
                           <span
-                            class="text-2xl font-black text-muted tracking-tight"
-                            >- {{ report.totalExpenses | currency: "BRL" }}</span
+                            class="text-2xl font-black text-red-500 tracking-tight"
+                            >-
+                            {{ report.totalExpenses | currency: "BRL" }}</span
                           >
                         </div>
                         <div
-                          class="flex justify-between items-center p-8 rounded-[32px] shadow-2xl transition-all border-4 bg-surface border-strong"
+                          class="flex justify-between items-center p-8 rounded-[32px] shadow-2xl transition-all border-4"
+                          [class.bg-emerald-500/10]="
+                            (report.netProfit ?? 0) >= 0
+                          "
+                          [class.border-emerald-500/20]="
+                            (report.netProfit ?? 0) >= 0
+                          "
+                          [class.bg-red-500/10]="(report.netProfit ?? 0) < 0"
+                          [class.border-red-500/20]="
+                            (report.netProfit ?? 0) < 0
+                          "
                         >
                           <div class="flex flex-col">
                             <span
-                              class="text-[11px] font-black uppercase tracking-widest mb-1 text-title"
+                              class="text-[11px] font-black uppercase tracking-widest mb-1"
+                              [class.text-emerald-600]="
+                                (report.netProfit ?? 0) >= 0
+                              "
+                              [class.text-red-600]="(report.netProfit ?? 0) < 0"
                               >Resultado Líquido Final</span
                             >
                             <p
@@ -444,7 +463,11 @@
                             </p>
                           </div>
                           <strong
-                            class="text-5xl font-black title-display tracking-tighter text-title"
+                            class="text-5xl font-black title-display tracking-tighter"
+                            [class.text-emerald-500]="
+                              (report.netProfit ?? 0) >= 0
+                            "
+                            [class.text-red-500]="(report.netProfit ?? 0) < 0"
                           >
                             {{ report.netProfit | currency: "BRL" }}
                           </strong>
@@ -621,18 +644,36 @@
                                   {{ item.revenue | currency: "BRL" }}
                                 </td>
                                 <td
-                                  class="px-8 py-6 text-right font-medium text-muted text-xs"
+                                  class="px-8 py-6 text-right font-medium text-amber-600 text-xs"
                                 >
                                   {{ item.totalCost | currency: "BRL" }}
                                 </td>
                                 <td
-                                  class="px-8 py-6 text-right font-black text-title title-display text-sm"
+                                  class="px-8 py-6 text-right font-black text-emerald-600 title-display text-sm"
                                 >
                                   {{ item.totalProfit | currency: "BRL" }}
                                 </td>
                                 <td class="px-8 py-6 text-right pr-12">
                                   <div
-                                    class="inline-flex items-center px-4 py-1.5 rounded-xl font-black text-[11px] title-display tracking-tighter bg-surface-elevated text-title"
+                                    class="inline-flex items-center px-4 py-1.5 rounded-xl font-black text-[11px] title-display tracking-tighter"
+                                    [class.bg-emerald-500/10]="
+                                      item.profitMargin > 20
+                                    "
+                                    [class.text-emerald-600]="
+                                      item.profitMargin > 20
+                                    "
+                                    [class.bg-amber-500/10]="
+                                      item.profitMargin <= 20 &&
+                                      item.profitMargin >= 0
+                                    "
+                                    [class.text-amber-600]="
+                                      item.profitMargin <= 20 &&
+                                      item.profitMargin >= 0
+                                    "
+                                    [class.bg-red-500/10]="
+                                      item.profitMargin < 0
+                                    "
+                                    [class.text-red-600]="item.profitMargin < 0"
                                   >
                                     {{ item.profitMargin | number: "1.0-1" }}%
                                   </div>

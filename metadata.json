@@ -1,10 +1,7 @@
 {
   "name": "ChefOS",
   "description": "Sistema Operacional completo para Gastronomia e Restaurantes: PDV, KDS, Estoque, iFood, FISCAL, RH e Gestão Multi-loja SaaS.",
-  "requestFramePermissions": [
-    "camera",
-    "geolocation"
-  ],
+  "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

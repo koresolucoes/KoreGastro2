@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { TimeClockEntry } from '../../../src/models/db.models.js';
-import { validateApiKey } from '../../utils/api-key-auth.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -48,15 +47,27 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 }
 
 async function authenticateAndGetRestaurantId(req: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
-    const authResult = await validateApiKey(req);
-    if (!authResult.isValid || !authResult.restaurantId) {
-        return {
-            restaurantId: authResult.restaurantId || '',
-            error: authResult.error ? { message: authResult.error.message } : { message: 'Authentication failed.' },
-            status: authResult.status || 403
-        };
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
     }
-    return { restaurantId: authResult.restaurantId };
+    const providedApiKey = authHeader.split(' ')[1];
+    const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
+    if (!restaurantId) {
+        return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
+    }
+    const { data: profile, error: profileError } = await supabase
+      .from('company_profile')
+      .select('external_api_key')
+      .eq('user_id', restaurantId)
+      .single();
+    if (profileError || !profile || !profile.external_api_key) {
+        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
+    }
+    if (providedApiKey !== profile.external_api_key) {
+        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
+    }
+    return { restaurantId };
 }
 
 export default async function handler(req: any, res: any) {
@@ -79,20 +90,7 @@ export default async function handler(req: any, res: any) {
             return res.status(status!).json({ error });
         }
 
-        let { employeeId, pin, latitude, longitude, lat, lng, location, coords } = req.body;
-        
-        latitude = latitude ?? lat ?? location?.latitude ?? location?.lat ?? coords?.latitude ?? coords?.lat;
-        longitude = longitude ?? lng ?? location?.longitude ?? location?.lng ?? coords?.longitude ?? coords?.lng;
-
-        if (latitude !== undefined && latitude !== null) {
-            if (typeof latitude === 'string') latitude = parseFloat(latitude.replace(',', '.'));
-            latitude = Number(latitude);
-        }
-        if (longitude !== undefined && longitude !== null) {
-            if (typeof longitude === 'string') longitude = parseFloat(longitude.replace(',', '.'));
-            longitude = Number(longitude);
-        }
-
+        const { employeeId, pin, latitude, longitude } = req.body;
         if (!employeeId || !pin) {
             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` and `pin` are required.' });
         }
@@ -121,23 +119,12 @@ export default async function handler(req: any, res: any) {
 
         // Check only if the restaurant has configured the location check
         if (profile.latitude && profile.longitude && profile.time_clock_radius) {
-            if (latitude === undefined || latitude === null || isNaN(latitude) || longitude === undefined || longitude === null || isNaN(longitude)) {
-                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: `Localização do funcionário não fornecida ou inválida. Recebido: lat=${latitude}, lng=${longitude}. Body: ${JSON.stringify(req.body)}` });
+            if (latitude === undefined || longitude === undefined) {
+                return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: 'Localização do funcionário não fornecida.' });
             }
             const distance = getDistance(latitude, longitude, profile.latitude, profile.longitude);
             if (distance > profile.time_clock_radius) {
-                return res.status(403).json({ 
-                    type: "about:blank", 
-                    title: "Forbidden", 
-                    status: 403, 
-                    detail: `Você está muito longe do restaurante para bater o ponto. Distância: ${Math.round(distance)}m. Raio permitido: ${profile.time_clock_radius}m.`,
-                    distance,
-                    radius: profile.time_clock_radius,
-                    receivedLat: latitude,
-                    receivedLng: longitude,
-                    restaurantLat: profile.latitude,
-                    restaurantLng: profile.longitude
-                });
+                return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Você está muito longe do restaurante para bater o ponto.' });
             }
         }
         // If location is not configured on profile, the check is skipped. 
@@ -166,8 +153,8 @@ export default async function handler(req: any, res: any) {
             const { data: newEntry, error: insertError } = await supabase.from('time_clock_entries').insert({ 
                 employee_id: employeeId, 
                 user_id: restaurantId,
-                latitude: latitude ?? null,
-                longitude: longitude ?? null,
+                latitude: latitude || null,
+                longitude: longitude || null,
                 clock_in_time: now,
                 signatures: signatures
             }).select('id').single();

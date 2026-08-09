@@ -4,7 +4,6 @@ import { SettingsStateService } from './settings-state.service';
 import { NotificationService } from './notification.service';
 import { DemoService } from './demo.service';
 import { UnitContextService } from './unit-context.service';
-import { getApiBaseUrl } from './api-client.service';
 
 @Injectable({
   providedIn: 'root',
@@ -32,8 +31,7 @@ export class FocusNFeService {
     }
 
     try {
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/focusnfe-proxy`, {
+      const response = await fetch('https://app.chefos.online/api/focusnfe-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -17,37 +17,38 @@ export interface ApiKeyValidationResult {
   apiKeyHash?: string;
   error?: { message: string };
   status?: number;
-  authType?: 'jwt' | 'api_key';
 }
 
 /**
  * Validates the API key provided in headers (Authorization: Bearer <key> or x-api-key)
- * It supports both Supabase JWT tokens and Company Profile external API keys.
+ * or query/body parameters against `company_profile.external_api_key`.
  */
 export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidationResult> {
-  let providedToken: string | undefined;
+  let providedApiKey: string | undefined;
 
   const authHeader = req.headers.authorization;
   if (authHeader) {
     if (authHeader.startsWith('Bearer ')) {
-      providedToken = authHeader.split(' ')[1]?.trim();
+      providedApiKey = authHeader.split(' ')[1]?.trim();
     } else {
-      providedToken = authHeader.trim();
+      providedApiKey = authHeader.trim();
     }
   }
 
-  if (!providedToken && req.headers['x-api-key']) {
-    providedToken = (req.headers['x-api-key'] as string)?.trim();
+  if (!providedApiKey && req.headers['x-api-key']) {
+    providedApiKey = (req.headers['x-api-key'] as string)?.trim();
   }
 
-  if (!providedToken) {
+  if (!providedApiKey) {
     return {
       isValid: false,
       restaurantId: null,
-      error: { message: 'Token de autenticação não fornecido nos cabeçalhos.' },
+      error: { message: 'Chave de API (x-api-key ou Bearer token) não fornecida nos cabeçalhos.' },
       status: 401
     };
   }
+
+  const apiKeyHash = crypto.createHash('sha256').update(providedApiKey).digest('hex');
 
   const reqRestaurantId = (
     req.query?.restaurantId ||
@@ -56,38 +57,10 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
   ) as string | undefined;
 
   try {
-    // 1. Validar como JWT do Supabase primeiro
-    if (providedToken.startsWith('eyJ')) {
-      const { data: { user }, error: authError } = await supabase.auth.getUser(providedToken);
-      
-      if (user && !authError) {
-        const matchedRestaurantId = user.id;
-
-        if (reqRestaurantId && reqRestaurantId !== matchedRestaurantId) {
-          return {
-            isValid: false,
-            restaurantId: null,
-            error: { message: 'O token JWT não pertence ao restaurante especificado.' },
-            status: 403
-          };
-        }
-
-        return {
-          isValid: true,
-          restaurantId: matchedRestaurantId,
-          tenantId: matchedRestaurantId,
-          authType: 'jwt'
-        };
-      }
-    }
-
-    // 2. Validar como API Key externa
-    const apiKeyHash = crypto.createHash('sha256').update(providedToken).digest('hex');
-
     const { data: profile, error: profileError } = await supabase
       .from('company_profile')
       .select('user_id, external_api_key')
-      .eq('external_api_key', providedToken)
+      .eq('external_api_key', providedApiKey)
       .maybeSingle();
 
     if (profileError || !profile) {
@@ -98,13 +71,12 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
           .eq('user_id', reqRestaurantId)
           .maybeSingle();
 
-        if (profileByRest && profileByRest.external_api_key === providedToken) {
+        if (profileByRest && profileByRest.external_api_key === providedApiKey) {
           return {
             isValid: true,
             restaurantId: reqRestaurantId,
             tenantId: reqRestaurantId,
-            apiKeyHash,
-            authType: 'api_key'
+            apiKeyHash
           };
         }
       }
@@ -112,7 +84,7 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
       return {
         isValid: false,
         restaurantId: null,
-        error: { message: 'Token ou chave de API inválida ou não encontrada.' },
+        error: { message: 'Chave de API inválida ou não encontrada.' },
         status: 403
       };
     }
@@ -132,14 +104,13 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
       isValid: true,
       restaurantId: matchedRestaurantId,
       tenantId: matchedRestaurantId,
-      apiKeyHash,
-      authType: 'api_key'
+      apiKeyHash
     };
   } catch (err: any) {
     return {
       isValid: false,
       restaurantId: null,
-      error: { message: `Erro ao validar token: ${err.message}` },
+      error: { message: `Erro ao validar chave de API: ${err.message}` },
       status: 500
     };
   }

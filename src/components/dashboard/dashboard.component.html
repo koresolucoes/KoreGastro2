@@ -12,9 +12,9 @@
     <div class="flex flex-wrap items-center gap-3">
       <!-- Period Selector -->
       <div class="flex space-x-1 bg-surface-elevated p-1 rounded-xl border border-subtle shadow-sm">
-        <button (click)="setPeriod('day')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'day' ? 'bg-title text-surface shadow-sm' : 'text-muted hover:text-title hover:bg-surface'">Hoje</button>
-        <button (click)="setPeriod('week')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'week' ? 'bg-title text-surface shadow-sm' : 'text-muted hover:text-title hover:bg-surface'">Semana</button>
-        <button (click)="setPeriod('month')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'month' ? 'bg-title text-surface shadow-sm' : 'text-muted hover:text-title hover:bg-surface'">Mês</button>
+        <button (click)="setPeriod('day')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'day' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Hoje</button>
+        <button (click)="setPeriod('week')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'week' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Semana</button>
+        <button (click)="setPeriod('month')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all" [class]="period() === 'month' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">Mês</button>
       </div>
 
       <!-- Control Panel / Edit Layout Button -->
@@ -125,23 +125,23 @@
       
       <!-- Alert 1: Cozinha -->
       @if(delayedKitchenOrders() > 0) {
-      <div class="bg-surface-elevated border border-strong rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-sm">
-        <div class="flex items-center gap-2 text-title font-bold truncate">
+      <div class="bg-rose-500/10 border border-rose-500 rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-sm">
+        <div class="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-bold truncate">
           <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0"></span>
           <span class="truncate">{{ delayedKitchenOrders() }} {{ delayedKitchenOrders() === 1 ? 'pedido atrasado' : 'pedidos atrasados' }}</span>
         </div>
-        <a routerLink="/kds" class="text-title font-extrabold hover:underline shrink-0 ml-2 py-1 px-2 whitespace-nowrap">Ver agora</a>
+        <a routerLink="/kds" class="text-rose-700 dark:text-rose-400 font-extrabold hover:underline shrink-0 ml-2 py-1 px-2 bg-rose-500/20 rounded-lg whitespace-nowrap">Ver agora</a>
       </div>
       }
 
       <!-- Alert 2: Estoque -->
       @if(lowStockCount() > 0) {
-      <div class="bg-surface-elevated border border-strong rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-sm">
-        <div class="flex items-center gap-2 text-title font-bold truncate">
-          <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0 text-amber-500">warning</span>
+      <div class="bg-amber-500/10 border border-amber-500 rounded-xl p-3 px-4 flex items-center justify-between text-xs shadow-sm">
+        <div class="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold truncate">
+          <span translate="no" class="notranslate material-symbols-outlined text-sm shrink-0">warning</span>
           <span class="truncate">{{ lowStockCount() }} {{ lowStockCount() === 1 ? 'item abaixo' : 'itens abaixo' }} do mínimo</span>
         </div>
-        <a routerLink="/inventory" class="text-title font-extrabold hover:underline shrink-0 ml-2 py-1 px-2 whitespace-nowrap">Estoque</a>
+        <a routerLink="/inventory" class="text-amber-700 dark:text-amber-400 font-extrabold hover:underline shrink-0 ml-2 py-1 px-2 bg-amber-500/20 rounded-lg whitespace-nowrap">Estoque</a>
       </div>
       }
 
@@ -175,10 +175,10 @@
         <div class="flex items-center gap-3">
            <!-- View Mode Toggle -->
            <div class="flex space-x-1 bg-surface-elevated rounded-xl p-1 border border-subtle shadow-xs">
-             <button (click)="viewMode.set('grid')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1" [class]="viewMode() === 'grid' ? 'bg-title text-surface shadow-sm' : 'text-muted hover:text-title hover:bg-surface'">
+             <button (click)="viewMode.set('grid')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1" [class]="viewMode() === 'grid' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">
                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">grid_view</span> Grade
              </button>
-             <button (click)="viewMode.set('list')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1" [class]="viewMode() === 'list' ? 'bg-title text-surface shadow-sm' : 'text-muted hover:text-title hover:bg-surface'">
+             <button (click)="viewMode.set('list')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1" [class]="viewMode() === 'list' ? 'bg-brand text-white shadow-sm' : 'text-muted hover:text-title'">
                <span translate="no" class="notranslate material-symbols-outlined text-[16px]">view_list</span> Lista
              </button>
            </div>
@@ -344,23 +344,23 @@
                             </div>
                             <div class="flex justify-between items-center py-2.5 border-b border-subtle/40">
                                 <span class="text-xs font-bold text-muted uppercase tracking-wider">CMV Alimentar</span>
-                                <span class="text-sm font-black text-title data-mono">({{ (cogs() / (totalSales() || 1)) | percent:'1.1-1' }}) -{{ cogs() | currency:'BRL' }}</span>
+                                <span class="text-sm font-black text-rose-500 data-mono">({{ (cogs() / (totalSales() || 1)) | percent:'1.1-1' }}) -{{ cogs() | currency:'BRL' }}</span>
                             </div>
                             <div class="flex justify-between items-center py-2.5 border-b border-subtle/40">
                                 <span class="text-xs font-bold text-muted uppercase tracking-wider">Custos Operacionais</span>
-                                <span class="text-sm font-black text-title data-mono">-{{ opex() | currency:'BRL' }}</span>
+                                <span class="text-sm font-black text-amber-500 data-mono">-{{ opex() | currency:'BRL' }}</span>
                             </div>
                             <div class="mt-auto pt-6">
                                  <div class="flex justify-between items-end">
                                     <div class="flex flex-col">
                                       <span class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">EBITDA Estimado</span>
                                       <div class="flex items-center gap-2">
-                                         <span class="text-2xl font-black data-mono tracking-tight text-title">
+                                         <span class="text-2xl font-black data-mono tracking-tight" [class.text-emerald-500]="netProfit() >= 0" [class.text-rose-500]="netProfit() < 0">
                                              {{ netProfit() | currency:'BRL' }}
                                          </span>
                                       </div>
                                     </div>
-                                    <div class="bg-surface-elevated text-title text-xs font-bold px-3 py-1 rounded-xl border border-strong">
+                                    <div class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-3 py-1 rounded-xl border border-emerald-500/20">
                                         {{ (netProfit() / (totalSales() || 1)) | percent:'1.1-1' }} Margem
                                     </div>
                                  </div>
@@ -418,8 +418,8 @@
                             <button (click)="selectedBcgTab.set('stars')" 
                                     class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'stars' 
-                                        ? 'bg-title text-surface font-bold border-title' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-strong'">
+                                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-emerald-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">star</span>
                                 <span class="text-[10px] font-bold uppercase">Estrelas</span>
                             </button>
@@ -427,8 +427,8 @@
                             <button (click)="selectedBcgTab.set('plowhorses')" 
                                     class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'plowhorses' 
-                                        ? 'bg-title text-surface font-bold border-title' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-strong'">
+                                        ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-amber-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">directions_run</span>
                                 <span class="text-[10px] font-bold uppercase">Cavalos</span>
                             </button>
@@ -436,8 +436,8 @@
                             <button (click)="selectedBcgTab.set('puzzles')" 
                                     class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'puzzles' 
-                                        ? 'bg-title text-surface font-bold border-title' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-strong'">
+                                        ? 'bg-blue-500/15 border-blue-500 text-blue-600 dark:text-blue-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-blue-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">help_outline</span>
                                 <span class="text-[10px] font-bold uppercase">Desafios</span>
                             </button>
@@ -445,8 +445,8 @@
                             <button (click)="selectedBcgTab.set('dogs')" 
                                     class="p-2.5 rounded-2xl border transition-all text-center cursor-pointer flex flex-col items-center hover:bg-surface-elevated hover:shadow-md active:scale-95"
                                     [class]="selectedBcgTab() === 'dogs' 
-                                        ? 'bg-title text-surface font-bold border-title' 
-                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-strong'">
+                                        ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 font-bold' 
+                                        : 'bg-surface border-subtle text-muted hover:text-title hover:border-rose-500/50'">
                                 <span translate="no" class="notranslate material-symbols-outlined text-base mb-0.5">delete_outline</span>
                                 <span class="text-[10px] font-bold uppercase">Alerta</span>
                             </button>
@@ -465,7 +465,7 @@
                                         <p class="text-xs font-bold text-title truncate">{{ item.name }}</p>
                                         <div class="flex items-center gap-2 mt-0.5 text-[10px]">
                                             <span class="text-muted">{{ item.quantitySold }} vendidos</span>
-                                            <span class="font-bold text-title">Margem: {{ item.marginPercent | number:'1.0-0' }}%</span>
+                                            <span class="font-bold" [class]="item.marginPercent >= 60 ? 'text-emerald-500' : 'text-amber-500'">Margem: {{ item.marginPercent | number:'1.0-0' }}%</span>
                                         </div>
                                     </div>
                                     <span class="text-xs font-mono font-bold text-title shrink-0">{{ item.price | currency:'BRL' }}</span>

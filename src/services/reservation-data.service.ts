@@ -3,7 +3,6 @@ import { supabase } from './supabase-client';
 import { Reservation, ReservationSettings, ReservationStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { UnitContextService } from './unit-context.service';
-import { ApiClientService } from './api-client.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +10,6 @@ import { ApiClientService } from './api-client.service';
 export class ReservationDataService {
   private authService = inject(AuthService);
   private unitContextService = inject(UnitContextService);
-  private apiClient = inject(ApiClientService);
 
   // --- Settings ---
   async getReservationSettings(): Promise<ReservationSettings | null> {
@@ -40,13 +38,13 @@ export class ReservationDataService {
 
   // --- Reservations (Internal Management) ---
   async updateReservationStatus(reservationId: string, status: ReservationStatus): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.patch(`/api/v2/reservations?id=${reservationId}`, { status });
+    const { error } = await supabase.from('reservations').update({ status }).eq('id', reservationId);
     return { success: !error, error };
   }
 
   async updateReservation(reservationId: string, reservationData: Partial<Reservation>): Promise<{ success: boolean; error: any }> {
     const { id, created_at, user_id, ...updateData } = reservationData;
-    const { error } = await this.apiClient.patch(`/api/v2/reservations?id=${reservationId}`, updateData);
+    const { error } = await supabase.from('reservations').update(updateData).eq('id', reservationId);
     return { success: !error, error };
   }
 
@@ -54,8 +52,9 @@ export class ReservationDataService {
     const userId = this.unitContextService.activeUnitId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const { error } = await this.apiClient.post('/api/v2/reservations', {
+    const { error } = await supabase.from('reservations').insert({
       ...reservationData,
+      user_id: userId,
       status: 'CONFIRMED', // Staff-added reservations are confirmed by default
     });
 

@@ -1,5 +1,3 @@
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Employee, TimeClockEntry, Role } from '../models/db.models';
@@ -36,7 +34,6 @@ export class OperationalAuthService {
   private settingsState = inject(SettingsStateService);
   private receiptService = inject(TimeClockReceiptService);
   private ntpService = inject(NtpService);
-  private http = inject(HttpClient);
   private unitContextService = inject(UnitContextService);
   
   activeEmployee = signal<(Employee & { role: string }) | null>(null);
@@ -125,7 +122,11 @@ export class OperationalAuthService {
           this.activeShift.set(null);
       }
   }
+
   shiftButtonState = computed<ShiftButtonState>(() => {
+    if (this.demoService.isDemoMode()) {
+        return { text: 'Encerrar Turno', action: 'end_shift', disabled: true, className: 'text-yellow-400' };
+    }
     const shift = this.activeShift();
     if (!shift) {
         return { text: 'Encerrar Turno', action: 'end_shift', disabled: true, className: 'text-yellow-400 hover:text-yellow-300' };
@@ -138,171 +139,244 @@ export class OperationalAuthService {
     }
     return { text: 'Encerrar Turno', action: 'end_shift', disabled: false, className: 'text-yellow-400 hover:text-yellow-300' };
   });
+
   async handleShiftAction() {
+      if (this.demoService.isDemoMode()) return;
       const shift = this.activeShift();
       const employee = this.activeEmployee();
-      if (!employee) return;
-      
+      if (!shift || !employee) return;
+
       const state = this.shiftButtonState().action;
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const networkTime = await this.ntpService.getNetworkTime();
+      const now = networkTime.toISOString();
       
-      let location: { latitude: number; longitude: number } | undefined = undefined;
-      const profile = this.settingsState.companyProfile();
-      const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius);
-
-      try {
-        location = await this.getCurrentLocation();
-      } catch (e: any) {
-        if (isLocationRequired) {
-          this.notificationService.show(e.message || 'Erro ao obter localização obrigatória.', 'error', 8000);
-          return;
-        }
-      }
-
-      try {
-        const res = await firstValueFrom(this.http.post<any>('/api/rh/ponto/bater-ponto', {
-          employeeId: employee.id,
-          pin: employee.pin,
-          restaurantId: employee.user_id,
-          latitude: location?.latitude,
-          longitude: location?.longitude
-        }, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        }));
-        
-        if (state === 'end_shift') {
-           this.switchEmployee();
-           return;
-        }
-      } catch (err: any) {
-        this.notificationService.show(err.error?.detail || err.message, 'error', 6000);
+      switch (state) {
+          case 'start_break':
+              await supabase.from('time_clock_entries').update({ break_start_time: now }).eq('id', shift.id);
+              await this.generateAndStoreReceipt(employee, 'INICIO_PAUSA', now, shift.id);
+              break;
+          case 'end_break':
+              await supabase.from('time_clock_entries').update({ break_end_time: now }).eq('id', shift.id);
+              await this.generateAndStoreReceipt(employee, 'FIM_PAUSA', now, shift.id);
+              break;
+          case 'end_shift':
+              await this.clockOut();
+              return; // clockOut handles logout and navigation
       }
       
+      // Refresh shift state after action
       await this.loadActiveShift(employee);
   }
 
-  // Receipts are now generated and stored by the backend API
+  private async generateAndStoreReceipt(
+      employee: Employee, 
+      action: 'INICIO_TURNO' | 'INICIO_PAUSA' | 'FIM_PAUSA' | 'FIM_TURNO',
+      timestamp: string,
+      shiftId: string
+  ): Promise<TimeClockReceipt> {
+      // 1. Gera o NSR simulado (uuid simplificado ou timestamp)
+      const nsr = String(Date.now());
+      
+      // 2. Prepara os dados para o Hash
+      const data = `${nsr}|${employee.id}|${action}|${timestamp}`;
+      const msgUint8 = new TextEncoder().encode(data);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-  private getCurrentLocation(): Promise<{ latitude: number; longitude: number }> {
+      const receipt: TimeClockReceipt = {
+          employeeName: employee.name,
+          matricula: employee.bank_details?.matricula || '',
+          cpf: employee.cpf || '',
+          action,
+          timestamp,
+          hash: hashHex,
+          nsr
+      };
+
+      // 3. Salva no banco de logs do sistema (imutável, seguro)
+      await supabase.from('system_logs').insert({
+          user_id: employee.user_id,
+          employee_id: employee.id,
+          action: `PONTO_${action}`,
+          details: JSON.stringify({ nsr, hash: hashHex, timestamp, shiftId })
+      });
+
+      // 4. Mostra o modal
+      this.receiptService.showReceipt(receipt);
+      return receipt;
+  }
+
+  private getCurrentLocation(): Promise<{ latitude: number, longitude: number }> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocalização não suportada pelo seu dispositivo ou navegador.'));
-      } else {
-        navigator.geolocation.getCurrentPosition(
-          pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-          err => {
-            let msg = 'Não foi possível obter sua localização.';
-            if (err.code === err.PERMISSION_DENIED) {
-              msg = 'Permissão de geolocalização negada. Por favor, ative a localização nas configurações do seu navegador para bater ponto.';
-            } else if (err.code === err.POSITION_UNAVAILABLE) {
-              msg = 'A informação de localização está indisponível.';
-            } else if (err.code === err.TIMEOUT) {
-              msg = 'Tempo limite esgotado ao tentar obter a localização.';
-            }
-            reject(new Error(msg));
-          },
-          { timeout: 10000 }
-        );
+        reject(new Error("Geolocalização não é suportada por este navegador."));
+        return;
       }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          let message = "Não foi possível obter sua localização. ";
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              message += "Você negou a permissão de acesso à localização.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              message += "As informações de localização não estão disponíveis.";
+              break;
+            case error.TIMEOUT:
+              message += "A solicitação de localização expirou.";
+              break;
+            default:
+              message += "Ocorreu um erro desconhecido.";
+              break;
+          }
+          reject(new Error(message));
+        }
+      );
     });
   }
 
-  async clockIn(employee: Employee, location?: { latitude: number; longitude: number }): Promise<{ success: boolean; error: unknown }> {
-    if (this.demoService.isDemoMode()) return { success: true, error: null };
+  private getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+  }
+
+  async clockIn(employee: Employee): Promise<{ success: boolean; error: unknown }> {
+    const profile = this.settingsState.companyProfile();
+    const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius && profile.time_clock_radius > 0);
+
+    let location: { latitude: number, longitude: number } | null = null;
     
-    if (!location) {
-      const profile = this.settingsState.companyProfile();
-      const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius);
+    if (isLocationRequired) {
       try {
         location = await this.getCurrentLocation();
-      } catch (e: any) {
-        if (isLocationRequired) {
-          this.notificationService.show(e.message || 'Erro ao obter localização obrigatória.', 'error', 8000);
-          return { success: false, error: e };
+        
+        const distance = this.getDistance(location.latitude, location.longitude, profile!.latitude!, profile!.longitude!);
+        if (distance > profile!.time_clock_radius!) {
+             this.notificationService.show('Você está muito longe do restaurante para bater o ponto.', 'error');
+             return { success: false, error: new Error('Distância inválida.') };
         }
+      } catch (locationError: unknown) {
+        this.notificationService.show((locationError as any).message, 'error', 6000);
+        return { success: false, error: locationError };
+      }
+    } else {
+      try {
+        location = await this.getCurrentLocation();
+      } catch (e) {
+        // Ignora erro se não for obrigatório
       }
     }
     
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
+    const networkTime = await this.ntpService.getNetworkTime();
+    const inTime = networkTime.toISOString();
 
-    try {
-      const res = await firstValueFrom(this.http.post<any>('/api/rh/ponto/bater-ponto', {
-        employeeId: employee.id,
-        pin: employee.pin,
-        restaurantId: employee.user_id,
-        latitude: location?.latitude,
-        longitude: location?.longitude
-      }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      }));
-      
-      // Update local state to reflect clock in
-      this.hrState.employees.update(employees => 
-          employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: 'active' } : e)
-      );
-      const updatedEmployee = { ...employee, current_clock_in_id: 'active' };
-      this.login(updatedEmployee);
-      
-      return { success: true, error: null };
-    } catch (error: any) {
-      if (error.error?.detail) {
-        this.notificationService.show(error.error.detail, 'error');
+    const { data: newEntry, error } = await supabase
+      .from('time_clock_entries')
+      .insert({ 
+        employee_id: employee.id,
+        clock_in_time: inTime,
+        latitude: location?.latitude || null,
+        longitude: location?.longitude || null,
+      })
+      .select('id, clock_in_time')
+      .single();
+
+    if (error) {
+       // Check for custom error from RLS policy
+       if ((error as any).message.includes('distancia_invalida')) {
+        this.notificationService.show('Você está muito longe do restaurante para bater o ponto.', 'error');
+        return { success: false, error: { message: 'Distância inválida.' } };
       }
-      return { success: false, error: error.error || error };
+       if ((error as any).message.includes('localizacao_nao_configurada')) {
+        this.notificationService.show('A localização do restaurante não foi configurada pelo gestor.', 'error');
+        return { success: false, error: { message: 'Localização não configurada.' } };
+      }
+      return { success: false, error };
     }
+
+    await this.generateAndStoreReceipt(employee, 'INICIO_TURNO', newEntry.clock_in_time, newEntry.id);
+
+    const { error: empError } = await supabase
+        .from('employees')
+        .update({ current_clock_in_id: newEntry.id })
+        .eq('id', employee.id);
+
+    if (empError) {
+        await supabase.from('time_clock_entries').delete().eq('id', newEntry.id);
+        return { success: false, error: empError };
+    }
+    
+    const updatedEmployee = { ...employee, current_clock_in_id: newEntry.id };
+    this.hrState.employees.update(employees => 
+        employees.map(e => e.id === employee.id ? updatedEmployee : e)
+    );
+    this.login(updatedEmployee);
+    return { success: true, error: null };
   }
 
 
   async clockOut(): Promise<{ success: boolean; error: unknown }> {
       const employee = this.activeEmployee();
       if (!employee || !employee.current_clock_in_id) {
+          // If for some reason they are logged in without a clock-in record, just log them out.
           this.switchEmployee();
           return { success: true, error: null };
       }
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      
-      let location: { latitude: number; longitude: number } | undefined = undefined;
-      const profile = this.settingsState.companyProfile();
-      const isLocationRequired = !!(profile?.latitude && profile?.longitude && profile?.time_clock_radius);
+  
+      const networkTime = await this.ntpService.getNetworkTime();
+      const outTime = networkTime.toISOString();
+      const { error } = await supabase
+          .from('time_clock_entries')
+          .update({ clock_out_time: outTime })
+          .eq('id', employee.current_clock_in_id);
+  
+      if (error) return { success: false, error };
 
-      try {
-        location = await this.getCurrentLocation();
-      } catch (e: any) {
-        if (isLocationRequired) {
-          this.notificationService.show(e.message || 'Erro ao obter localização obrigatória.', 'error', 8000);
-          return { success: false, error: e };
-        }
+      await this.generateAndStoreReceipt(employee, 'FIM_TURNO', outTime, employee.current_clock_in_id);
+  
+      const { error: empError } = await supabase
+          .from('employees')
+          .update({ current_clock_in_id: null })
+          .eq('id', employee.id);
+  
+      if (empError) {
+          return { success: false, error: empError };
       }
-
-      try {
-        await firstValueFrom(this.http.post<any>('/api/rh/ponto/bater-ponto', {
-          employeeId: employee.id,
-          pin: employee.pin,
-          restaurantId: employee.user_id,
-          latitude: location?.latitude,
-          longitude: location?.longitude
-        }, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        }));
-        
-        this.hrState.employees.update(employees => 
-            employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: null } : e)
-        );
-        this.switchEmployee();
-        return { success: true, error: null };
-      } catch (error: any) {
-        return { success: false, error: error.error || error };
-      }
+      
+       this.hrState.employees.update(employees => 
+          employees.map(e => e.id === employee.id ? { ...e, current_clock_in_id: null } : e)
+      );
+      this.switchEmployee();
+      return { success: true, error: null };
   }
 
   login(employee: Employee) {
     let roleName: string = 'Sem Cargo';
-    const rolesMap = new Map<string, string>(this.hrState.roles().map(r => [r.id, r.name]));
-    roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
+    if (this.demoService.isDemoMode()) {
+        const rolesMap = new Map(MOCK_ROLES.map(r => [r.id, r.name]));
+        roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
+    } else {
+        // FIX: Explicitly type the Map to ensure correct type inference for '.get()'.
+        const rolesMap = new Map<string, string>(this.hrState.roles().map(r => [r.id, r.name]));
+        roleName = (employee.role_id ? rolesMap.get(employee.role_id) : undefined) || 'Sem Cargo';
+    }
 
     const employeeWithRole: (Employee & { role: string }) = {
       ...employee,

@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { IfoodOrderStatus } from '../models/db.models';
 import { SettingsStateService } from './settings-state.service';
-import { getApiBaseUrl } from './api-client.service';
 
 @Injectable({
   providedIn: 'root'
@@ -56,8 +55,7 @@ export class IfoodDataService {
         return { success: false, error: { message: `No valid action found for status ${status}` } };
       }
 
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/ifood-proxy`, {
+      const response = await fetch('https://app.chefos.online/api/ifood-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -86,8 +84,7 @@ export class IfoodDataService {
 
   async sendLogisticsAction(ifoodOrderId: string, action: string, details?: any): Promise<{ success: boolean; error: any, data?: any }> {
     try {
-       const baseUrl = getApiBaseUrl();
-       const response = await fetch(`${baseUrl}/api/ifood-proxy`, {
+       const response = await fetch('https://app.chefos.online/api/ifood-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -117,8 +114,7 @@ export class IfoodDataService {
 
   async sendDisputeAction(disputeId: string, action: 'acceptDispute' | 'rejectDispute', details?: any): Promise<{ success: boolean; error: any }> {
     try {
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/ifood-proxy`, {
+      const response = await fetch('https://app.chefos.online/api/ifood-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,8 +142,7 @@ export class IfoodDataService {
 
   async proposeDisputeAlternative(disputeId: string, alternativeId: string, body: any): Promise<{ success: boolean; error: any }> {
     try {
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/ifood-proxy`, {
+      const response = await fetch('https://app.chefos.online/api/ifood-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -175,8 +170,7 @@ export class IfoodDataService {
   }
   
   async getEvidenceImage(imageUrl: string): Promise<{ base64Image: string; contentType: string; }> {
-    const baseUrl = getApiBaseUrl();
-    const response = await fetch(`${baseUrl}/api/ifood-proxy`, {
+    const response = await fetch('https://app.chefos.online/api/ifood-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

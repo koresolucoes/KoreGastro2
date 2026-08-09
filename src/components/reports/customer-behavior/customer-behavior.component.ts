@@ -10,10 +10,10 @@ import { NotificationService } from '../../../services/notification.service';
   providers: [CurrencyPipe, DatePipe],
   template: `
     <div class="h-full flex flex-col space-y-8">
-      <div class="chef-surface rounded-3xl border border-strong shadow-sm p-6 bg-surface flex-shrink-0">
+      <div class="chef-surface rounded-3xl border border-subtle shadow-xl p-6 bg-indigo-500/5 border-indigo-500/20 flex-shrink-0">
         <div class="flex items-start gap-6">
-          <div class="w-16 h-16 bg-surface-elevated rounded-2xl flex items-center justify-center border border-strong shadow-inner flex-shrink-0">
-            <span translate="no" class="notranslate material-symbols-outlined text-title text-4xl">psychology</span>
+          <div class="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20 shadow-inner flex-shrink-0">
+            <span translate="no" class="notranslate material-symbols-outlined text-indigo-500 text-4xl">psychology</span>
           </div>
           <div>
             <h2 class="text-2xl font-black text-title title-display tracking-tight">Comportamento de Clientes (RFM)</h2>

@@ -18,7 +18,6 @@ import { SupabaseStateService } from "./supabase-state.service";
 import { PrintingService } from "./printing.service";
 import { PricingService } from "./pricing.service";
 import { supabase } from "./supabase-client";
-import { ApiClientService } from "./api-client.service";
 import { v4 as uuidv4 } from "uuid";
 import { InventoryDataService } from "./inventory-data.service";
 import { WebhookService } from "./webhook.service";
@@ -53,7 +52,6 @@ export class PosDataService {
   private unitContextService = inject(UnitContextService);
   private recipeState = inject(RecipeStateService);
   private auditDataService = inject(AuditDataService);
-  private apiClient = inject(ApiClientService);
 
   private getActiveUnitId(): string | null {
     return this.unitContextService.activeUnitId();
@@ -94,22 +92,27 @@ export class PosDataService {
     }
 
     const session_token = crypto.randomUUID();
-    const { data, error } = await this.apiClient.post<Order>('/api/v2/pos/orders', {
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({
         table_number: 0,
         command_number: commandNumber,
         tab_name: customerName,
         order_type: "Tab",
         status: "OPEN",
+        user_id: userId,
         created_by_employee_id: employeeId,
         session_token,
-    });
+      })
+      .select("*, customers(*)")
+      .single();
 
     if (error) return { success: false, error };
 
     const newOrder = { ...data, order_items: [] };
-    this.posState.orders.update((orders) => [...orders, newOrder as any]);
+    this.posState.orders.update((orders) => [...orders, newOrder]);
 
-    return { success: true, error: null, data: newOrder as any };
+    return { success: true, error: null, data: newOrder };
   }
 
   // --- EXISTING METHODS ---
@@ -118,16 +121,25 @@ export class PosDataService {
     table: Table,
     employeeId: string,
   ): Promise<{ success: boolean; error: any; data?: Order }> {
+    const userId = this.getActiveUnitId();
+    if (!userId)
+      return { success: false, error: { message: "Active unit not found" } };
+
     const session_token = crypto.randomUUID();
-    const { data, error } = await this.apiClient.post<Order>('/api/v2/pos/orders', {
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({
         table_number: table.number,
         order_type: "Dine-in",
+        user_id: userId,
         created_by_employee_id: employeeId,
         session_token,
-    });
+      })
+      .select("*, customers(*)")
+      .single();
 
     if (error) return { success: false, error };
-    return { success: true, error: null, data: { ...data, order_items: [] } as any };
+    return { success: true, error: null, data: { ...data, order_items: [] } };
   }
 
   async addItemsToOrder(
@@ -250,13 +262,18 @@ export class PosDataService {
 
     if (allItemsToInsert.length === 0) return { success: true, error: null };
 
-    const { data: inserted, error } = await this.apiClient.post('/api/v2/pos/order-items?action=add-items', {
-        items: allItemsToInsert,
-        tableId,
-        employeeId
-    });
-    
+    const { data: inserted, error } = await supabase
+      .from("order_items")
+      .insert(allItemsToInsert)
+      .select();
     if (error) return { success: false, error };
+
+    if (tableId) {
+      await supabase
+        .from("tables")
+        .update({ status: "OCUPADA" as TableStatus, employee_id: employeeId })
+        .eq("id", tableId);
+    }
 
     return { success: true, error: null };
   }
@@ -304,7 +321,7 @@ export class PosDataService {
       };
       return { ...item, status: status, status_timestamps: newTimestamps };
     });
-    const { error } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: updates });
+    const { error } = await supabase.from("order_items").upsert(updates);
     if (!error && items && items.length > 0) {
       const orderId = items[0].order_id;
       this.checkAndUpdateDeliveryOrderStatus(orderId);
@@ -419,7 +436,7 @@ export class PosDataService {
       };
     });
     if (updates.length === 0) return { success: true, error: null };
-    const { error } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: updates });
+    const { error } = await supabase.from("order_items").upsert(updates);
     return { success: !error, error };
   }
 
@@ -522,17 +539,15 @@ export class PosDataService {
         destOrderId = destOrder.id;
 
         // Update table customer counts
-        await this.apiClient.post('/api/v2/pos/tables?action=upsert', {
-          tables: [
-            {
-              ...destinationTable,
-              status: "OCUPADA",
-              customer_count:
-                (destinationTable.customer_count || 0) +
-                (sourceTable.customer_count || 0),
-            },
-          ]
-        });
+        await supabase.from("tables").upsert([
+          {
+            ...destinationTable,
+            status: "OCUPADA",
+            customer_count:
+              (destinationTable.customer_count || 0) +
+              (sourceTable.customer_count || 0),
+          },
+        ]);
       } else {
         // Create a new order for destination table
         const newOrderPayload = {
@@ -551,16 +566,14 @@ export class PosDataService {
         destOrderId = newOrderData.id;
 
         // Update destination table status
-        await this.apiClient.post('/api/v2/pos/tables?action=upsert', {
-          tables: [
-            {
-              ...destinationTable,
-              status: "OCUPADA",
-              employee_id: sourceTable.employee_id,
-              customer_count: sourceTable.customer_count || 1,
-            },
-          ]
-        });
+        await supabase.from("tables").upsert([
+          {
+            ...destinationTable,
+            status: "OCUPADA",
+            employee_id: sourceTable.employee_id,
+            customer_count: sourceTable.customer_count || 1,
+          },
+        ]);
       }
 
       const itemsToInsert: any[] = [];
@@ -599,12 +612,16 @@ export class PosDataService {
       }
 
       if (itemsToUpdate.length > 0) {
-        const { error: updateError } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: itemsToUpdate });
+        const { error: updateError } = await supabase
+          .from("order_items")
+          .upsert(itemsToUpdate);
         if (updateError) throw updateError;
       }
 
       if (itemsToInsert.length > 0) {
-        const { error: insertError } = await this.apiClient.post('/api/v2/pos/order-items?action=add-items', { items: itemsToInsert });
+        const { error: insertError } = await supabase
+          .from("order_items")
+          .insert(itemsToInsert);
         if (insertError) throw insertError;
       }
 
@@ -613,7 +630,11 @@ export class PosDataService {
         originalOrderItems.reduce((acc, curr) => acc + curr.quantity, 0) -
         itemsToSplit.reduce((acc, curr) => acc + curr.quantity, 0);
       if (remainingItemsCount <= 0) {
-        await this.deleteEmptyOrder(order.id);
+        await supabase.from("orders").delete().eq("id", order.id);
+        await supabase
+          .from("tables")
+          .update({ status: "LIVRE", employee_id: null, customer_count: 0 })
+          .eq("id", sourceTable.id);
       }
 
       return { success: true, error: null };
@@ -625,7 +646,32 @@ export class PosDataService {
   async deleteEmptyOrder(
     orderId: string,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.delete(`/api/v2/pos/orders?id=${orderId}`);
+    const userId = this.getActiveUnitId();
+    const { data: order } = await supabase
+      .from("orders")
+      .select("table_number")
+      .eq("id", orderId)
+      .single();
+
+    const { error } = await supabase.from("orders").delete().eq("id", orderId);
+
+    if (!error && order && order.table_number > 0 && userId) {
+      const { count } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("table_number", order.table_number)
+        .eq("user_id", userId)
+        .in("status", ["OPEN", "PAYING"]);
+
+      if (count === 0) {
+        await supabase
+          .from("tables")
+          .update({ status: "LIVRE", employee_id: null, customer_count: 0 })
+          .eq("number", order.table_number)
+          .eq("user_id", userId);
+      }
+    }
+
     return { success: !error, error };
   }
 
@@ -633,8 +679,12 @@ export class PosDataService {
     tableId: string,
     orderId: string,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.put(`/api/v2/pos/orders?id=${orderId}&action=release`, { tableId });
-    return { success: !error, error };
+    await supabase
+      .from("tables")
+      .update({ status: "LIVRE", employee_id: null, customer_count: 0 })
+      .eq("id", tableId);
+    await supabase.from("orders").delete().eq("id", orderId);
+    return { success: true, error: null };
   }
 
   async applyDiscountToOrderItems(
@@ -689,7 +739,7 @@ export class PosDataService {
         }));
       }
     }
-    const { error } = await this.apiClient.post('/api/v2/pos/order-items?action=upsert', { items: updates });
+    const { error } = await supabase.from("order_items").upsert(updates);
     if (error) return { success: false, error };
     this.posState.orders.update((currentOrders) => {
       return currentOrders.map((order) => {
@@ -713,11 +763,10 @@ export class PosDataService {
     discountType: DiscountType | null,
     discountValue: number | null,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.put(`/api/v2/pos/orders?id=${orderId}`, {
-        discount_type: discountType,
-        discount_value: discountValue
-    });
-
+    const { error } = await supabase
+      .from("orders")
+      .update({ discount_type: discountType, discount_value: discountValue })
+      .eq("id", orderId);
     if (error) return { success: false, error };
     this.posState.orders.update((currentOrders) =>
       currentOrders.map((order) =>
@@ -726,7 +775,7 @@ export class PosDataService {
               ...order,
               discount_type: discountType,
               discount_value: discountValue,
-            } as any
+            }
           : order,
       ),
     );
@@ -1019,7 +1068,26 @@ export class PosDataService {
   async addHall(
     name: string,
   ): Promise<{ success: boolean; data?: any; error: any }> {
-    const { data, error } = await this.apiClient.post('/api/v2/pos/halls', { name });
+    const userId = this.getActiveUnitId();
+    if (!userId)
+      return { success: false, error: { message: "Active unit not found" } };
+
+    const { data: existing } = await supabase
+      .from("halls")
+      .select()
+      .eq("user_id", userId)
+      .eq("name", name)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: true, data: existing, error: null };
+    }
+
+    const { data, error } = await supabase
+      .from("halls")
+      .insert({ name, user_id: userId })
+      .select()
+      .single();
     return { success: !error, data, error };
   }
 
@@ -1027,33 +1095,67 @@ export class PosDataService {
     id: string,
     name: string,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.put(`/api/v2/pos/halls?id=${id}`, { name });
+    const { error } = await supabase
+      .from("halls")
+      .update({ name })
+      .eq("id", id);
     return { success: !error, error };
   }
 
   async deleteHall(id: string): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.delete(`/api/v2/pos/halls?id=${id}`);
+    const { error } = await supabase.from("halls").delete().eq("id", id);
     return { success: !error, error };
   }
 
   async deleteTablesByHallId(
     hallId: string,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.delete(`/api/v2/pos/tables?hallId=${hallId}`);
+    const { error } = await supabase
+      .from("tables")
+      .delete()
+      .eq("hall_id", hallId);
     return { success: !error, error };
   }
 
   async upsertTables(
     tables: Partial<Table>[],
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.post(`/api/v2/pos/tables?action=upsert`, { tables });
+    const fallbackUserId = this.getActiveUnitId();
+    if (!fallbackUserId)
+      return { success: false, error: { message: "Active unit not found" } };
+    const tablesToUpsert = tables.map((t) => {
+      let id = t.id;
+      if (id?.startsWith("temp-")) {
+        id = id.replace("temp-", "");
+      }
+      const payload: any = {
+          user_id: t.user_id || fallbackUserId,
+          number: t.number,
+          hall_id: t.hall_id,
+          status: t.status || 'LIVRE',
+          x: t.x || 0,
+          y: t.y || 0,
+          width: t.width || 80,
+          height: t.height || 80,
+          employee_id: t.employee_id || null,
+          customer_count: t.customer_count || 0,
+          created_at: t.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+      };
+      if (id) {
+          payload.id = id;
+      }
+      return payload;
+    });
+    const { error } = await supabase.from("tables").upsert(tablesToUpsert);
+    if (error) console.error("Error upserting tables:", error);
     return { success: !error, error };
   }
 
   async deleteTable(
     tableId: string,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.delete(`/api/v2/pos/tables?id=${tableId}`);
+    const { error } = await supabase.from("tables").delete().eq("id", tableId);
     return { success: !error, error };
   }
 
@@ -1061,7 +1163,10 @@ export class PosDataService {
     tableId: string,
     status: TableStatus,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.put(`/api/v2/pos/tables?id=${tableId}`, { status });
+    const { error } = await supabase
+      .from("tables")
+      .update({ status })
+      .eq("id", tableId);
     if (!error) {
       this.posState.tables.update((tables) =>
         tables.map((t) => (t.id === tableId ? { ...t, status } : t)),
@@ -1074,7 +1179,10 @@ export class PosDataService {
     tableId: string,
     count: number,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.put(`/api/v2/pos/tables?id=${tableId}`, { customer_count: count });
+    const { error } = await supabase
+      .from("tables")
+      .update({ customer_count: count })
+      .eq("id", tableId);
     if (!error) {
       this.posState.tables.update((tables) =>
         tables.map((t) =>
@@ -1089,27 +1197,73 @@ export class PosDataService {
     orderId: string,
     status: OrderStatus,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.put(`/api/v2/pos/orders?id=${orderId}`, { status });
+    const { error } = await supabase
+      .from("orders")
+      .update({ status })
+      .eq("id", orderId);
     return { success: !error, error };
   }
 
   async deleteOrderAndItems(
     orderId: string,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.delete(`/api/v2/pos/orders?id=${orderId}&action=with-items`);
-    return { success: !error, error };
+    const userId = this.getActiveUnitId();
+    const { data: order } = await supabase
+      .from("orders")
+      .select("table_number")
+      .eq("id", orderId)
+      .single();
+
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", orderId);
+    if (itemsError) return { success: false, error: itemsError };
+
+    const { error: orderError } = await supabase
+      .from("orders")
+      .delete()
+      .eq("id", orderId);
+
+    if (!orderError && order && order.table_number > 0 && userId) {
+      const { count } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("table_number", order.table_number)
+        .eq("user_id", userId)
+        .in("status", ["OPEN", "PAYING"]);
+
+      if (count === 0) {
+        await supabase
+          .from("tables")
+          .update({ status: "LIVRE", employee_id: null, customer_count: 0 })
+          .eq("number", order.table_number)
+          .eq("user_id", userId);
+      }
+    }
+
+    return { success: !orderError, error: orderError };
   }
 
   async associateCustomerToOrder(
     orderId: string,
     customerId: string | null,
   ): Promise<{ success: boolean; error: any }> {
-    const { error } = await this.apiClient.put(`/api/v2/pos/orders?id=${orderId}`, { customer_id: customerId });
+    const { error } = await supabase
+      .from("orders")
+      .update({ customer_id: customerId })
+      .eq("id", orderId);
     if (!error) {
-      // Not fetching full order to avoid direct supabase call, rely on state refresh or just optimistic update
-      this.posState.orders.update((orders) =>
-        orders.map((o) => (o.id === orderId ? { ...o, customer_id: customerId } as any : o)),
-      );
+      const { data: updatedOrder } = await supabase
+        .from("orders")
+        .select("*, order_items(*), customers(*)")
+        .eq("id", orderId)
+        .single();
+      if (updatedOrder) {
+        this.posState.orders.update((orders) =>
+          orders.map((o) => (o.id === orderId ? (updatedOrder as any) : o)),
+        );
+      }
     }
     return { success: !error, error };
   }

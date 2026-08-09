@@ -11,8 +11,8 @@
  * environment (e.g., Vercel project settings), as they are used by the API proxy functions.
  */
 export const environment = {
-  supabaseUrl: import.meta.env.VITE_SUPABASE_URL || (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '') || '',
-  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '') || '',
+  supabaseUrl: (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '') || (import.meta.env['VITE_SUPABASE_URL'] as string) || '',
+  supabaseAnonKey: (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '') || (import.meta.env['VITE_SUPABASE_ANON_KEY'] as string) || '',
 };
 
 if (!environment.supabaseUrl || !environment.supabaseUrl.startsWith('http')) {
