@@ -285,8 +285,37 @@ export class TopNavComponent {
     if (event) event.stopPropagation();
     this.notificationService.markAsRead(notif.id);
     if (notif.actionUrl) {
-      this.router.navigate([notif.actionUrl]);
+      const targetPortal = this.getNotificationTargetPortal(notif.type);
+      const currentPortal = this.portalContextService.currentMode();
+
+      if (currentPortal !== 'all' && currentPortal !== targetPortal && targetPortal !== 'all') {
+        if (!this.portalContextService.isDomainLocked()) {
+          this.portalContextService.switchPortalInDev(targetPortal);
+          this.router.navigate([notif.actionUrl]);
+        } else {
+          window.location.href = this.portalContextService.getTargetPortalUrl(targetPortal, notif.actionUrl);
+          return;
+        }
+      } else {
+        this.router.navigate([notif.actionUrl]);
+      }
       this.openDropdown.set(null);
+    }
+  }
+
+  getNotificationTargetPortal(type: NotificationType): 'gestao' | 'operacao' | 'all' {
+    switch (type) {
+      case 'waiter':
+      case 'ifood':
+      case 'kds':
+      case 'payment':
+      case 'whatsapp':
+        return 'operacao';
+      case 'inventory':
+      case 'rh':
+        return 'gestao';
+      default:
+        return 'all';
     }
   }
 

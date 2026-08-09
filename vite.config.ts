@@ -35,8 +35,8 @@ export default defineConfig(({ mode }) => {
             const parsedUrl = parse(url);
             const pathname = parsedUrl.pathname || '';
 
-            // Intercept standard API endpoints except Cielo which is proxy-mapped
-            if (pathname.startsWith('/api') && !pathname.startsWith('/api/cielo')) {
+            // Intercept standard API endpoints
+            if (pathname.startsWith('/api')) {
               let relativePath = pathname;
               if (relativePath.endsWith('/')) {
                 relativePath = relativePath.slice(0, -1);
@@ -159,23 +159,13 @@ export default defineConfig(({ mode }) => {
     define: {
       SUPABASE_URL: JSON.stringify(supabaseUrl),
       SUPABASE_ANON_KEY: JSON.stringify(supabaseAnonKey),
-      GEMINI_API_KEY: JSON.stringify(geminiApiKey),
-      CIELO_MERCHANT_ID: JSON.stringify(cieloMerchantId),
-      CIELO_MERCHANT_KEY: JSON.stringify(cieloMerchantKey),
       MERCADO_PAGO_PUBLIC_KEY: JSON.stringify(mpPublicKey)
     },
     server: {
       port: 3000,
       strictPort: true,
       host: '0.0.0.0',
-      allowedHosts: true,
-      proxy: {
-        '/api/cielo': {
-          target: 'https://apisandbox.cieloecommerce.cielo.com.br',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/cielo/, '')
-        }
-      }
+      allowedHosts: true
     },
     build: {
       outDir: 'dist',

@@ -1,8 +1,10 @@
-import { Injectable, signal, computed, inject, effect } from '@angular/core';
+import { Injectable, signal, computed, inject, effect, Injector } from '@angular/core';
 import { ToastService } from './toast.service';
 import { SoundNotificationService } from './sound-notification.service';
 import { UnitContextService } from './unit-context.service';
 import { supabase } from './supabase-client';
+import { PortalContextService } from './portal-context.service';
+import { OperationalAuthService } from './operational-auth.service';
 
 export interface NotificationState {
   isOpen: boolean;
@@ -39,6 +41,8 @@ export class NotificationService {
   private toastService = inject(ToastService);
   private soundService = inject(SoundNotificationService);
   private unitContext = inject(UnitContextService);
+  private portalContext = inject(PortalContextService);
+  private injector = inject(Injector);
 
   notificationState = signal<NotificationState>({
     isOpen: false,
@@ -56,10 +60,75 @@ export class NotificationService {
   activeFilter = signal<NotificationFilter>('all');
   soundEnabled = signal<boolean>(true);
 
-  unreadCount = computed(() => this.systemNotifications().filter(n => !n.read).length);
+  // Helper method to resolve circular dependency
+  private getOperationalAuthService(): OperationalAuthService | null {
+    try {
+      return this.injector.get(OperationalAuthService);
+    } catch {
+      return null;
+    }
+  }
+
+  getNotificationTargetPortal(type: NotificationType): 'gestao' | 'operacao' | 'all' {
+    switch (type) {
+      case 'waiter':
+      case 'ifood':
+      case 'kds':
+      case 'payment':
+      case 'whatsapp':
+        return 'operacao';
+      case 'inventory':
+      case 'rh':
+        return 'gestao';
+      default:
+        return 'all';
+    }
+  }
+  
+  private isNotificationForRole(type: NotificationType, role: string): boolean {
+    const r = role.toLowerCase();
+    switch (type) {
+       case 'waiter':
+          return r.includes('garçom') || r.includes('caixa');
+       case 'ifood':
+       case 'whatsapp':
+       case 'payment':
+          return r.includes('caixa');
+       case 'kds':
+          return r.includes('cozinha') || r.includes('cozinheiro');
+       case 'inventory':
+       case 'rh':
+          return false; // Only gestao/gerentes see these
+       default:
+          return true;
+    }
+  }
+
+  private isNotificationRelevantForCurrentUser(notif: SystemNotification): boolean {
+    const currentPortal = this.portalContext.currentMode();
+    const opAuth = this.getOperationalAuthService();
+    const employee = opAuth ? opAuth.activeEmployee() : null;
+    const role = (employee?.role || 'Sem Cargo').toLowerCase();
+    const isGerente = role.includes('admin') || role.includes('gerente');
+
+    const target = this.getNotificationTargetPortal(notif.type);
+    const matchesPortal = target === 'all' || currentPortal === 'all' || target === currentPortal;
+
+    if (!matchesPortal) return false;
+    
+    if (isGerente) return true;
+    
+    return this.isNotificationForRole(notif.type, role);
+  }
+
+  private getVisibleNotifications = () => {
+    return this.systemNotifications().filter(n => this.isNotificationRelevantForCurrentUser(n));
+  };
+
+  unreadCount = computed(() => this.getVisibleNotifications().filter(n => !n.read).length);
 
   filteredNotifications = computed(() => {
-    const list = this.systemNotifications();
+    const list = this.getVisibleNotifications();
     const filter = this.activeFilter();
 
     if (filter === 'unread') {
@@ -118,12 +187,14 @@ export class NotificationService {
       if (addedNotifications.length > 0) {
         this.systemNotifications.set(newModels);
         
-        // Play sound and show toast for the most recent new notification
+        // Play sound and show toast for the most recent new notification if relevant
         const latest = addedNotifications[0];
-        if (this.soundEnabled()) {
-           this.playSound(latest.type, latest.severity);
+        if (this.isNotificationRelevantForCurrentUser(latest)) {
+          if (this.soundEnabled()) {
+             this.playSound(latest.type, latest.severity);
+          }
+          this.show(`${latest.title}: ${latest.message}`, latest.severity === 'error' ? 'error' : latest.severity === 'warning' ? 'warning' : 'info', 4500);
         }
-        this.show(`${latest.title}: ${latest.message}`, latest.severity === 'error' ? 'error' : latest.severity === 'warning' ? 'warning' : 'info', 4500);
       } else {
         // Just update state in case read status changed
         this.systemNotifications.set(newModels);
@@ -173,11 +244,13 @@ export class NotificationService {
 
           this.systemNotifications.update(current => [newNotif, ...current]);
           
-          if (this.soundEnabled()) {
-             this.playSound(newNotif.type, newNotif.severity);
+          if (this.isNotificationRelevantForCurrentUser(newNotif)) {
+            if (this.soundEnabled()) {
+               this.playSound(newNotif.type, newNotif.severity);
+            }
+            
+            this.show(`${newNotif.title}: ${newNotif.message}`, newNotif.severity === 'error' ? 'error' : newNotif.severity === 'warning' ? 'warning' : 'info', 4500);
           }
-          
-          this.show(`${newNotif.title}: ${newNotif.message}`, newNotif.severity === 'error' ? 'error' : newNotif.severity === 'warning' ? 'warning' : 'info', 4500);
         }
       )
       .on(
@@ -274,11 +347,13 @@ export class NotificationService {
       
       this.systemNotifications.update(current => [fallbackNotif, ...current]);
       
-      if (this.soundEnabled()) {
-         this.playSound(fallbackNotif.type, fallbackNotif.severity);
-      }
-      if (data.showToast !== false) {
-         this.show(`${fallbackNotif.title}: ${fallbackNotif.message}`, fallbackNotif.severity === 'error' ? 'error' : fallbackNotif.severity === 'warning' ? 'warning' : 'info', 4500);
+      if (this.isNotificationRelevantForCurrentUser(fallbackNotif)) {
+        if (this.soundEnabled()) {
+           this.playSound(fallbackNotif.type, fallbackNotif.severity);
+        }
+        if (data.showToast !== false) {
+           this.show(`${fallbackNotif.title}: ${fallbackNotif.message}`, fallbackNotif.severity === 'error' ? 'error' : fallbackNotif.severity === 'warning' ? 'warning' : 'info', 4500);
+        }
       }
       return fallbackNotif;
     }
@@ -288,11 +363,13 @@ export class NotificationService {
     if (!exists) {
       this.systemNotifications.update(current => [dbModel, ...current]);
       
-      if (this.soundEnabled()) {
-         this.playSound(dbModel.type, dbModel.severity);
-      }
-      if (data.showToast !== false) {
-         this.show(`${dbModel.title}: ${dbModel.message}`, dbModel.severity === 'error' ? 'error' : dbModel.severity === 'warning' ? 'warning' : 'info', 4500);
+      if (this.isNotificationRelevantForCurrentUser(dbModel)) {
+        if (this.soundEnabled()) {
+           this.playSound(dbModel.type, dbModel.severity);
+        }
+        if (data.showToast !== false) {
+           this.show(`${dbModel.title}: ${dbModel.message}`, dbModel.severity === 'error' ? 'error' : dbModel.severity === 'warning' ? 'warning' : 'info', 4500);
+        }
       }
     }
     
