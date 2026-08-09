@@ -86,7 +86,7 @@ export class EmployeeDetailsModalComponent {
             setTimeout(() => {
                 document.body.removeChild(iframe);
             }, 1000);
-          }, 500);
+          }, 1500);
       }
   }
 

@@ -324,34 +324,19 @@ export class PublicDataService {
     userId: string,
   ): Promise<Partial<CompanyProfile> & { has_mp_integration?: boolean } | null> {
     const { data, error } = await supabase
-      .from("company_profile")
-      .select("*") // Select all to bypass potential column-specific RLS issues
+      .from("company_profile_public")
+      .select("*")
       .eq("user_id", userId)
       .single();
 
     if (error) {
-      // Don't log "not found" as a critical error, it's a valid case.
       if (error.code !== "PGRST116") {
         console.error("Error fetching public company profile:", error);
       }
       return null;
     }
 
-    let hasMp = false;
-
-    if (data) {
-      // IMPORTANT: Explicitly remove sensitive fields before returning to the client.
-      // This prevents exposing API keys or other private data.
-      delete (data as any).external_api_key;
-      delete (data as any).ifood_merchant_id;
-      
-      hasMp = !!(data as any).mp_access_token;
-      
-      delete (data as any).mp_access_token;
-      delete (data as any).mp_refresh_token;
-    }
-
-    return data ? { ...data, has_mp_integration: hasMp } : null;
+    return data ? { ...data, has_mp_integration: (data as any).has_mercadopago_integration } : null;
   }
 
   async getPublicReservationSettings(

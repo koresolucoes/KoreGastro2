@@ -52,14 +52,24 @@ export default async function (req: VercelRequest, res: VercelResponse) {
 
     const { access_token, refresh_token, public_key, user_id: mp_user_id } = data;
 
-    // Update the company_profile in the database with these tokens
+    // Update the credentials and public profile
+    const { error: credsError } = await supabase
+      .from('store_integration_credentials')
+      .upsert({
+        store_id: userId,
+        mp_access_token: access_token,
+        mp_refresh_token: refresh_token,
+        mp_user_id: mp_user_id
+      }, { onConflict: 'store_id' });
+
+    if (credsError) {
+      console.error('Database error updating credentials:', credsError);
+    }
+
     const { error: dbError } = await supabase
       .from('company_profile')
       .update({
-        mp_access_token: access_token,
-        mp_refresh_token: refresh_token,
-        mp_public_key: public_key,
-        mp_user_id: mp_user_id
+        mp_public_key: public_key
       })
       .eq('user_id', userId);
 

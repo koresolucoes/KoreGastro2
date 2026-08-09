@@ -56,15 +56,15 @@ async function authenticateAndGetRestaurantId(req: VercelRequest): Promise<{ res
     if (!restaurantId) {
         return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
     }
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
+    const { data: creds, error: credsError } = await supabase
+      .from('store_integration_credentials')
       .select('external_api_key')
-      .eq('user_id', restaurantId)
+      .eq('store_id', restaurantId)
       .single();
-    if (profileError || !profile || !profile.external_api_key) {
+    if (credsError || !creds || !creds.external_api_key) {
         return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
     }
-    if (providedApiKey !== profile.external_api_key) {
+    if (providedApiKey !== creds.external_api_key) {
         return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
     }
     return { restaurantId };

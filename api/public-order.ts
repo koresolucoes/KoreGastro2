@@ -185,14 +185,14 @@ export default async function handler(req: any, res: any) {
           return res.status(400).json({ error: "Valor inválido para o PIX" });
         }
 
-        const { data: company } = await supabase
-          .from("company_profile")
+        const { data: creds } = await supabase
+          .from("store_integration_credentials")
           .select("mp_access_token")
-          .eq("user_id", sessionOrder.user_id)
+          .eq("store_id", sessionOrder.user_id)
           .single();
 
         const mpToken =
-          company?.mp_access_token ||
+          creds?.mp_access_token ||
           process.env.MERCADOPAGO_ACCESS_TOKEN ||
           process.env.MERCADO_PAGO_ACCESS_TOKEN;
 

@@ -33,7 +33,7 @@ export class IfoodStoreManagerComponent implements OnInit {
 
   private settingsState = inject(SettingsStateService);
   private settingsDataService = inject(SettingsDataService);
-  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.ifood_merchant_id);
+  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.has_ifood_integration);
   isLoadingStatus = signal(true);
   isLoadingInterruptions = signal(true);
   isLoadingHours = signal(true);

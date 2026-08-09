@@ -123,7 +123,7 @@ export class WhatsappAgentSettingsComponent implements OnInit {
 
   async autoCaptureCompanyData(storeId: string) {
     const { data: profile } = await supabase
-      .from('company_profile')
+      .from('company_profile_public')
       .select('company_name, address')
       .eq('user_id', storeId)
       .maybeSingle();
@@ -154,7 +154,7 @@ export class WhatsappAgentSettingsComponent implements OnInit {
     this.isLoading.set(true);
     
     const { data: profile } = await supabase
-      .from('company_profile')
+      .from('company_profile_public')
       .select('company_name, address')
       .eq('user_id', storeId)
       .maybeSingle();

@@ -80,12 +80,22 @@ export default async function handler(req: any, res: any) {
         cnpj: cnpj || '',
         phone: phone || '',
         address: address || '',
-        external_api_key: apiKey,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
 
     if (profileError) {
       console.warn('[Provisioning Warning] Company profile setup notice:', profileError.message);
+    }
+    
+    const { error: credsError } = await supabaseAdmin
+      .from('store_integration_credentials')
+      .upsert({
+        store_id: userId,
+        external_api_key: apiKey
+      }, { onConflict: 'store_id' });
+
+    if (credsError) {
+      console.warn('[Provisioning Warning] Credentials setup notice:', credsError.message);
     }
 
     // 3. Provision Default Subscription (30-day trial or specified plan)

@@ -16,7 +16,7 @@
       </div>
     </div>
     <div class="mt-8 pt-6 border-t border-subtle flex justify-end items-center gap-4">
-      @if (companyProfile()?.ifood_merchant_id) {
+      @if (companyProfile()?.has_ifood_integration) {
          <span class="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">Conectado</span>
       }
       <a routerLink="/ifood-store-manager" class="bg-surface hover:bg-brand hover:text-white border border-strong hover:border-brand text-title font-black uppercase tracking-widest text-[10px] py-3.5 px-6 rounded-xl transition-all shadow-sm active:scale-95 text-center">

@@ -98,7 +98,7 @@ export default async function handler(req: any, res: any) {
         // Per-merchant heartbeat
         console.log('[Webhook] KEEPALIVE event for merchants:', payload.merchantIds);
         const { data: activeMerchants, error: dbError } = await supabase
-          .from('company_profile')
+          .from('store_integration_credentials')
           .select('ifood_merchant_id')
           .in('ifood_merchant_id', payload.merchantIds);
 

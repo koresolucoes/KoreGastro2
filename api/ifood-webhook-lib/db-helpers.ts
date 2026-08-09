@@ -57,8 +57,8 @@ export async function updateLogStatus(supabase: SupabaseClient, logId: string, s
 
 export async function findUserByMerchantId(supabase: SupabaseClient, merchantId: string): Promise<string | null> {
   const { data, error } = await supabase
-    .from('company_profile')
-    .select('user_id')
+    .from('store_integration_credentials')
+    .select('store_id')
     .eq('ifood_merchant_id', merchantId)
     .single();
   
@@ -66,7 +66,7 @@ export async function findUserByMerchantId(supabase: SupabaseClient, merchantId:
     console.error(`Merchant not found for ID: ${merchantId}`);
     return null;
   }
-  return data.user_id;
+  return data.store_id;
 }
 
 export async function findExistingOrder(supabase: SupabaseClient, ifoodOrderId: string, userId: string): Promise<boolean> {

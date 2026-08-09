@@ -15,7 +15,7 @@ export class CoreDataLoaderService {
       employeesRes, 
       webhooksRes
     ] = await Promise.all([
-      supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('company_profile_public').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
       supabase.from('role_permissions').select('*').eq('user_id', userId),
       supabase.from('employees').select('*').eq('user_id', userId),

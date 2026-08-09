@@ -667,21 +667,26 @@ export interface CompanyProfile {
   address: string | null;
   phone: string | null;
   logo_url: string | null;
-  ifood_merchant_id: string | null;
   menu_cover_url: string | null;
   menu_header_url: string | null;
-  external_api_key: string | null;
   created_at: string;
   latitude: number | null;
   longitude: number | null;
   time_clock_radius: number | null;
   service_fee_percentage?: number | null;
+  mp_public_key?: string | null;
+  has_ifood_integration?: boolean;
+  has_mercadopago_integration?: boolean;
+  has_focusnfe_integration?: boolean;
+  
+  // Keep these as optional for backwards compatibility in forms/updates where we manually pass them
+  ifood_merchant_id?: string | null;
+  external_api_key?: string | null;
   focusnfe_token?: string | null;
   focusnfe_cert_valid_until?: string | null;
   mp_access_token?: string | null;
   mp_refresh_token?: string | null;
   mp_user_id?: string | null;
-  mp_public_key?: string | null;
 }
 
 export interface LoyaltySettings {

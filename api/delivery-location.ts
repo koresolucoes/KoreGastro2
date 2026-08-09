@@ -40,17 +40,17 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
+    const { data: creds, error: credsError } = await supabase
+      .from('store_integration_credentials')
       .select('external_api_key')
-      .eq('user_id', restaurantId)
+      .eq('store_id', restaurantId)
       .single();
 
-    if (profileError || !profile || !profile.external_api_key) {
+    if (credsError || !creds || !creds.external_api_key) {
       return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid `restaurantId` or API key not configured.' });
     }
 
-    if (providedApiKey !== profile.external_api_key) {
+    if (providedApiKey !== creds.external_api_key) {
       return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid API key.' });
     }
 

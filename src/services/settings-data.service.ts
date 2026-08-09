@@ -477,9 +477,23 @@ export class SettingsDataService {
       }
     }
 
+    const { ifood_merchant_id, external_api_key, mp_access_token, mp_refresh_token, mp_public_key, focusnfe_token, focusnfe_cert_valid_until, ...publicData } = profileData;
+
     const { error } = await supabase
       .from("company_profile")
-      .upsert({ ...profileData, user_id: userId }, { onConflict: "user_id" });
+      .upsert({ ...publicData, user_id: userId }, { onConflict: "user_id" });
+
+    // Update credentials if provided
+    if (ifood_merchant_id !== undefined || external_api_key !== undefined || mp_access_token !== undefined || mp_refresh_token !== undefined) {
+      const credsUpdate: any = { store_id: userId };
+      if (ifood_merchant_id !== undefined) credsUpdate.ifood_merchant_id = ifood_merchant_id;
+      if (external_api_key !== undefined) credsUpdate.external_api_key = external_api_key;
+      if (mp_access_token !== undefined) credsUpdate.mp_access_token = mp_access_token;
+      if (mp_refresh_token !== undefined) credsUpdate.mp_refresh_token = mp_refresh_token;
+      
+      await supabase.from("store_integration_credentials").upsert(credsUpdate, { onConflict: "store_id" });
+    }
+
     if (!error) {
        this.auditService.logAction('COMPANY_PROFILE_UPDATED', `Perfil da empresa atualizado`);
     }
@@ -529,9 +543,8 @@ export class SettingsDataService {
     if (!userId)
       return { success: false, error: { message: "Active unit not found" } };
     const { error } = await supabase
-      .from("company_profile")
-      .update({ focusnfe_token: token, focusnfe_cert_valid_until: validUntil })
-      .eq("user_id", userId);
+      .from("store_integration_credentials")
+      .upsert({ store_id: userId, focusnfe_token: token, focusnfe_cert_valid_until: validUntil }, { onConflict: 'store_id' });
     return { success: !error, error };
   }
 

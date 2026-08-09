@@ -40,7 +40,7 @@ export class IfoodMenuComponent implements OnInit {
   private recipeDataService = inject(RecipeDataService);
   private settingsState = inject(SettingsStateService);
 
-  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.ifood_merchant_id);
+  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.has_ifood_integration);
 
   isLoading = signal(true);
   view = signal<'live' | 'unsellable' | 'optionGroups'>('optionGroups');

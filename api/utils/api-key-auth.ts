@@ -57,21 +57,21 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
   ) as string | undefined;
 
   try {
-    const { data: profile, error: profileError } = await supabase
-      .from('company_profile')
-      .select('user_id, external_api_key')
+    const { data: creds, error: credsError } = await supabase
+      .from('store_integration_credentials')
+      .select('store_id, external_api_key')
       .eq('external_api_key', providedApiKey)
       .maybeSingle();
 
-    if (profileError || !profile) {
+    if (credsError || !creds) {
       if (reqRestaurantId) {
-        const { data: profileByRest } = await supabase
-          .from('company_profile')
-          .select('user_id, external_api_key')
-          .eq('user_id', reqRestaurantId)
+        const { data: credsByRest } = await supabase
+          .from('store_integration_credentials')
+          .select('store_id, external_api_key')
+          .eq('store_id', reqRestaurantId)
           .maybeSingle();
 
-        if (profileByRest && profileByRest.external_api_key === providedApiKey) {
+        if (credsByRest && credsByRest.external_api_key === providedApiKey) {
           return {
             isValid: true,
             restaurantId: reqRestaurantId,
@@ -89,7 +89,7 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
       };
     }
 
-    const matchedRestaurantId = profile.user_id;
+    const matchedRestaurantId = creds.store_id;
 
     if (reqRestaurantId && reqRestaurantId !== matchedRestaurantId) {
       return {
