@@ -421,6 +421,7 @@ export class PublicDataService {
   async publicUpdateTableOrder(
     orderId: string,
     updates: any,
+    sessionToken?: string,
   ): Promise<{ success: boolean; error: any }> {
     try {
       // Tenta via RPC primeiro
@@ -437,11 +438,15 @@ export class PublicDataService {
         return { success: true, error: null };
       }
 
-      // Fallback para API Vercel
-      const response = await fetch(`/api/public-order`, {
+      // Fallback para API
+      const url = sessionToken
+        ? `/api/public-order?token=${encodeURIComponent(sessionToken)}`
+        : `/api/public-order`;
+
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, updates }),
+        body: JSON.stringify({ orderId, updates, token: sessionToken }),
       });
       if (!response.ok) throw new Error(await response.text());
       return { success: true, error: null };

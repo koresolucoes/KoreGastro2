@@ -309,10 +309,14 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
     }));
 
     // We use the public-order endpoint to bypass RLS restrictions securely
-    const response = await fetch("/api/public-order", {
+    const token = this.sessionToken();
+    const url = token
+      ? `/api/public-order?token=${encodeURIComponent(token)}`
+      : "/api/public-order";
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ insertItems: orderItemsPayload }),
+      body: JSON.stringify({ token, insertItems: orderItemsPayload }),
     });
 
     const resData = await response.json();
@@ -476,10 +480,15 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
     const amount = this.splitTotalPerPerson();
     this.isGeneratingPix.set(true);
     try {
-      const res = await fetch("/api/public-order", {
+      const token = this.sessionToken();
+      const url = token
+        ? `/api/public-order?token=${encodeURIComponent(token)}`
+        : "/api/public-order";
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          token,
           orderId: o.id,
           updates: {
             action: "GENERATE_PIX",
@@ -513,10 +522,15 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
     if (code === "KORE10") {
       const o = this.order();
       if (o) {
-        await fetch("/api/public-order", {
+        const token = this.sessionToken();
+        const url = token
+          ? `/api/public-order?token=${encodeURIComponent(token)}`
+          : "/api/public-order";
+        await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            token,
             orderId: o.id,
             updates: {
               action: "APPLY_DISCOUNT",
@@ -623,10 +637,15 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
         const amount = this.splitTotalPerPerson();
         const payment = { method: "PIX", amount: amount };
 
-        const res = await fetch("/api/public-order", {
+        const token = this.sessionToken();
+        const url = token
+          ? `/api/public-order?token=${encodeURIComponent(token)}`
+          : "/api/public-order";
+        const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            token,
             orderId: o.id,
             updates: {
               action: "FINALIZE",

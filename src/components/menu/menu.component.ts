@@ -596,10 +596,14 @@ export class MenuComponent implements OnInit {
         };
       });
 
-      const response = await fetch("/api/public-order", {
+      const token = this.sessionToken();
+      const url = token
+        ? `/api/public-order?token=${encodeURIComponent(token)}`
+        : "/api/public-order";
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ insertItems: orderItems }),
+        body: JSON.stringify({ token, insertItems: orderItems }),
       });
 
       const resData = await response.json();
@@ -635,6 +639,7 @@ export class MenuComponent implements OnInit {
       const { error } = await this.publicData.publicUpdateTableOrder(
         order.id,
         updates,
+        this.sessionToken() || undefined,
       );
       if (error) throw error;
 
@@ -665,9 +670,11 @@ export class MenuComponent implements OnInit {
           ? order.notes
           : `${order.notes}\n${billNote}`
         : billNote;
-      const { error } = await this.publicData.publicUpdateTableOrder(order.id, {
-        notes,
-      });
+      const { error } = await this.publicData.publicUpdateTableOrder(
+        order.id,
+        { notes },
+        this.sessionToken() || undefined,
+      );
       if (error) throw error;
 
       this.tableOrder.update((o) => (o ? { ...o, notes } : null));
@@ -693,10 +700,15 @@ export class MenuComponent implements OnInit {
     if (code === "KORE10") {
       const o = this.tableOrder();
       if (o) {
-        await fetch("/api/public-order", {
+        const token = this.sessionToken();
+        const url = token
+          ? `/api/public-order?token=${encodeURIComponent(token)}`
+          : "/api/public-order";
+        await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            token,
             orderId: o.id,
             updates: {
               action: "APPLY_DISCOUNT",
@@ -830,10 +842,15 @@ export class MenuComponent implements OnInit {
     const amount = this.splitTotalPerPerson();
     this.isGeneratingPix.set(true);
     try {
-      const res = await fetch("/api/public-order", {
+      const token = this.sessionToken();
+      const url = token
+        ? `/api/public-order?token=${encodeURIComponent(token)}`
+        : "/api/public-order";
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          token,
           orderId: o.id,
           updates: {
             action: "GENERATE_PIX",
@@ -878,10 +895,15 @@ export class MenuComponent implements OnInit {
         const amount = this.splitTotalPerPerson();
         const payment = { method: "PIX", amount: amount };
 
-        await fetch("/api/public-order", {
+        const token = this.sessionToken();
+        const url = token
+          ? `/api/public-order?token=${encodeURIComponent(token)}`
+          : "/api/public-order";
+        await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            token,
             orderId: o.id,
             updates: {
               action: "FINALIZE",
