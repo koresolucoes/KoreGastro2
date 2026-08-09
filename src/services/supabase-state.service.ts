@@ -2,6 +2,7 @@
 import { Injectable, signal, computed, WritableSignal, inject, effect, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { ProductionPlan, Order, OrderItem } from '../models/db.models';
+import { AccountId, StoreId } from '../types';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PricingService } from './pricing.service';
@@ -98,7 +99,7 @@ export class SupabaseStateService {
             ++this.bootstrapGeneration;
             this.unsubscribeFromChanges();
             this.clearAllData();
-            if (this.unitContextService.activeUnitId()) {
+            if (this.unitContextService.activeStoreId()) {
                 this.unitContextService.activeUnitId.set('');
             }
             this.bootstrapError.set(null);
@@ -110,10 +111,10 @@ export class SupabaseStateService {
     // EFFECT 2: React to Active Unit Changes
     // Handles Data Loading AND Operator Auto-Switch
     effect(async () => {
-        const activeUnitId = this.unitContextService.activeUnitId();
+        const activeStoreId = this.unitContextService.activeStoreId();
         const isDemo = this.demoService.isDemoMode();
         
-        if (activeUnitId && !isDemo) {
+        if (activeStoreId && !isDemo) {
             const generation = ++this.bootstrapGeneration;
 
             // IMMEDIATELY cleanup old unit realtime & clear state
@@ -125,18 +126,18 @@ export class SupabaseStateService {
 
             try {
                 // 2. Load Core Data (Permissions, Settings, Roles) - Critical for Auth
-                await this.loadCoreDataForGeneration(activeUnitId, generation);
+                await this.loadCoreDataForGeneration(activeStoreId, generation);
                 if (generation !== this.bootstrapGeneration) return;
                 
                 // Transition to LOADING_ESSENTIAL
                 this.bootstrapStatus.set('LOADING_ESSENTIAL');
 
                 // 3. Load Catalogs & Active State (Menu, Current Stock, Open Orders) - Critical for Operations
-                await this.loadEssentialDataForGeneration(activeUnitId, generation);
+                await this.loadEssentialDataForGeneration(activeStoreId, generation);
                 if (generation !== this.bootstrapGeneration) return;
 
                 // 4. Start Realtime
-                this.subscribeToChanges(activeUnitId, generation);
+                this.subscribeToChanges(activeStoreId, generation);
 
                 if (generation !== this.bootstrapGeneration) return;
 
@@ -172,12 +173,12 @@ export class SupabaseStateService {
   }
 
   // --- 1. CORE DATA (Required for basic app structure) ---
-  public async loadCoreData(userId: string) {
-    return this.loadCoreDataForGeneration(userId, this.bootstrapGeneration);
+  public async loadCoreData(storeId: StoreId) {
+    return this.loadCoreDataForGeneration(storeId, this.bootstrapGeneration);
   }
 
-  private async loadCoreDataForGeneration(userId: string, generation: number) {
-    const permCacheKey = `chefos_role_perms_${userId}`;
+  private async loadCoreDataForGeneration(storeId: StoreId, generation: number) {
+    const permCacheKey = `chefos_role_perms_${storeId}`;
     const cachedPerms = localStorage.getItem(permCacheKey);
     if (cachedPerms && generation === this.bootstrapGeneration) {
       try {
@@ -187,7 +188,7 @@ export class SupabaseStateService {
       }
     }
 
-    const coreData = await this.coreDataLoader.load(userId);
+    const coreData = await this.coreDataLoader.load(storeId);
 
     if (generation !== this.bootstrapGeneration) return;
 
@@ -202,21 +203,21 @@ export class SupabaseStateService {
   }
 
   // --- 2. ESSENTIAL DATA (Required for POS/KDS/Inventory to function) ---
-  public async loadEssentialData(userId: string) {
-    return this.loadEssentialDataForGeneration(userId, this.bootstrapGeneration);
+  public async loadEssentialData(storeId: StoreId) {
+    return this.loadEssentialDataForGeneration(storeId, this.bootstrapGeneration);
   }
 
-  private async loadEssentialDataForGeneration(userId: string, generation: number) {
+  private async loadEssentialDataForGeneration(storeId: StoreId, generation: number) {
     const [
       posData,
       catalogData,
       inventoryData,
       operationsData
     ] = await Promise.all([
-      this.posDataLoader.load(userId),
-      this.catalogDataLoader.load(userId),
-      this.inventoryDataLoader.load(userId),
-      this.operationsDataLoader.load(userId)
+      this.posDataLoader.load(storeId),
+      this.catalogDataLoader.load(storeId),
+      this.inventoryDataLoader.load(storeId),
+      this.operationsDataLoader.load(storeId)
     ]);
 
     if (generation !== this.bootstrapGeneration) return;
@@ -253,8 +254,8 @@ export class SupabaseStateService {
   }
 
   public async refetchRecipesData() {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return;
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) return;
     const currentGen = this.bootstrapGeneration;
 
     const [
@@ -264,14 +265,14 @@ export class SupabaseStateService {
         recipeSubRecipes,
         storeCustomPrices
     ] = await Promise.all([
-        supabase.from('recipes').select('*').eq('store_id', userId),
-        supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
-        supabase.from('recipe_preparations').select('*').eq('user_id', userId),
-        supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
-        supabase.from('store_custom_prices').select('*').eq('store_id', userId),
+        supabase.from('recipes').select('*').eq('store_id', storeId),
+        supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', storeId),
+        supabase.from('recipe_preparations').select('*').eq('user_id', storeId),
+        supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', storeId),
+        supabase.from('store_custom_prices').select('*').eq('store_id', storeId),
     ]);
 
-    if (currentGen !== this.bootstrapGeneration || userId !== this.unitContextService.activeUnitId()) {
+    if (currentGen !== this.bootstrapGeneration || storeId !== this.unitContextService.activeStoreId()) {
         return;
     }
 
@@ -285,8 +286,8 @@ export class SupabaseStateService {
   // --- 3. ON-DEMAND DATA (Heavy/Historical) ---
   // Called by Inventory, Reports, HR components on init
   public async loadBackOfficeData() {
-     const userId = this.unitContextService.activeUnitId();
-     if (!userId) return;
+     const storeId = this.unitContextService.activeStoreId();
+     if (!storeId) return;
      const currentGen = this.bootstrapGeneration;
 
      const yesterday = new Date();
@@ -298,17 +299,17 @@ export class SupabaseStateService {
         requisitions, schedules, leaveRequests, 
         activeReservations
      ] = await Promise.all([
-        supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit)), created_by_employee:employees!purchase_orders_created_by_employee_id_fkey(name), received_by_employee:employees!purchase_orders_received_by_employee_id_fkey(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
-        supabase.from('inventory_lots').select('*').eq('user_id', userId).gt('quantity', 0).order('created_at', { ascending: true }),
-        supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', userId).order('plan_date', { ascending: false }).limit(20),
-        supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name), target_unit:stores!requisitions_target_unit_id_fkey(name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
-        supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', userId).order('week_start_date', { ascending: false }).limit(10),
-        supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', userId).order('start_date', { ascending: false }).limit(50),
+        supabase.from('purchase_orders').select('*, suppliers(name), purchase_order_items(*, ingredients(name, unit)), created_by_employee:employees!purchase_orders_created_by_employee_id_fkey(name), received_by_employee:employees!purchase_orders_received_by_employee_id_fkey(name)').eq('user_id', storeId).order('created_at', { ascending: false }).limit(50),
+        supabase.from('inventory_lots').select('*').eq('user_id', storeId).gt('quantity', 0).order('created_at', { ascending: true }),
+        supabase.from('production_plans').select('*, production_tasks(*, recipes(name, source_ingredient_id), stations(name), employees(name))').eq('user_id', storeId).order('plan_date', { ascending: false }).limit(20),
+        supabase.from('requisitions').select('*, requisition_items(*, ingredients(name)), stations(name), requester:employees!requested_by(name), processor:employees!processed_by(name), target_unit:stores!requisitions_target_unit_id_fkey(name)').eq('user_id', storeId).order('created_at', { ascending: false }).limit(50),
+        supabase.from('schedules').select('*, shifts(*, employees(name))').eq('user_id', storeId).order('week_start_date', { ascending: false }).limit(10),
+        supabase.from('leave_requests').select('*, employees(name, role)').eq('user_id', storeId).order('start_date', { ascending: false }).limit(50),
         // Load only future or today's reservations to save bandwidth
-        supabase.from('reservations').select('*').eq('user_id', userId).gte('reservation_time', yesterday.toISOString()).order('reservation_time', { ascending: true })
+        supabase.from('reservations').select('*').eq('user_id', storeId).gte('reservation_time', yesterday.toISOString()).order('reservation_time', { ascending: true })
      ]);
 
-     if (currentGen !== this.bootstrapGeneration || userId !== this.unitContextService.activeUnitId()) {
+     if (currentGen !== this.bootstrapGeneration || storeId !== this.unitContextService.activeStoreId()) {
          return;
      }
 
@@ -322,8 +323,8 @@ export class SupabaseStateService {
   }
 
   public async refetchIfoodLogs() {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return;
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) return;
     await this.refetchSimpleTable('ifood_webhook_logs', '*', this.ifoodState.ifoodWebhookLogs, true, 100);
   }
 
@@ -341,23 +342,23 @@ export class SupabaseStateService {
     this.stopKdsPoller();
   }
 
-  private subscribeToChanges(userId: string, generation = this.bootstrapGeneration) {
+  private subscribeToChanges(storeId: StoreId, generation = this.bootstrapGeneration) {
     this.unsubscribeFromChanges();
 
-    if (generation !== this.bootstrapGeneration || userId !== this.unitContextService.activeUnitId()) {
+    if (generation !== this.bootstrapGeneration || storeId !== this.unitContextService.activeStoreId()) {
       return;
     }
     
     this.startKdsPoller();
 
-    this.realtimeChannel = supabase.channel(`db-changes:${userId}`)
+    this.realtimeChannel = supabase.channel(`db-changes:${storeId}`)
       .on(
         'postgres_changes', 
         { event: '*', schema: 'public' }, 
         (payload: any) => this.handleChanges(payload, generation)
       )
       .subscribe((status, err) => {
-        if (generation !== this.bootstrapGeneration || userId !== this.unitContextService.activeUnitId()) {
+        if (generation !== this.bootstrapGeneration || storeId !== this.unitContextService.activeStoreId()) {
           return;
         }
 
@@ -365,15 +366,15 @@ export class SupabaseStateService {
             // Cleanup and retry
             if (this.retryTimeout) clearTimeout(this.retryTimeout);
             this.retryTimeout = setTimeout(() => {
-                if (generation === this.bootstrapGeneration && userId === this.unitContextService.activeUnitId()) {
-                    this.subscribeToChanges(userId, generation);
+                if (generation === this.bootstrapGeneration && storeId === this.unitContextService.activeStoreId()) {
+                    this.subscribeToChanges(storeId, generation);
                 }
             }, 5000);
         }
       });
   }
   
-  public resolveRealtimeStoreId(table: string, row: any): string | null {
+  public resolveRealtimeStoreId(table: string, row: any): StoreId | null {
     if (!row) return null;
 
     if (table === 'recipes' || table === 'store_custom_prices') {
@@ -392,14 +393,14 @@ export class SupabaseStateService {
   }
 
   private handleChanges(payload: any, generation = this.bootstrapGeneration) {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId || generation !== this.bootstrapGeneration) return;
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId || generation !== this.bootstrapGeneration) return;
 
     // Safety: ignore updates from other units
     const relevantRow = payload.new || payload.old;
     if (relevantRow) {
         const tenantId = this.resolveRealtimeStoreId(payload.table, relevantRow);
-        if (tenantId && tenantId !== userId) return;
+        if (tenantId && tenantId !== storeId) return;
     }
 
     switch (payload.table) {
@@ -788,7 +789,7 @@ export class SupabaseStateService {
   }
 
   public async refreshDashboardAndCashierData() {
-    const userId = this.unitContextService.activeUnitId();
+    const userId = this.unitContextService.activeStoreId();
     if (!userId) return;
     
     const { data: closings } = await supabase.from('cashier_closings').select('*').eq('user_id', userId).order('closed_at', { ascending: false }).limit(5);
@@ -804,7 +805,7 @@ export class SupabaseStateService {
   }
 
   private async refetchSimpleTable<T>(tableName: string, selectQuery: string, signal: WritableSignal<T[]>, orderByDesc = false, limit?: number) {
-    const userId = this.unitContextService.activeUnitId();
+    const userId = this.unitContextService.activeStoreId();
     if (!userId) return;
     let query = supabase.from(tableName).select(selectQuery).eq('user_id', userId);
     
@@ -916,7 +917,7 @@ export class SupabaseStateService {
   }
 
   async fetchPerformanceDataForPeriod(startDate: Date, endDate: Date): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
+    const userId = this.unitContextService.activeStoreId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
     const [transactionsRes, completedOrdersRes] = await Promise.all([

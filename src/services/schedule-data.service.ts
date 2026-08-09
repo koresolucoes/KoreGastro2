@@ -5,6 +5,7 @@ import { supabase } from './supabase-client';
 // FIX: Import and inject HrStateService to access schedule data
 import { HrStateService } from './hr-state.service';
 import { UnitContextService } from './unit-context.service';
+import { StoreId } from '../types';
 
 @Injectable({
   providedIn: 'root',
@@ -15,8 +16,12 @@ export class ScheduleDataService {
   private hrState = inject(HrStateService);
   private unitContextService = inject(UnitContextService);
 
+  private getActiveStoreId(): StoreId | null {
+      return this.unitContextService.activeStoreId();
+  }
+
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.getActiveStoreId();
   }
 
   async getOrCreateScheduleForDate(weekStartDate: string): Promise<{ data: Schedule | null; error: any }> {

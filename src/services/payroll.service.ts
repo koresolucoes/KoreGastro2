@@ -10,7 +10,7 @@ export class PayrollService {
   private unitContextService = inject(UnitContextService);
 
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.unitContextService.activeStoreId();
   }
 
   async getAdjustments(period: string): Promise<{ data: PayrollAdjustment[]; error: any }> {

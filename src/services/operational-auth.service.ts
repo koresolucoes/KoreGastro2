@@ -65,9 +65,9 @@ export class OperationalAuthService {
 
     // Auto-reset operator session when switching to a different store context
     effect(() => {
-      const activeUnitId = this.unitContextService.activeUnitId();
+      const activeStoreId = this.unitContextService.activeStoreId();
       const employee = this.activeEmployee();
-      if (employee && activeUnitId && employee.user_id && employee.user_id !== activeUnitId && !this.demoService.isDemoMode()) {
+      if (employee && activeStoreId && employee.user_id && employee.user_id !== activeStoreId && !this.demoService.isDemoMode()) {
         this.resetSession();
         this.router.navigate(['/employee-selection']);
       }

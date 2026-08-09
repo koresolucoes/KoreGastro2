@@ -1,4 +1,11 @@
 
+
+// --- Semantic Tenancy Contract ---
+// ACCOUNT = auth.users.id
+// STORE = stores.id
+export type AccountId = string;
+export type StoreId = string;
+
 export type Json =
   | string
   | number

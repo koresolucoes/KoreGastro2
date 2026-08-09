@@ -4,6 +4,7 @@ import { LeaveRequest } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
+import { StoreId } from '../types';
 
 @Injectable({
   providedIn: 'root',
@@ -12,8 +13,12 @@ export class LeaveDataService {
   private authService = inject(AuthService);
   private unitContextService = inject(UnitContextService);
 
+  private getActiveStoreId(): StoreId | null {
+      return this.unitContextService.activeStoreId();
+  }
+
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.getActiveStoreId();
   }
 
   async addLeaveRequest(

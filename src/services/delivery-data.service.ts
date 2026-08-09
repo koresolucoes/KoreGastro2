@@ -8,6 +8,7 @@ import { PricingService } from './pricing.service';
 import { InventoryDataService } from './inventory-data.service';
 import { WebhookService } from './webhook.service';
 import { UnitContextService } from './unit-context.service';
+import { StoreId } from '../types';
 
 // Interface for the new order cart item
 interface DeliveryCartItem {
@@ -26,8 +27,12 @@ export class DeliveryDataService {
   private webhookService = inject(WebhookService);
   private unitContextService = inject(UnitContextService);
 
+  private getActiveStoreId(): StoreId | null {
+    return this.unitContextService.activeStoreId();
+  }
+
   private getActiveUnitId(): string | null {
-    return this.unitContextService.activeUnitId();
+    return this.getActiveStoreId();
   }
 
   async getTodayDeliveredOrders(): Promise<{ data: Order[] | null; error: any }> {

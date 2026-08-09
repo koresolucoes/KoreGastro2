@@ -34,7 +34,7 @@ export class SettingsDataService {
   private auditService = inject(AuditDataService);
 
   public getActiveUnitId(): string | null {
-    return this.unitContextService.activeUnitId();
+    return this.unitContextService.activeStoreId();
   }
 
   private async uploadAsset(

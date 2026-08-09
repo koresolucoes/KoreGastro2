@@ -26,7 +26,7 @@ export class InventoryDataService {
   private ntpService = inject(NtpService);
 
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.unitContextService.activeStoreId();
   }
 
   // --- Audit: Logs de Estoque ---

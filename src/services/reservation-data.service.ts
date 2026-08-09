@@ -3,6 +3,7 @@ import { supabase } from './supabase-client';
 import { Reservation, ReservationSettings, ReservationStatus } from '../models/db.models';
 import { AuthService } from './auth.service';
 import { UnitContextService } from './unit-context.service';
+import { StoreId } from '../types';
 
 @Injectable({
   providedIn: 'root',
@@ -13,13 +14,13 @@ export class ReservationDataService {
 
   // --- Settings ---
   async getReservationSettings(): Promise<ReservationSettings | null> {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return null;
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) return null;
 
     const { data, error } = await supabase
       .from('reservation_settings')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', storeId)
       .maybeSingle();
     if (error) {
       console.error('Error fetching reservation settings:', error);
@@ -29,10 +30,10 @@ export class ReservationDataService {
   }
 
   async updateReservationSettings(settings: Partial<ReservationSettings>): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) return { success: false, error: { message: 'User not authenticated' } };
 
-    const { error } = await supabase.from('reservation_settings').upsert({ ...settings, user_id: userId }, { onConflict: 'user_id' });
+    const { error } = await supabase.from('reservation_settings').upsert({ ...settings, user_id: storeId }, { onConflict: 'user_id' });
     return { success: !error, error };
   }
 
@@ -49,12 +50,12 @@ export class ReservationDataService {
   }
 
   async createManualReservation(reservationData: Partial<Reservation>): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { error } = await supabase.from('reservations').insert({
       ...reservationData,
-      user_id: userId,
+      user_id: storeId,
       status: 'CONFIRMED', // Staff-added reservations are confirmed by default
     });
 

@@ -21,7 +21,7 @@ export class FocusNFeService {
         return { success: false, error: { message: 'Modo de demonstração' } };
     }
 
-    const restaurantId = this.unitContextService.activeUnitId();
+    const restaurantId = this.unitContextService.activeStoreId();
     const apiKey = this.settingsState.companyProfile()?.external_api_key;
 
     if (!restaurantId || !apiKey) {

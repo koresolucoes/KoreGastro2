@@ -28,7 +28,7 @@ export class WebhookService {
       return;
     }
       
-    const restaurantId = this.unitContextService.activeUnitId();
+    const restaurantId = this.unitContextService.activeStoreId();
     const apiKey = this.settingsState.companyProfile()?.external_api_key;
 
     // The webhook configurations are loaded into the settingsState.

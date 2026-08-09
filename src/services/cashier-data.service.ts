@@ -13,6 +13,7 @@ import { Payment } from '../components/cashier/cashier.component';
 import { v4 as uuidv4 } from 'uuid';
 import { UnitContextService } from './unit-context.service';
 import { AuditDataService } from './audit-data.service';
+import { StoreId } from '../types';
 
 interface CartItem {
   recipe: Recipe;
@@ -108,8 +109,12 @@ export class CashierDataService {
   private unitContextService = inject(UnitContextService);
   private auditDataService = inject(AuditDataService);
 
+  private getActiveStoreId(): StoreId | null {
+      return this.unitContextService.activeStoreId();
+  }
+  
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.getActiveStoreId();
   }
   
   async getCompletedOrdersForPeriod(startDateStr: string, endDateStr: string): Promise<{ data: Order[] | null; error: any }> {

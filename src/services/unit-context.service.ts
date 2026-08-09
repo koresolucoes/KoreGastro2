@@ -2,11 +2,12 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { AuthService } from './auth.service';
+import { AccountId, StoreId } from '../types';
 
 const ACTIVE_UNIT_KEY = 'chefos_active_unit';
 
 export interface UnitInfo {
-  id: string;
+  id: StoreId;
   name: string;
   role: string;
 }
@@ -19,7 +20,10 @@ export class UnitContextService {
 
   // Default initial stores so the unit selector is always operational
   availableUnits = signal<UnitInfo[]>([]);
-  activeUnitId = signal<string>('');
+  activeUnitId = signal<StoreId>('');
+
+  // Semantic alias for activeUnitId representing the StoreId
+  readonly activeStoreId = computed<StoreId>(() => this.activeUnitId());
 
   isMultiUnit = computed(() => this.availableUnits().length > 1);
 
@@ -41,18 +45,18 @@ export class UnitContextService {
     }
   }
 
-  async loadContext(userId: string) {
+  async loadContext(accountId: AccountId) {
     const { data: ownedStores, error: ownedError } = await supabase
       .from('stores')
       .select('id, name')
-      .eq('owner_id', userId);
+      .eq('owner_id', accountId);
 
     if (ownedError) console.error('Error fetching owned stores:', ownedError);
 
     const { data: permissions, error: permError } = await supabase
       .from('unit_permissions')
       .select('store_id, role, stores(name)')
-      .eq('manager_id', userId);
+      .eq('manager_id', accountId);
 
     if (permError) console.error('Error fetching unit permissions:', permError);
 
@@ -84,7 +88,7 @@ export class UnitContextService {
 
     if (allUnits.length === 0) {
       allUnits = [
-        { id: userId, name: 'Unidade Principal', role: 'owner' }
+        { id: accountId, name: 'Unidade Principal', role: 'owner' }
       ];
     }
 

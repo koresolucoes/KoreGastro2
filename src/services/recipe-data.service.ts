@@ -15,7 +15,7 @@ export class RecipeDataService {
   private auditDataService = inject(AuditDataService);
 
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.unitContextService.activeStoreId();
   }
 
   async addRecipe(recipe: Partial<Omit<Recipe, 'id' | 'created_at'>>): Promise<{ success: boolean; error: any; data?: Recipe }> {

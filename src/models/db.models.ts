@@ -1,3 +1,6 @@
+import { AccountId, StoreId } from '../types';
+export type { AccountId, StoreId };
+
 export type WebhookEvent =
   | 'order.created'
   | 'order.updated'

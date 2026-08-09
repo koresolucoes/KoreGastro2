@@ -7,6 +7,7 @@ import { InventoryDataService } from './inventory-data.service';
 import { InventoryStateService } from './inventory-state.service';
 import { CompletionData } from '../components/mise-en-place/completion-modal/completion-modal.component'; 
 import { UnitContextService } from './unit-context.service';
+import { StoreId } from '../types';
 
 @Injectable({
   providedIn: 'root',
@@ -17,8 +18,12 @@ export class MiseEnPlaceDataService {
   private inventoryState = inject(InventoryStateService);
   private unitContextService = inject(UnitContextService);
 
+  private getActiveStoreId(): StoreId | null {
+      return this.unitContextService.activeStoreId();
+  }
+
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.getActiveStoreId();
   }
 
   // ... (getOrCreatePlanForDate remains the same, assuming it's correctly filtering by userId/storeId) ...

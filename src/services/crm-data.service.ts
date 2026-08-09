@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
 import { Customer, Order } from '../models/db.models';
+import { StoreId } from '../types';
 
 export interface RfmCustomer {
   customerId: string;
@@ -22,21 +23,21 @@ export class CrmDataService {
   unitContext = inject(UnitContextService);
 
   async getRfmAnalysis(): Promise<{ success: boolean; data: RfmCustomer[] | null; error: any }> {
-      const userId = this.unitContext.activeUnitId();
-      if (!userId) return { success: false, data: null, error: new Error('Usuário não autenticado') };
+      const storeId: StoreId | null = this.unitContext.activeStoreId();
+      if (!storeId) return { success: false, data: null, error: new Error('Usuário não autenticado') };
       
       try {
           // Fetch all customers for the current unit
           const { data: customers, error: customerError } = await supabase
               .from('customers')
               .select('*')
-              .eq('user_id', userId);
+              .eq('user_id', storeId);
               
           if (customerError) return { success: false, data: null, error: customerError };
           if (!customers || customers.length === 0) return { success: true, data: [], error: null };
           
           // Fetch all completed orders (with a customer attached) for the current unit
-          const { data: orders, error: ordersError } = await orderQuery(userId);
+          const { data: orders, error: ordersError } = await orderQuery(storeId);
           
           if (ordersError) return { success: false, data: null, error: ordersError };
           
@@ -127,13 +128,13 @@ export class CrmDataService {
   }
 }
 
-async function orderQuery(userId: string) {
+async function orderQuery(storeId: StoreId) {
     return supabase
               .from('orders')
               .select(`
                   id, customer_id, timestamp, status, discount_type, discount_value,
                   order_items(id, price, quantity, status, discount_type, discount_value)
               `)
-              .eq('user_id', userId)
+              .eq('user_id', storeId)
               .in('status', ['COMPLETED', 'DELIVERED']);
 }

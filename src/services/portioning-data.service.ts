@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { supabase } from './supabase-client';
 import { PortioningEvent, PortioningEventOutput } from '../models/db.models';
 import { UnitContextService } from './unit-context.service';
+import { StoreId } from '../types';
 
 export interface PortioningForm {
   employee_id: string | null;
@@ -21,8 +22,8 @@ export class PortioningDataService {
   private unitContextService = inject(UnitContextService);
 
   async createPortioningEvent(form: PortioningForm) {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) return { success: false, error: { message: 'User not authenticated' } };
 
     // This should ideally be a single database transaction / RPC call
     // For now, we'll do it sequentially.
@@ -51,7 +52,7 @@ export class PortioningDataService {
       const { data: event, error: eventError } = await supabase
         .from('portioning_events')
         .insert({
-          user_id: userId,
+          user_id: storeId,
           employee_id: form.employee_id,
           notes: form.notes,
           input_ingredient_id: form.input_ingredient_id,
@@ -69,7 +70,7 @@ export class PortioningDataService {
         p_ingredient_id: form.input_ingredient_id,
         p_quantity_change: -form.input_quantity,
         p_reason: `Porcionamento Evento #${event.id.slice(0, 8)}`,
-        p_user_id: userId,
+        p_user_id: storeId,
         p_lot_id_for_exit: form.input_lot_id,
         p_lot_number_for_entry: null,
         p_expiration_date_for_entry: null,
@@ -96,7 +97,7 @@ export class PortioningDataService {
             p_ingredient_id: output.ingredient_id,
             p_quantity_change: output.quantity_produced,
             p_reason: `Rendimento Porcionamento #${event.id.slice(0, 8)}`,
-            p_user_id: userId,
+            p_user_id: storeId,
             p_lot_number_for_entry: lotNumber,
             p_lot_id_for_exit: null,
             p_expiration_date_for_entry: null,

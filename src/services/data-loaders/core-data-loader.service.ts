@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { supabase } from '../supabase-client';
 import { CoreDataLoadResult } from '../../models/data-loader.models';
 import { assertCriticalDataResult, extractOptionalDataResult } from './data-loader.utils';
+import { StoreId } from '../../types';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CoreDataLoaderService {
-  public async load(userId: string): Promise<CoreDataLoadResult> {
+  public async load(storeId: StoreId): Promise<CoreDataLoadResult> {
     const [
       companyProfileRes, 
       rolesRes, 
@@ -15,11 +16,11 @@ export class CoreDataLoaderService {
       employeesRes, 
       webhooksRes
     ] = await Promise.all([
-      supabase.from('company_profile_public').select('*').eq('user_id', userId).maybeSingle(),
-      supabase.from('roles').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-      supabase.from('role_permissions').select('*').eq('user_id', userId),
-      supabase.from('employees').select('*').eq('user_id', userId),
-      supabase.from('webhooks').select('*').eq('user_id', userId),
+      supabase.from('company_profile_public').select('*').eq('user_id', storeId).maybeSingle(),
+      supabase.from('roles').select('*').eq('user_id', storeId).order('created_at', { ascending: true }),
+      supabase.from('role_permissions').select('*').eq('user_id', storeId),
+      supabase.from('employees').select('*').eq('user_id', storeId),
+      supabase.from('webhooks').select('*').eq('user_id', storeId),
     ]);
 
     const companyProfile = assertCriticalDataResult(companyProfileRes, 'company_profile_public');

@@ -12,7 +12,7 @@ export class TimeClockService {
   private unitContextService = inject(UnitContextService);
 
   async getEntriesForPeriod(startDate: string, endDate: string, employeeId: string): Promise<{ data: TimeClockEntry[] | null; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
+    const userId = this.unitContextService.activeStoreId();
     if (!userId) return { data: null, error: { message: 'User not authenticated' } };
 
     // Create Date objects from the string inputs, ensuring they are parsed as local time.
@@ -34,7 +34,7 @@ export class TimeClockService {
   }
 
   async addEntry(entry: Partial<TimeClockEntry>): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
+    const userId = this.unitContextService.activeStoreId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { error } = await supabase.from('time_clock_entries').insert({

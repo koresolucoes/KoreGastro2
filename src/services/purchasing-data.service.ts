@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { InventoryDataService } from './inventory-data.service';
 import { supabase } from './supabase-client';
 import { UnitContextService } from './unit-context.service';
+import { StoreId } from '../types';
 
 type FormItem = {
     id: string; // Can be temp id
@@ -30,14 +31,14 @@ export class PurchasingDataService {
     items: FormItem[],
     employeeId: string | null // AUDIT: Created By
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
-    if (!userId) return { success: false, error: { message: 'User not authenticated' } };
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) return { success: false, error: { message: 'User not authenticated' } };
 
     const { data: order, error: orderError } = await supabase
       .from('purchase_orders')
       .insert({ 
           ...orderData, 
-          user_id: userId,
+          user_id: storeId,
           created_by_employee_id: employeeId 
       })
       .select('id')
@@ -52,7 +53,7 @@ export class PurchasingDataService {
       cost: item.cost,
       lot_number: item.lot_number,
       expiration_date: item.expiration_date,
-      user_id: userId,
+      user_id: storeId,
     }));
 
     const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemsToInsert);
@@ -69,7 +70,7 @@ export class PurchasingDataService {
     orderData: { supplier_id: string | null; status: PurchaseOrderStatus; notes: string },
     items: FormItem[]
   ): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
+    const userId = this.unitContextService.activeStoreId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
     
     const { error: orderError } = await supabase.from('purchase_orders').update(orderData).eq('id', orderId);

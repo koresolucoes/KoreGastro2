@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { supabase } from '../supabase-client';
 import { CatalogDataLoadResult } from '../../models/data-loader.models';
 import { assertCriticalDataResult, extractOptionalDataResult } from './data-loader.utils';
+import { StoreId } from '../../types';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CatalogDataLoaderService {
-  public async load(userId: string): Promise<CatalogDataLoadResult> {
+  public async load(storeId: StoreId): Promise<CatalogDataLoadResult> {
     const [
       categoriesRes, 
       recipesRes, 
@@ -18,14 +19,14 @@ export class CatalogDataLoaderService {
       recipeSubRecipesRes, 
       storeCustomPricesRes
     ] = await Promise.all([
-      supabase.from('categories').select('*').eq('user_id', userId),
-      supabase.from('recipes').select('*').eq('store_id', userId),
-      supabase.from('promotions').select('*').eq('user_id', userId),
-      supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', userId),
-      supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', userId),
-      supabase.from('recipe_preparations').select('*').eq('user_id', userId),
-      supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', userId),
-      supabase.from('store_custom_prices').select('*').eq('store_id', userId)
+      supabase.from('categories').select('*').eq('user_id', storeId),
+      supabase.from('recipes').select('*').eq('store_id', storeId),
+      supabase.from('promotions').select('*').eq('user_id', storeId),
+      supabase.from('promotion_recipes').select('*, recipes(name)').eq('user_id', storeId),
+      supabase.from('recipe_ingredients').select('*, ingredients(name, unit, cost)').eq('user_id', storeId),
+      supabase.from('recipe_preparations').select('*').eq('user_id', storeId),
+      supabase.from('recipe_sub_recipes').select('*, recipes:recipes!child_recipe_id(name, id)').eq('user_id', storeId),
+      supabase.from('store_custom_prices').select('*').eq('store_id', storeId)
     ]);
 
     const categories = assertCriticalDataResult(categoriesRes, 'categories') || [];

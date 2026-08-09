@@ -24,7 +24,7 @@ export class SubscriptionStateService {
   constructor() {
       // Effect to load subscription logic when the active unit changes
       effect(async () => {
-          const activeUnitId = this.unitContextService.activeUnitId();
+          const activeStoreId = this.unitContextService.activeStoreId();
           
           if (this.demoService.isDemoMode()) {
               this.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
@@ -32,8 +32,8 @@ export class SubscriptionStateService {
               return;
           }
 
-          if (activeUnitId) {
-              await this.loadSubscriptionForUnit(activeUnitId);
+          if (activeStoreId) {
+              await this.loadSubscriptionForUnit(activeStoreId);
           } else {
               // Se não tem unidade, não tem o que carregar, mas paramos o loading
               this.isLoading.set(false);

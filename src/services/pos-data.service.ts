@@ -54,7 +54,7 @@ export class PosDataService {
   private auditDataService = inject(AuditDataService);
 
   private getActiveUnitId(): string | null {
-    return this.unitContextService.activeUnitId();
+    return this.unitContextService.activeStoreId();
   }
 
   getOrderByTableNumber(tableNumber: number): Order | undefined {

@@ -7,6 +7,7 @@ import { InventoryDataService } from './inventory-data.service';
 import { InventoryStateService } from './inventory-state.service';
 import { UnitContextService } from './unit-context.service';
 import { OperationalAuthService } from './operational-auth.service';
+import { StoreId } from '../types';
 
 export interface StationCostSummary {
     stationName: string;
@@ -25,8 +26,12 @@ export class RequisitionService {
   private inventoryState = inject(InventoryStateService);
   private unitContextService = inject(UnitContextService);
 
+  private getActiveStoreId(): StoreId | null {
+      return this.unitContextService.activeStoreId();
+  }
+
   private getActiveUnitId(): string | null {
-      return this.unitContextService.activeUnitId();
+      return this.getActiveStoreId();
   }
 
   async loadTemplates(): Promise<void> {
@@ -125,7 +130,7 @@ export class RequisitionService {
   }
 
   async updateRequisitionStatus(id: string, status: RequisitionStatus, items?: { id: string, quantity_delivered: number }[]): Promise<{ success: boolean; error: any }> {
-    const userId = this.unitContextService.activeUnitId();
+    const userId = this.unitContextService.activeStoreId();
     if (!userId) return { success: false, error: { message: 'User not authenticated' } };
 
     if (status === 'DELIVERED' && items) {
@@ -149,10 +154,10 @@ export class RequisitionService {
             .eq('id', item.id).single();
           
           if (reqItem && (reqItem as any).ingredients?.name) {
-              const activeUnitId = this.getActiveUnitId();
+              const activeStoreId = this.getActiveUnitId();
               const { data: localIngredient } = await supabase.from('ingredients')
                   .select('id')
-                  .eq('user_id', activeUnitId)
+                  .eq('user_id', activeStoreId)
                   .eq('name', (reqItem as any).ingredients.name)
                   .single();
 
@@ -215,10 +220,10 @@ export class RequisitionService {
                  .maybeSingle();
 
              if (origIng?.name) {
-                 const activeUnitId = this.getActiveUnitId();
+                 const activeStoreId = this.getActiveUnitId();
                  const { data: localIng } = await supabase.from('ingredients')
                      .select('id')
-                     .eq('user_id', activeUnitId)
+                     .eq('user_id', activeStoreId)
                      .ilike('name', origIng.name)
                      .maybeSingle();
 
@@ -318,8 +323,8 @@ export class RequisitionService {
 
   // --- COMMISSARY / CROSS-TENANT ---
   async getInboxRequisitions(startDate: string, endDate: string) {
-      const activeUnitId = this.getActiveUnitId();
-      if (!activeUnitId) return { data: null, error: { message: 'Unit not found' } };
+      const activeStoreId = this.getActiveUnitId();
+      if (!activeStoreId) return { data: null, error: { message: 'Unit not found' } };
 
       const { data, error } = await supabase
           .from('requisitions')
@@ -337,7 +342,7 @@ export class RequisitionService {
               ingredients (id, name)
             )
           `)
-          .eq('target_unit_id', activeUnitId)
+          .eq('target_unit_id', activeStoreId)
           .gte('created_at', new Date(`${startDate}T00:00:00`).toISOString())
           .lte('created_at', new Date(`${endDate}T23:59:59`).toISOString())
           .order('created_at', { ascending: false });

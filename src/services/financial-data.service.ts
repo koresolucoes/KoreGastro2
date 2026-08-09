@@ -32,7 +32,7 @@ export class FinancialDataService {
   private unitContextService = inject(UnitContextService);
 
   private getActiveUnitId(): string | null {
-    return this.unitContextService.activeUnitId();
+    return this.unitContextService.activeStoreId();
   }
 
   async getLossReport(startDate: string, endDate: string): Promise<{ data: LossReportItem[] | null; error: any }> {

@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { supabase } from '../supabase-client';
 import { OperationsDataLoadResult } from '../../models/data-loader.models';
 import { assertCriticalDataResult, extractOptionalDataResult } from './data-loader.utils';
+import { StoreId } from '../../types';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OperationsDataLoaderService {
-  public async load(userId: string): Promise<OperationsDataLoadResult> {
+  public async load(storeId: StoreId): Promise<OperationsDataLoadResult> {
     const [
       deliveryDriversRes,
       loyaltySettingsRes, 
@@ -16,13 +17,13 @@ export class OperationsDataLoaderService {
       paymentTerminalsRes,
       ifoodWebhookLogsRes
     ] = await Promise.all([
-      supabase.from('delivery_drivers').select('*').eq('user_id', userId).eq('is_active', true),
-      supabase.from('loyalty_settings').select('*').eq('user_id', userId).maybeSingle(),
-      supabase.from('loyalty_rewards').select('*').eq('user_id', userId).order('points_cost', { ascending: true }),
-      supabase.from('reservation_settings').select('*').eq('user_id', userId).maybeSingle(),
-      supabase.from('payment_terminals').select('*').eq('user_id', userId).eq('is_active', true),
+      supabase.from('delivery_drivers').select('*').eq('user_id', storeId).eq('is_active', true),
+      supabase.from('loyalty_settings').select('*').eq('user_id', storeId).maybeSingle(),
+      supabase.from('loyalty_rewards').select('*').eq('user_id', storeId).order('points_cost', { ascending: true }),
+      supabase.from('reservation_settings').select('*').eq('user_id', storeId).maybeSingle(),
+      supabase.from('payment_terminals').select('*').eq('user_id', storeId).eq('is_active', true),
       // Webhook logs for realtime ifood status
-      supabase.from('ifood_webhook_logs').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100)
+      supabase.from('ifood_webhook_logs').select('*').eq('user_id', storeId).order('created_at', { ascending: false }).limit(100)
     ]);
 
     const deliveryDrivers = assertCriticalDataResult(deliveryDriversRes, 'delivery_drivers') || [];
