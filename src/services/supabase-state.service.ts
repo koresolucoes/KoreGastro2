@@ -23,6 +23,7 @@ import { NotificationService } from './notification.service';
 import * as mockData from '../data/mock-data';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { DeliveryStateService } from './delivery-state.service';
+import { BootstrapStatus, BootstrapStage, BootstrapError, sanitizeBootstrapErrorMessage } from '../models/bootstrap-state.model';
 
 @Injectable({
   providedIn: 'root',
@@ -54,7 +55,19 @@ export class SupabaseStateService {
   private kdsPollerInterval: any = null;
   private bootstrapGeneration = 0;
 
-  // Flag to indicate Core data (permissions, profile) is ready
+  // Explicit Bootstrap Lifecycle Signals (Etapa 04B)
+  public readonly bootstrapStatus = signal<BootstrapStatus>('IDLE');
+  public readonly bootstrapError = signal<BootstrapError | null>(null);
+
+  // Computeds for bootstrap readiness and status
+  public readonly isBootstrapLoading = computed(() => {
+    const status = this.bootstrapStatus();
+    return status === 'LOADING_CORE' || status === 'LOADING_ESSENTIAL';
+  });
+  public readonly isBootstrapReady = computed(() => this.bootstrapStatus() === 'READY');
+  public readonly hasBootstrapError = computed(() => this.bootstrapStatus() === 'ERROR');
+
+  // Flag to indicate Core data (permissions, profile) is ready (Backward Compatibility)
   isDataLoaded = signal(false);
 
   constructor() {
@@ -77,6 +90,8 @@ export class SupabaseStateService {
             if (this.unitContextService.activeUnitId()) {
                 this.unitContextService.activeUnitId.set('');
             }
+            this.bootstrapError.set(null);
+            this.bootstrapStatus.set('IDLE');
             this.isDataLoaded.set(true); // Signal completion so guards don't hang for unauthenticated users
         }
     }, { allowSignalWrites: true });
@@ -93,6 +108,8 @@ export class SupabaseStateService {
             // IMMEDIATELY cleanup old unit realtime & clear state
             this.unsubscribeFromChanges();
             this.clearAllData();
+            this.bootstrapError.set(null);
+            this.bootstrapStatus.set('LOADING_CORE');
             this.isDataLoaded.set(false);
 
             try {
@@ -100,6 +117,9 @@ export class SupabaseStateService {
                 await this.loadCoreDataForGeneration(activeUnitId, generation);
                 if (generation !== this.bootstrapGeneration) return;
                 
+                // Transition to LOADING_ESSENTIAL
+                this.bootstrapStatus.set('LOADING_ESSENTIAL');
+
                 // 3. Load Catalogs & Active State (Menu, Current Stock, Open Orders) - Critical for Operations
                 await this.loadEssentialDataForGeneration(activeUnitId, generation);
                 if (generation !== this.bootstrapGeneration) return;
@@ -110,6 +130,7 @@ export class SupabaseStateService {
                 if (generation !== this.bootstrapGeneration) return;
 
                 // 5. Mark data loaded SUCCESS
+                this.bootstrapStatus.set('READY');
                 this.isDataLoaded.set(true);
 
                 // 6. If no employee is logged in, navigate to employee selection
@@ -118,9 +139,17 @@ export class SupabaseStateService {
                         this.router.navigate(['/employee-selection']);
                     }
                 });
-            } catch (err) {
+            } catch (err: any) {
+                if (generation !== this.bootstrapGeneration) return;
+
                 console.error("Critical error loading unit data:", err);
-                // Do NOT mark isDataLoaded(true) on critical bootstrap failure
+                const stage: BootstrapStage = this.bootstrapStatus() === 'LOADING_ESSENTIAL' ? 'ESSENTIAL' : 'CORE';
+                this.bootstrapError.set({
+                    stage,
+                    message: sanitizeBootstrapErrorMessage(err?.message || err)
+                });
+                this.bootstrapStatus.set('ERROR');
+                this.isDataLoaded.set(false);
             }
         }
     }, { allowSignalWrites: true });
@@ -894,8 +923,11 @@ export class SupabaseStateService {
   
   // --- MOCK DATA ---
   private loadMockData(generation = this.bootstrapGeneration) {
-    this.isDataLoaded.set(false);
     if (generation !== this.bootstrapGeneration) return;
+
+    this.bootstrapError.set(null);
+    this.bootstrapStatus.set('LOADING_CORE');
+    this.isDataLoaded.set(false);
 
     try {
         this.posState.halls.set(mockData.MOCK_HALLS);
@@ -929,12 +961,21 @@ export class SupabaseStateService {
         });
         
         this.subscriptionState.activeUserPermissions.set(new Set(ALL_PERMISSION_KEYS));
-    } catch (e) {
+
+        if (generation === this.bootstrapGeneration) {
+            this.bootstrapStatus.set('READY');
+            this.isDataLoaded.set(true);
+        }
+    } catch (e: any) {
         console.error("Failed to load mock data:", e);
         this.clearAllData();
-    } finally {
         if (generation === this.bootstrapGeneration) {
-            this.isDataLoaded.set(true);
+            this.bootstrapError.set({
+                stage: 'CORE',
+                message: sanitizeBootstrapErrorMessage(e)
+            });
+            this.bootstrapStatus.set('ERROR');
+            this.isDataLoaded.set(false);
         }
     }
   }
