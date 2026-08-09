@@ -25,6 +25,7 @@ import * as mockData from '../data/mock-data';
 import { ALL_PERMISSION_KEYS } from '../config/permissions';
 import { DeliveryStateService } from './delivery-state.service';
 import { BootstrapStatus, BootstrapStage, BootstrapError, sanitizeBootstrapErrorMessage } from '../models/bootstrap-state.model';
+import { RealtimeCoordinatorService } from './realtime/realtime-coordinator.service';
 import { CoreDataLoaderService } from './data-loaders/core-data-loader.service';
 import { PosDataLoaderService } from './data-loaders/pos-data-loader.service';
 import { CatalogDataLoaderService } from './data-loaders/catalog-data-loader.service';
@@ -60,10 +61,9 @@ export class SupabaseStateService {
   private catalogDataLoader = inject(CatalogDataLoaderService);
   private inventoryDataLoader = inject(InventoryDataLoaderService);
   private operationsDataLoader = inject(OperationsDataLoaderService);
+  private realtimeCoordinator = inject(RealtimeCoordinatorService);
 
   private currentUser = this.authService.currentUser;
-  private realtimeChannel: any | null = null;
-  private retryTimeout: any;
   private kdsPollerInterval: any = null;
   private bootstrapGeneration = 0;
 
@@ -331,14 +331,7 @@ export class SupabaseStateService {
   // --- REALTIME SUBSCRIPTION ---
 
   private unsubscribeFromChanges() {
-    if (this.realtimeChannel) {
-        supabase.removeChannel(this.realtimeChannel);
-        this.realtimeChannel = null;
-    }
-    if (this.retryTimeout) {
-        clearTimeout(this.retryTimeout);
-        this.retryTimeout = null;
-    }
+    this.realtimeCoordinator.stop();
     this.stopKdsPoller();
   }
 
@@ -351,57 +344,14 @@ export class SupabaseStateService {
     
     this.startKdsPoller();
 
-    this.realtimeChannel = supabase.channel(`db-changes:${storeId}`)
-      .on(
-        'postgres_changes', 
-        { event: '*', schema: 'public' }, 
-        (payload: any) => this.handleChanges(payload, generation)
-      )
-      .subscribe((status, err) => {
-        if (generation !== this.bootstrapGeneration || storeId !== this.unitContextService.activeStoreId()) {
-          return;
-        }
-
-        if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            // Cleanup and retry
-            if (this.retryTimeout) clearTimeout(this.retryTimeout);
-            this.retryTimeout = setTimeout(() => {
-                if (generation === this.bootstrapGeneration && storeId === this.unitContextService.activeStoreId()) {
-                    this.subscribeToChanges(storeId, generation);
-                }
-            }, 5000);
-        }
-      });
-  }
-  
-  public resolveRealtimeStoreId(table: string, row: any): StoreId | null {
-    if (!row) return null;
-
-    if (table === 'recipes' || table === 'store_custom_prices') {
-      return row.store_id || null;
-    }
-
-    if (row.user_id) {
-      return row.user_id;
-    }
-
-    if (row.store_id) {
-      return row.store_id;
-    }
-
-    return null;
+    this.realtimeCoordinator.start(storeId, generation, (payload) => {
+        this.handleChanges(payload, generation);
+    });
   }
 
   private handleChanges(payload: any, generation = this.bootstrapGeneration) {
     const storeId = this.unitContextService.activeStoreId();
     if (!storeId || generation !== this.bootstrapGeneration) return;
-
-    // Safety: ignore updates from other units
-    const relevantRow = payload.new || payload.old;
-    if (relevantRow) {
-        const tenantId = this.resolveRealtimeStoreId(payload.table, relevantRow);
-        if (tenantId && tenantId !== storeId) return;
-    }
 
     switch (payload.table) {
         case 'ifood_webhook_logs':
