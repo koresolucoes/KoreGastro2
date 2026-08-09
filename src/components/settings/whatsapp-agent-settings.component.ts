@@ -122,11 +122,20 @@ export class WhatsappAgentSettingsComponent implements OnInit {
   }
 
   async autoCaptureCompanyData(storeId: string) {
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('company_profile_public')
       .select('company_name, address')
       .eq('user_id', storeId)
       .maybeSingle();
+
+    if (!profile) {
+      const fallback = await supabase
+        .from('company_profile')
+        .select('company_name, address')
+        .eq('user_id', storeId)
+        .maybeSingle();
+      profile = fallback.data;
+    }
 
     if (profile) {
       if (!this.restaurantName) this.restaurantName = profile.company_name || '';
@@ -153,11 +162,20 @@ export class WhatsappAgentSettingsComponent implements OnInit {
 
     this.isLoading.set(true);
     
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('company_profile_public')
       .select('company_name, address')
       .eq('user_id', storeId)
       .maybeSingle();
+
+    if (!profile) {
+      const fallback = await supabase
+        .from('company_profile')
+        .select('company_name, address')
+        .eq('user_id', storeId)
+        .maybeSingle();
+      profile = fallback.data;
+    }
 
     if (profile) {
       this.restaurantName = profile.company_name || this.restaurantName;

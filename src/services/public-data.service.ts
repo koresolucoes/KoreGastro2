@@ -323,11 +323,23 @@ export class PublicDataService {
   async getPublicCompanyProfile(
     userId: string,
   ): Promise<Partial<CompanyProfile> & { has_mp_integration?: boolean } | null> {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("company_profile_public")
       .select("*")
       .eq("user_id", userId)
       .single();
+
+    if (error && error.code !== "PGRST116") {
+      const fallback = await supabase
+        .from("company_profile")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+      if (!fallback.error) {
+        data = fallback.data;
+        error = null;
+      }
+    }
 
     if (error) {
       if (error.code !== "PGRST116") {
@@ -336,7 +348,7 @@ export class PublicDataService {
       return null;
     }
 
-    return data ? { ...data, has_mp_integration: (data as any).has_mercadopago_integration } : null;
+    return data ? { ...data, has_mp_integration: (data as any).has_mercadopago_integration ?? !!(data as any).mp_access_token } : null;
   }
 
   async getPublicReservationSettings(
