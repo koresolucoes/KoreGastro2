@@ -82,8 +82,7 @@ export class PortalContextService {
     '/payroll',
     '/performance',
     '/settings',
-    '/subscription',
-    '/admin'
+    '/subscription'
   ];
 
   readonly OPERACAO_PATHS = [

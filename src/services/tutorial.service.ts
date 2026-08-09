@@ -72,29 +72,6 @@ export class TutorialService {
       ]
     },
     {
-      id: 'painel-admin',
-      title: 'Painel de Administração',
-      description: 'Aprenda a gerenciar assinaturas, visualizar métricas globais e controlar o acesso ao sistema.',
-      icon: 'admin_panel_settings',
-      steps: [
-        {
-          title: '1. Acesso ao Painel',
-          content: 'O Painel de Administração é exclusivo para usuários com permissão de administrador do sistema. Ele pode ser acessado pelo menu lateral clicando em "Acesso Admin".',
-          imageUrl: 'https://picsum.photos/800/400?random=30'
-        },
-        {
-          title: '2. Visão Geral (Dashboard)',
-          content: 'No dashboard principal, você pode ver métricas globais como o número total de restaurantes cadastrados, a Receita Recorrente Mensal (MRR) e o status das assinaturas.',
-          imageUrl: 'https://picsum.photos/800/400?random=31'
-        },
-        {
-          title: '3. Gestão de Assinaturas',
-          content: 'Na aba de assinaturas, você pode visualizar todos os planos ativos, cancelar assinaturas inadimplentes ou conceder períodos de teste (trial) para novos clientes.',
-          imageUrl: 'https://picsum.photos/800/400?random=32'
-        }
-      ]
-    },
-    {
       id: 'delivery-ifood-integrado',
       title: 'Delivery e Integração iFood',
       description: 'Centralize sua operação de delivery. Receba pedidos do iFood com sincronização automática de cardápio e gerencie entregadores.',
