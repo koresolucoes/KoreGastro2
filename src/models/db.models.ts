@@ -25,6 +25,27 @@ export type IfoodOrderStatus = 'RECEIVED' | 'CONFIRMED' | 'IN_PREPARATION' | 'DI
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 export type PortioningOutputType = 'YIELD' | 'BYPRODUCT' | 'WASTE';
 export type LabelType = 'OPENING' | 'PREPARED' | 'PORTION' | 'DEFROST' | 'GENERIC';
+export type PaymentAttemptStatus = 'CREATED' | 'PENDING' | 'APPROVED' | 'FAILED' | 'EXPIRED' | 'CANCELLED' | 'REFUNDED';
+
+export interface OrderPaymentAttempt {
+  id: string;
+  order_id: string;
+  provider: string;
+  payment_method: string;
+  amount: number;
+  status: PaymentAttemptStatus;
+  provider_status?: string | null;
+  idempotency_key?: string | null;
+  provider_payment_id?: string | null;
+  expires_at?: string | null;
+  approved_at?: string | null;
+  failed_at?: string | null;
+  failure_code?: string | null;
+  failure_message?: string | null;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface StoreCustomPrice {
   id: string;
