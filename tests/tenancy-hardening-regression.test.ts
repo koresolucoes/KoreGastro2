@@ -14,6 +14,8 @@ if (typeof (import.meta as any).env === 'undefined') {
   (import.meta as any).env = {};
 }
 import { SupabaseStateService } from '../src/services/supabase-state.service';
+import { CoreDataLoaderService } from '../src/services/data-loaders/core-data-loader.service';
+import { supabase } from '../src/services/supabase-client';
 
 function assertCondition(condition: boolean, testName: string) {
   if (condition) {
@@ -317,6 +319,66 @@ async function runTests() {
 
     assertCondition(orderRes.status === 'OPEN', 'TESTE 5a: Public ordering for anon creates OPEN order');
     assertCondition(db.orders.get(orderRes.id)?.total_amount === 50, 'TESTE 5b: Public order created with correct total amount');
+  }
+
+  // TEST 6: CoreDataLoaderService queries company_profile_public ONLY and never company_profile
+  {
+    const queriedTables: string[] = [];
+    const fakeClient = {
+      from(table: string) {
+        queriedTables.push(table);
+        const builder: any = {
+          select: () => builder,
+          eq: () => builder,
+          order: () => builder,
+          maybeSingle: async () => ({ data: { id: 'cp1', company_name: 'Test Store' }, error: null }),
+          then: (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
+        };
+        return builder;
+      }
+    };
+
+    const service = new CoreDataLoaderService();
+    const originalFrom = (supabase as any).from;
+    (supabase as any).from = fakeClient.from.bind(fakeClient);
+
+    try {
+      const res = await service.load('user_123');
+      assertCondition(queriedTables.includes('company_profile_public'), 'TESTE 6a: CoreDataLoaderService queries company_profile_public');
+      assertCondition(!queriedTables.includes('company_profile'), 'TESTE 6b: CoreDataLoaderService NEVER queries company_profile');
+      assertCondition(res.companyProfile.company_name === 'Test Store', 'TESTE 6c: CoreDataLoaderService returns loaded company_profile_public data');
+    } finally {
+      (supabase as any).from = originalFrom;
+    }
+
+    // TEST 6d: If company_profile_public fails, propagates error without fallback to company_profile
+    const queriedTablesOnFail: string[] = [];
+    const failClient = {
+      from(table: string) {
+        queriedTablesOnFail.push(table);
+        const builder: any = {
+          select: () => builder,
+          eq: () => builder,
+          order: () => builder,
+          maybeSingle: async () => ({ data: null, error: { message: 'View query failed' } }),
+          then: (resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve)
+        };
+        return builder;
+      }
+    };
+
+    (supabase as any).from = failClient.from.bind(failClient);
+    let errorPropagated = false;
+    try {
+      await service.load('user_123');
+    } catch (err: any) {
+      errorPropagated = err.message.includes('company_profile_public');
+    } finally {
+      (supabase as any).from = originalFrom;
+    }
+
+    assertCondition(errorPropagated === true, 'TESTE 6d: Error propagated when company_profile_public query fails');
+    assertCondition(!queriedTablesOnFail.includes('company_profile'), 'TESTE 6e: company_profile is NOT queried on failure (no fallback)');
   }
 
   console.log('============================================================');

@@ -313,7 +313,7 @@ BEGIN
             recipe_base_ingredients AS (
                 SELECT id AS recipe_id, source_ingredient_id AS ingredient_id
                 FROM public.recipes
-                WHERE (store_id = p_user_id OR (store_id IS NULL AND user_id = p_user_id)) AND source_ingredient_id IS NOT NULL
+                WHERE store_id = p_user_id AND source_ingredient_id IS NOT NULL
             ),
             recipe_direct_ingredients AS (
                 SELECT recipe_id, ingredient_id, quantity
@@ -460,9 +460,9 @@ BEGIN
 
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
-    -- Correct query for recipe: use recipes.store_id (with fallback to user_id for legacy records)
+    -- Query for recipe using canonical store ownership (recipes.store_id)
     SELECT * INTO v_recipe FROM public.recipes 
-    WHERE (store_id = p_restaurant_id OR (store_id IS NULL AND user_id = p_restaurant_id))
+    WHERE store_id = p_restaurant_id
       AND external_code = v_item->>'externalCode'
       AND deleted_at IS NULL;
 

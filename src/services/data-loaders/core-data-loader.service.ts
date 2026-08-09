@@ -8,7 +8,7 @@ import { assertCriticalDataResult, extractOptionalDataResult } from './data-load
 })
 export class CoreDataLoaderService {
   public async load(userId: string): Promise<CoreDataLoadResult> {
-    let [
+    const [
       companyProfileRes, 
       rolesRes, 
       rolePermissionsRes, 
@@ -22,12 +22,7 @@ export class CoreDataLoaderService {
       supabase.from('webhooks').select('*').eq('user_id', userId),
     ]);
 
-    if (companyProfileRes.error) {
-      console.warn('[CoreDataLoaderService] company_profile_public query failed, falling back to company_profile:', companyProfileRes.error);
-      companyProfileRes = await supabase.from('company_profile').select('*').eq('user_id', userId).maybeSingle();
-    }
-
-    const companyProfile = assertCriticalDataResult(companyProfileRes, 'company_profile');
+    const companyProfile = assertCriticalDataResult(companyProfileRes, 'company_profile_public');
     const roles = assertCriticalDataResult(rolesRes, 'roles') || [];
     const rolePermissions = assertCriticalDataResult(rolePermissionsRes, 'role_permissions') || [];
     const employees = assertCriticalDataResult(employeesRes, 'employees') || [];
