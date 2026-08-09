@@ -124,24 +124,7 @@ export function withAuth(handler: ApiHandler) {
         }
 
         try {
-            // 4. Check Admin routes
-            if (req.url && req.url.includes('/admin/')) {
-                const { data: userData } = await supabase.auth.admin.getUserById(restaurantId);
-                if (userData && userData.user && userData.user.email) {
-                    const { data: adminData } = await supabase
-                        .from('system_admins')
-                        .select('email')
-                        .eq('email', userData.user.email)
-                        .maybeSingle();
-                    if (!adminData) {
-                        return res.status(403).json({ success: false, error: 'Acesso negado: Requer privilégios de Administrador.' });
-                    }
-                } else {
-                    return res.status(403).json({ success: false, error: 'Acesso negado: Não foi possível verificar status de administrador.' });
-                }
-            }
-
-            // 5. Execute the actual handler
+            // 4. Execute the actual handler
             await handler(req, res, restaurantId);
 
             const latencyMs = Date.now() - startTime;
