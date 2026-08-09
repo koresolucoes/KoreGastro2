@@ -1,13 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-dotenv.config();
+import { withAuth, supabase } from '../utils/api-handler.js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export default async function handler(req: any, res: any) {
+async function handler(req: VercelRequest, res: VercelResponse, restaurantId: string) {
     if (req.method !== 'POST') {
         return res.status(405).end();
     }
@@ -21,9 +15,10 @@ export default async function handler(req: any, res: any) {
             .from('whatsapp_chats')
             .select('customer_phone, store_id')
             .eq('id', chatId)
+            .eq('store_id', restaurantId)
             .single();
 
-        if (chatError || !chat) throw new Error('Chat not found');
+        if (chatError || !chat) throw new Error('Chat not found or unauthorized');
 
         // Get config
         const { data: config, error: configError } = await supabase
@@ -73,7 +68,7 @@ export default async function handler(req: any, res: any) {
         if (insertError) throw insertError;
 
         // Update chat last message 
-        await supabase.from('whatsapp_chats').update({ last_message_at: new Date().toISOString() }).eq('id', chatId);
+        await supabase.from('whatsapp_chats').update({ last_message_at: new Date().toISOString() }).eq('id', chatId).eq('store_id', restaurantId);
 
         return res.status(200).json({ success: true, message: insertData });
 
@@ -82,3 +77,5 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ error: error.message });
     }
 }
+
+export default withAuth(handler);

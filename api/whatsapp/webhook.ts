@@ -526,15 +526,51 @@ async function handleReservation(
       return { success: false, error: "date, time e party_size são obrigatórios." };
     }
     // Simplification: just return available and tell AI to confirm with user.
-    return { success: true, available: true, message: "A princípio temos disponibilidade. O atendente pode confirmar posteriormente se precisar." };
+    const startWindow = new Date(`${date}T${time}:00-03:00`);
+    const endWindow = new Date(startWindow.getTime() + 2 * 60 * 60 * 1000);
+    const { data: overlapping } = await supabase.from("reservations")
+      .select('id, party_size')
+      .eq('user_id', storeId)
+      .gte('reservation_time', startWindow.toISOString())
+      .lt('reservation_time', endWindow.toISOString())
+      .neq('status', 'CANCELADA');
+    
+    let totalSeatsReserved = 0;
+    if (overlapping) totalSeatsReserved = overlapping.reduce((acc, curr) => acc + (curr.party_size || 0), 0);
+    
+    if (totalSeatsReserved + (party_size || 2) > 20) {
+       return { success: false, available: false, message: "Não temos disponibilidade para esse horário." };
+    }
+    return { success: true, available: true, message: "Temos disponibilidade para o horário." };
   }
 
   if (action === "CREATE") {
     if (!date || !time || !party_size || !customer_name) {
       return { success: false, error: "date, time, party_size e customer_name são obrigatórios." };
     }
+    
     const reservationTime = new Date(`${date}T${time}:00-03:00`);
-    const { data, error } = await supabase.from("reservations").insert({
+    const endWindow = new Date(reservationTime.getTime() + 2 * 60 * 60 * 1000);
+
+    const { data: overlapping, error } = await supabase.from("reservations")
+      .select('id, party_size')
+      .eq('user_id', storeId)
+      .gte('reservation_time', reservationTime.toISOString())
+      .lt('reservation_time', endWindow.toISOString())
+      .neq('status', 'CANCELADA');
+      
+    let totalSeatsReserved = 0;
+    if (overlapping) {
+       totalSeatsReserved = overlapping.reduce((acc, curr) => acc + (curr.party_size || 0), 0);
+    }
+    
+    // Arbitrary limit for now: 20 seats
+    if (totalSeatsReserved + party_size > 20) {
+       return { success: false, error: "Desculpe, não temos disponibilidade para esse número de pessoas nesse horário." };
+    }
+
+    const { data, error: insertError } = await supabase.from("reservations").insert({
+
       user_id: storeId,
       customer_id: customerId,
       customer_phone: customerPhone,
@@ -610,7 +646,8 @@ async function createOrder(
     await supabase
       .from("customers")
       .update({ notes: existingNotes.trim() })
-      .eq("id", customerId);
+      .eq("id", customerId)
+      .eq("user_id", storeId);
   }
 
   const finalOrderData = {

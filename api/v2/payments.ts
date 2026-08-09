@@ -98,7 +98,7 @@ export default withAuth(async function handler(req: any, res: any, restaurantId:
     }
 
     // 5. Webhook
-    const { data: updatedOrder } = await supabase.from('orders').select('*, customers(*), order_items(*), delivery_drivers(*)').eq('id', orderId).single();
+    const { data: updatedOrder } = await supabase.from('orders').select('*, customers(*), order_items(*), delivery_drivers(*)').eq('id', orderId).eq('user_id', restaurantId).single();
     if (updatedOrder) {
         await triggerWebhook(restaurantId, 'order.updated', updatedOrder).catch(console.error);
     }

@@ -414,84 +414,27 @@ export class SettingsDataService {
     return { success: !error, error };
   }
 
-  async updateCompanyProfile(
-    profile: Partial<CompanyProfile>,
-    logoFile?: File | null,
-    coverFile?: File | null,
-    headerFile?: File | null,
-  ): Promise<{ success: boolean; error: any }> {
+  
+  async updateCompanyProfile(profileData: Partial<CompanyProfile>): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId)
       return { success: false, error: { message: "Active unit not found" } };
 
-    const profileData = { ...profile };
-
-    if (logoFile) {
-      const fileExt = logoFile.name.split(".").pop();
-      const path = `public/logos/${userId}-logo.${fileExt}`;
-      const { publicUrl, error: uploadError } = await this.uploadAsset(
-        logoFile,
-        path,
-      );
-      if (uploadError) return { success: false, error: uploadError };
-      profileData.logo_url = publicUrl;
-    }
-
-    if (coverFile) {
-      const fileExt = coverFile.name.split(".").pop();
-      const path = `public/covers/${userId}-cover.${fileExt}`;
-      const { publicUrl, error: uploadError } = await this.uploadAsset(
-        coverFile,
-        path,
-      );
-      if (uploadError) return { success: false, error: uploadError };
-      profileData.menu_cover_url = publicUrl;
-    }
-
-    if (headerFile) {
-      const fileExt = headerFile.name.split(".").pop();
-      const path = `public/headers/${userId}-header.${fileExt}`;
-      const { publicUrl, error: uploadError } = await this.uploadAsset(
-        headerFile,
-        path,
-      );
-      if (uploadError) return { success: false, error: uploadError };
-      profileData.menu_header_url = publicUrl;
-    }
-
-    if (profileData.company_name) {
-      const { data: authSession } = await supabase.auth.getSession();
-      const ownerId = authSession.session?.user.id || userId;
-      
-      const { error: storeErr } = await supabase
-        .from("stores")
-        .upsert({ id: userId, name: profileData.company_name, owner_id: ownerId }, { onConflict: 'id' });
-        
-      if (storeErr) {
-        console.error("Failed to upsert store:", storeErr);
-        // Continue anyway, maybe it exists and just lacks permissions to upsert, but update works?
-        await supabase
-          .from("stores")
-          .update({ name: profileData.company_name })
-          .eq("id", userId);
-      }
-    }
-
-    const { ifood_merchant_id, external_api_key, mp_access_token, mp_refresh_token, mp_public_key, focusnfe_token, focusnfe_cert_valid_until, ...publicData } = profileData;
+    const { ifood_merchant_id, external_api_key, mp_access_token, mp_refresh_token, mp_public_key, focusnfe_token, focusnfe_cert_valid_until, has_mp_integration, has_focusnfe_integration, ...publicData } = profileData;
 
     const { error } = await supabase
       .from("company_profile")
       .upsert({ ...publicData, user_id: userId }, { onConflict: "user_id" });
 
-    // Update credentials if provided
-    if (ifood_merchant_id !== undefined || external_api_key !== undefined || mp_access_token !== undefined || mp_refresh_token !== undefined) {
-      const credsUpdate: any = { store_id: userId };
-      if (ifood_merchant_id !== undefined) credsUpdate.ifood_merchant_id = ifood_merchant_id;
-      if (external_api_key !== undefined) credsUpdate.external_api_key = external_api_key;
-      if (mp_access_token !== undefined) credsUpdate.mp_access_token = mp_access_token;
-      if (mp_refresh_token !== undefined) credsUpdate.mp_refresh_token = mp_refresh_token;
-      
-      await supabase.from("store_integration_credentials").upsert(credsUpdate, { onConflict: "store_id" });
+    const credsUpdate: any = { store_id: userId };
+    let hasCredsUpdate = false;
+    if (ifood_merchant_id !== undefined) { credsUpdate.ifood_merchant_id = ifood_merchant_id; hasCredsUpdate = true; }
+    if (external_api_key && !external_api_key.includes('••••')) { credsUpdate.external_api_key = external_api_key; hasCredsUpdate = true; }
+    if (mp_access_token && !mp_access_token.includes('••••')) { credsUpdate.mp_access_token = mp_access_token; hasCredsUpdate = true; }
+    if (mp_refresh_token && !mp_refresh_token.includes('••••')) { credsUpdate.mp_refresh_token = mp_refresh_token; hasCredsUpdate = true; }
+
+    if (hasCredsUpdate) {
+       await this.supabase.rpc('update_store_credentials', { p_store_id: userId, p_credentials: credsUpdate });
     }
 
     if (!error) {
@@ -499,6 +442,7 @@ export class SettingsDataService {
     }
     return { success: !error, error };
   }
+
 
   async updateStoreName(
     storeId: string,

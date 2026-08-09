@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { TimeClockEntry } from '../../../src/models/db.models.js';
 
@@ -99,6 +100,7 @@ export default async function handler(req: any, res: any) {
             .from('employees')
             .select('id, name, pin, current_clock_in_id, cpf')
             .eq('id', employeeId)
+            .eq('user_id', restaurantId)
             .single();
         
         if (empError || !employee) {
@@ -159,13 +161,13 @@ export default async function handler(req: any, res: any) {
                 signatures: signatures
             }).select('id').single();
             if (insertError) throw insertError;
-            await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId);
+            await supabase.from('employees').update({ current_clock_in_id: newEntry.id }).eq('id', employeeId).eq('user_id', restaurantId);
             return res.status(200).json({ status: 'TURNO_INICIADO', employeeName: employee.name, signatureData: sigData });
         } else { // Interacting with an active shift
-            const { data: activeEntry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', employee.current_clock_in_id).single();
+            const { data: activeEntry, error: entryError } = await supabase.from('time_clock_entries').select('*').eq('id', employee.current_clock_in_id).eq('user_id', restaurantId).single();
             if (entryError || !activeEntry) {
                 // This case can happen if the `current_clock_in_id` is stale. Let's fix it and ask the user to try again.
-                await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
+                await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId).eq('user_id', restaurantId);
                 return res.status(409).json({ type: "about:blank", title: "Conflict", status: 409, detail: 'Shift data out of sync. Please try again.' });
             }
 
@@ -174,18 +176,18 @@ export default async function handler(req: any, res: any) {
             if (!activeEntry.break_start_time) { // Starting break
                 const sigData = generateReceipt('break_start');
                 currentSignatures.break_start = sigData;
-                await supabase.from('time_clock_entries').update({ break_start_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
+                await supabase.from('time_clock_entries').update({ break_start_time: now, signatures: currentSignatures }).eq('id', activeEntry.id).eq('user_id', restaurantId);
                 return res.status(200).json({ status: 'PAUSA_INICIADA', employeeName: employee.name, signatureData: sigData });
             } else if (!activeEntry.break_end_time) { // Ending break
                 const sigData = generateReceipt('break_end');
                 currentSignatures.break_end = sigData;
-                await supabase.from('time_clock_entries').update({ break_end_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
+                await supabase.from('time_clock_entries').update({ break_end_time: now, signatures: currentSignatures }).eq('id', activeEntry.id).eq('user_id', restaurantId);
                 return res.status(200).json({ status: 'PAUSA_FINALIZADA', employeeName: employee.name, signatureData: sigData });
             } else { // Clocking out
                 const sigData = generateReceipt('clock_out');
                 currentSignatures.clock_out = sigData;
-                await supabase.from('time_clock_entries').update({ clock_out_time: now, signatures: currentSignatures }).eq('id', activeEntry.id);
-                await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId);
+                await supabase.from('time_clock_entries').update({ clock_out_time: now, signatures: currentSignatures }).eq('id', activeEntry.id).eq('user_id', restaurantId);
+                await supabase.from('employees').update({ current_clock_in_id: null }).eq('id', employeeId).eq('user_id', restaurantId);
                 return res.status(200).json({ status: 'TURNO_FINALIZADO', employeeName: employee.name, signatureData: sigData });
             }
         }

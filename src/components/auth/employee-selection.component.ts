@@ -119,10 +119,7 @@ export class EmployeeSelectionComponent implements OnDestroy {
   }
 
   selectEmployee(employee: Employee) {
-    if (!employee.pin || employee.pin.trim() === '') {
-        this.notificationService.show('Este funcionário não possui um PIN configurado. Solicite ao gerente.', 'error');
-        return;
-    }
+    
     // PIN required, show PIN modal
     this.selectedEmployee.set(employee);
     this.searchQuery.set('');
@@ -213,10 +210,22 @@ export class EmployeeSelectionComponent implements OnDestroy {
     this.loginError.set(false);
   }
 
-  attemptLogin() {
+  
+  async attemptLogin() {
     const employee = this.selectedEmployee();
-    if (this.pinInput() === employee?.pin) {
+    if (!employee) return;
+    
+    // We can't rely on the storeId directly from the state unless we have it.
+    // We can use employee.user_id (which is store_id)
+    const storeId = employee.user_id;
+
+    const { success, message, opToken } = await this.operationalAuth.verifyPin(employee.id, this.pinInput(), storeId);
+
+    if (success) {
         this.selectedEmployee.set(null); // Close PIN modal
+        if (opToken) {
+            sessionStorage.setItem('opToken', opToken);
+        }
         if (!employee.current_clock_in_id) {
             // Correct PIN, not clocked in -> show clock-in confirmation
             this.confirmationEmployee.set(employee);
@@ -229,7 +238,7 @@ export class EmployeeSelectionComponent implements OnDestroy {
         setTimeout(() => this.clearPin(), 800);
     }
   }
-  
+
   // --- Clock-in Confirmation ---
   async confirmClockIn() {
     const employee = this.confirmationEmployee();

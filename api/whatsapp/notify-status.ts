@@ -8,6 +8,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req: any, res: any) {
+  return res.status(403).json({ error: "Endpoint temporariamente desabilitado por segurança" });
+  return res.status(403).json({ error: "Endpoint temporariamente desabilitado por segurança" });
     if (req.method !== 'POST') {
         return res.status(405).end();
     }

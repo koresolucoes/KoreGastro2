@@ -210,7 +210,7 @@ async function handleAddItems(req: VercelRequest, res: VercelResponse, restauran
     }
     const { items } = parsed.data;
     
-    const { data: order, error: orderError } = await supabase.from('orders').select('id').eq('id', orderId).in('status', ['OPEN', 'PAYING']).single();
+    const { data: order, error: orderError } = await supabase.from('orders').select('id').eq('id', orderId).eq('user_id', restaurantId).in('status', ['OPEN', 'PAYING']).single();
     if (orderError) return res.status(404).json({ error: { message: `Active order with id "${orderId}" not found.` } });
     
     try {

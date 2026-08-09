@@ -2,6 +2,8 @@
 import { Component, ChangeDetectionStrategy, output, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HrStateService } from '../../../services/hr-state.service';
+import { OperationalAuthService } from '../../../services/operational-auth.service';
+import { UnitContextService } from '../../../services/unit-context.service';
 import { Employee } from '../../../models/db.models';
 
 @Component({
@@ -13,6 +15,8 @@ import { Employee } from '../../../models/db.models';
 })
 export class ManagerAuthModalComponent {
   private hrState = inject(HrStateService);
+  private operationalAuth = inject(OperationalAuthService);
+  private unitContextService = inject(UnitContextService);
 
   authorized = output<Employee>();
   close = output<void>();
@@ -40,28 +44,24 @@ export class ManagerAuthModalComponent {
     this.hasError.set(false);
   }
 
-  private verifyPin() {
+  
+  private async verifyPin() {
     const enteredPin = this.pin();
-    const employees = this.hrState.employees();
-    const roles = this.hrState.roles();
-    
-    const managerRole = roles.find(r => r.name === 'Gerente');
-    
-    if (!managerRole) {
-        // Fallback: Check if any employee has this PIN and is designated as manager in some other way, or fail safe.
-        // For strictness, if no manager role exists, auth fails.
+    const storeId = this.unitContextService.activeStoreId();
+    if (!storeId) {
         this.showError();
         return;
     }
 
-    const manager = employees.find(e => e.pin === enteredPin && e.role_id === managerRole.id);
+    const { success, employee } = await this.operationalAuth.verifyManagerPin(enteredPin, storeId);
 
-    if (manager) {
-      this.authorized.emit(manager);
+    if (success && employee) {
+      this.authorized.emit(employee);
     } else {
       this.showError();
     }
   }
+
 
   private showError() {
     this.hasError.set(true);

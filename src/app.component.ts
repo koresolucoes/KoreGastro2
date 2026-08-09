@@ -12,7 +12,7 @@ import { filter, map } from 'rxjs';
 import { SubscriptionStateService } from './services/subscription-state.service';
 import { DemoService } from './services/demo.service';
 import { TopNavComponent } from './components/top-nav/top-nav.component';
-import { SubscriptionComponent } from './components/subscription/subscription.component';
+
 
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { LayoutService } from './services/layout.service';
@@ -22,7 +22,7 @@ import { LayoutService } from './services/layout.service';
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [RouterOutlet, RouterLink, TopNavComponent, SidebarComponent, NotificationModalComponent, ToastContainerComponent, SubscriptionComponent, TimeClockReceiptModalComponent]
+  imports: [RouterOutlet, RouterLink, TopNavComponent, SidebarComponent, NotificationModalComponent, ToastContainerComponent,  TimeClockReceiptModalComponent]
 })
 export class AppComponent implements OnInit {
   authService = inject(AuthService);

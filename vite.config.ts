@@ -13,7 +13,13 @@ export default defineConfig(({ mode }) => {
   const cieloMerchantKey = process.env['CIELO_MERCHANT_KEY'] || process.env['VITE_CIELO_MERCHANT_KEY'] || '';
   const mpPublicKey = process.env['MERCADO_PAGO_PUBLIC_KEY'] || process.env['VITE_MERCADO_PAGO_PUBLIC_KEY'] || '';
 
+  
   if (mode === 'production') {
+    if (!supabaseUrl) {
+      console.error('ERRO CRÍTICO: SUPABASE_URL é obrigatório para o build de produção.');
+      throw new Error('MISSING_SUPABASE_URL');
+    }
+
     console.log('--- Build Environment Check ---');
     console.log('SUPABASE_URL:', supabaseUrl ? 'Configured' : 'MISSING');
     console.log('SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Configured' : 'MISSING');

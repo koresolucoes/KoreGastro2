@@ -89,7 +89,8 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
             const { data, error } = await supabase
                 .from('role_permissions')
                 .select('permission_key')
-                .eq('role_id', roleId);
+                .eq('role_id', roleId)
+                .eq('user_id', restaurantId);
             
             if (error) throw error;
             return (data || []).map(p => p.permission_key);
@@ -115,7 +116,7 @@ async function handlePut(req: VercelRequest, res: VercelResponse, restaurantId: 
         const roleId = id as string;
 
         // Delete existing permissions for the role
-        const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
+        const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId).eq('user_id', restaurantId);
         if (deleteError) throw deleteError;
 
         // Insert new permissions if any

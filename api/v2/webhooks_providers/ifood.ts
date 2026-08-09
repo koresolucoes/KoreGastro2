@@ -89,6 +89,9 @@ export default async function handler(req: any, res: any) {
       return res.status(401).send({ error: 'Invalid signature.' });
     } else if (!signature) {
        console.log('[Webhook] No signature received.');
+       if (logId) await updateLogStatus(supabase, logId, 'ERROR_INVALID_SIGNATURE');
+       return res.status(401).send({ error: 'Missing signature.' });
+       console.log('[Webhook] No signature received.');
     }
     
     const eventCode = payload.fullCode || payload.code;
@@ -158,34 +161,34 @@ export default async function handler(req: any, res: any) {
         case 'CONFIRMED':
             const orderIdToConfirm = getOrderIdFromPayload(payload);
             if (!orderIdToConfirm) throw new Error("CONFIRMED event is missing a valid 'orderId'.");
-            await confirmOrderInDb(supabase, orderIdToConfirm);
+            await confirmOrderInDb(supabase, userId, orderIdToConfirm);
             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONFIRMED');
             break;
         case 'DISPATCHED':
         case 'READY_TO_PICKUP':
             const orderIdToDispatch = getOrderIdFromPayload(payload);
             if (!orderIdToDispatch) throw new Error("DISPATCHED/READY_TO_PICKUP event is missing a valid 'orderId'.");
-            await dispatchOrderInDb(supabase, orderIdToDispatch);
+            await dispatchOrderInDb(supabase, userId, orderIdToDispatch);
             if (logId) await updateLogStatus(supabase, logId, `SUCCESS_${eventCode}`);
             break;
         case 'CONCLUDED':
             const orderIdToConclude = getOrderIdFromPayload(payload);
             if (!orderIdToConclude) throw new Error("CONCLUDED event is missing a valid 'orderId'.");
-            await concludeOrderInDb(supabase, orderIdToConclude);
+            await concludeOrderInDb(supabase, userId, orderIdToConclude);
             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CONCLUDED');
             break;
         case 'CANCELLED':
             // FIX: Use consistent helper function to get order ID and add a null check.
             const orderIdToCancel = getOrderIdFromPayload(payload);
             if (!orderIdToCancel) throw new Error("CANCELLED event is missing a valid 'orderId'.");
-            await cancelOrderInDb(supabase, orderIdToCancel);
+            await cancelOrderInDb(supabase, userId, orderIdToCancel);
             if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_CANCELLED');
             break;
       }
     } else if (LOGISTICS_EVENTS.has(eventCode)) {
         const orderId = getOrderIdFromPayload(payload);
         if (orderId && payload.metadata) {
-            await updateOrderLogisticsMetadata(supabase, orderId, payload.metadata);
+            await updateOrderLogisticsMetadata(supabase, userId, orderId, payload.metadata);
         }
         if (logId) await updateLogStatus(supabase, logId, `SUCCESS_LOGISTICS_${eventCode}`);
     } else if (eventCode === 'HANDSHAKE_SETTLEMENT') {
@@ -199,7 +202,7 @@ export default async function handler(req: any, res: any) {
         
         // If cancellation is accepted by merchant OR customer, we cancel the order in our system.
         if (status === 'ACCEPTED') {
-             await cancelOrderInDb(supabase, orderIdToUpdate);
+             await cancelOrderInDb(supabase, userId, orderIdToUpdate);
              if (logId) await updateLogStatus(supabase, logId, 'SUCCESS_HANDSHAKE_ACCEPTED');
         } else { // REJECTED or EXPIRED
              // Fetch the order to check its dispute type

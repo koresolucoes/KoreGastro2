@@ -19,7 +19,7 @@ export class CoreDataLoaderService {
       supabase.from('company_profile_public').select('*').eq('user_id', storeId).maybeSingle(),
       supabase.from('roles').select('*').eq('user_id', storeId).order('created_at', { ascending: true }),
       supabase.from('role_permissions').select('*').eq('user_id', storeId),
-      supabase.from('employees').select('*').eq('user_id', storeId),
+      supabase.from('employees').select('id, name, role, email, phone, status, store_id, user_id, color, created_at, updated_at, hire_date, birth_date, cpf, base_salary, hourly_rate, employee_type').eq('user_id', storeId),
       supabase.from('webhooks').select('*').eq('user_id', storeId),
     ]);
 

@@ -129,7 +129,7 @@ async function getOrCreateCustomer(supabase: SupabaseClient, userId: string, ifo
   if (existingCustomer) {
     // If we have updates (e.g., new phone or CPF), apply them
     if (Object.keys(updates).length > 0) {
-      await supabase.from('customers').update(updates).eq('id', existingCustomer.id);
+      await supabase.from('customers').update(updates).eq('id', existingCustomer.id).eq('user_id', userId);
     }
     return existingCustomer.id;
   }
@@ -312,9 +312,9 @@ export async function processPlacedOrder(supabase: SupabaseClient, userId: strin
   }
 }
 
-export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+export async function confirmOrderInDb(supabase: SupabaseClient, userId: string, ifoodOrderId: string) {
   console.log(`[DB Helper] Processing CONFIRMED event for iFood order ${ifoodOrderId}.`);
-  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(*)').eq('ifood_order_id', ifoodOrderId).single();
+  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(*)').eq('ifood_order_id', ifoodOrderId).eq('user_id', userId).single();
   if (orderError || !order) {
     console.error(`[DB Helper] Could not find order to confirm with iFood ID ${ifoodOrderId}. Error:`, orderError);
     return;
@@ -342,9 +342,9 @@ export async function confirmOrderInDb(supabase: SupabaseClient, ifoodOrderId: s
   }
 }
 
-export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+export async function dispatchOrderInDb(supabase: SupabaseClient, userId: string, ifoodOrderId: string) {
   console.log(`[DB Helper] Processing DISPATCHED event for iFood order ${ifoodOrderId}.`);
-  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(*)').eq('ifood_order_id', ifoodOrderId).single();
+  const { data: order, error: orderError } = await supabase.from('orders').select('id, order_items(*)').eq('ifood_order_id', ifoodOrderId).eq('user_id', userId).single();
   if (orderError || !order) {
     console.error(`[DB Helper] Could not find order to dispatch with iFood ID ${ifoodOrderId}. Error:`, orderError);
     return;
@@ -372,18 +372,19 @@ export async function dispatchOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
   }
 }
 
-export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+export async function concludeOrderInDb(supabase: SupabaseClient, userId: string, ifoodOrderId: string) {
   // Fetch the order to get payment details and user_id
   const { data: order, error } = await supabase
     .from('orders')
     .select('id, user_id, ifood_payments')
     .eq('ifood_order_id', ifoodOrderId)
+    .eq('user_id', userId)
     .single();
 
   if (error || !order) {
     console.error(`[concludeOrderInDb] Could not find order with iFood ID ${ifoodOrderId} to create transaction.`);
     // Still try to update the status as a fallback
-    await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+    await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId).eq('user_id', userId);
     return;
   }
 
@@ -415,29 +416,30 @@ export async function concludeOrderInDb(supabase: SupabaseClient, ifoodOrderId: 
     if (rpcError) {
       console.error(`[concludeOrderInDb] Failed to finalize order transaction for order ${order.id}:`, rpcError);
       // Fallback
-      await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+      await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId).eq('user_id', userId);
     }
   } else {
     // Finally, update the order status
-    await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId);
+    await supabase.from('orders').update({ status: 'COMPLETED', completed_at: new Date().toISOString() }).eq('ifood_order_id', ifoodOrderId).eq('user_id', userId);
   }
 }
 
-export async function cancelOrderInDb(supabase: SupabaseClient, ifoodOrderId: string) {
+export async function cancelOrderInDb(supabase: SupabaseClient, userId: string, ifoodOrderId: string) {
   await supabase.from('orders').update({ 
     status: 'CANCELLED', 
     completed_at: new Date().toISOString(),
     ifood_dispute_id: null,
     ifood_dispute_details: null
-  }).eq('ifood_order_id', ifoodOrderId);
+  }).eq('ifood_order_id', ifoodOrderId).eq('user_id', userId);
 }
 // FIX: Added missing updateOrderLogisticsMetadata function.
-export async function updateOrderLogisticsMetadata(supabase: SupabaseClient, ifoodOrderId: string, metadata: any) {
+export async function updateOrderLogisticsMetadata(supabase: SupabaseClient, userId: string, ifoodOrderId: string, metadata: any) {
   // Fetches the order to get the current delivery_info
   const { data: order, error: fetchError } = await supabase
     .from('orders')
     .select('id, delivery_info')
     .eq('ifood_order_id', ifoodOrderId)
+    .eq('user_id', userId)
     .single();
 
   if (fetchError || !order) {

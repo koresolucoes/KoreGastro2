@@ -5,6 +5,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 export const maxDuration = 60;
 
 export default async function handler(req: any, res: any) {
+  return res.status(403).json({ error: "Endpoint temporariamente desabilitado por segurança" });
+  return res.status(403).json({ error: "Endpoint temporariamente desabilitado por segurança" });
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ type: "about:blank", title: "Method Not Allowed", status: 405, detail: `Method ${req.method} Not Allowed` });

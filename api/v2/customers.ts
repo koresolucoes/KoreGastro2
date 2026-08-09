@@ -165,7 +165,7 @@ async function handlePatch(req: VercelRequest, res: VercelResponse, restaurantId
         if (fetchError) throw new Error(`Could not find customer: ${fetchError.message}`);
         
         const newPoints = (customer.loyalty_points || 0) + loyalty_points_change;
-        const { data: updatedCustomer, error } = await supabase.from('customers').update({ loyalty_points: newPoints }).eq('id', id).select(PUBLIC_CUSTOMER_COLUMNS).single();
+        const { data: updatedCustomer, error } = await supabase.from('customers').update({ loyalty_points: newPoints }).eq('id', id).eq('user_id', restaurantId).select(PUBLIC_CUSTOMER_COLUMNS).single();
         if (error) throw new Error(`Could not update points: ${error.message}`);
         
         await supabase.from('loyalty_movements').insert({ user_id: restaurantId, customer_id: id, points_change: loyalty_points_change, description });
@@ -220,7 +220,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse, restaurantId
     try {
         const isMatch = await bcrypt.compare(password, data.password_hash);
         if (isMatch) {
-            const { data: publicData, error: publicError } = await supabase.from('customers').select(PUBLIC_CUSTOMER_COLUMNS).eq('id', data.id).single();
+            const { data: publicData, error: publicError } = await supabase.from('customers').select(PUBLIC_CUSTOMER_COLUMNS).eq('id', data.id).eq('user_id', restaurantId).single();
             if (publicError) throw publicError;
             return res.status(200).json(publicData);
         }

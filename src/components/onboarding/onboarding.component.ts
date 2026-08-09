@@ -353,7 +353,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       const managerNameInput = (this.data.managerName || '').trim() || 'Gerente Geral';
       const managerPinInput = (this.data.managerPin || '').trim() || '1234';
 
-      const { data: existingEmployees } = await supabase.from('employees').select('*').eq('user_id', activeUnitId);
+      const { data: existingEmployees } = await supabase.from('employees').select('id, name').eq('user_id', activeUnitId);
       let activeEmp = existingEmployees?.find((e: any) => e.role_id === gerenteRole?.id || e.name === managerNameInput) || existingEmployees?.[0];
 
       if (!activeEmp) {

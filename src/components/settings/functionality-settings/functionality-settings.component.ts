@@ -164,8 +164,16 @@ export class FunctionalitySettingsComponent {
       'Gerar Nova Chave?'
     );
     if (confirmed) {
-      const { success, error } = await this.settingsDataService.regenerateExternalApiKey();
-      if (!success) await this.notificationService.alert(`Erro: ${error?.message}`);
+      const { success, error, data } = await this.settingsDataService.regenerateExternalApiKey();
+      if (!success) {
+        await this.notificationService.alert(`Erro: ${error?.message}`);
+      } else if (data?.external_api_key) {
+        this.settingsState.companyProfile.update(profile => {
+          if (!profile) return null;
+          return { ...profile, external_api_key: data.external_api_key };
+        });
+        this.notificationService.show('Chave de API regerada com sucesso!', 'success');
+      }
     }
   }
 

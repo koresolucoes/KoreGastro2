@@ -227,7 +227,7 @@
                   <div>
                     <label class="block text-[10px] font-black text-muted uppercase tracking-wider mb-2">Chave de API (Secret)</label>
                     <div class="flex gap-2">
-                        <input type="text" readonly [value]="companyProfileForm().external_api_key ? '••••••••••••' + companyProfileForm().external_api_key!.slice(-4) : 'Nenhuma chave gerada'" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-title font-mono text-xs truncate">
+                        <input type="text" readonly [value]="companyProfileForm().external_api_key || 'Nenhuma chave gerada'" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-title font-mono text-xs truncate">
                         <button (click)="copyToClipboard(companyProfileForm().external_api_key)" [disabled]="!companyProfileForm().external_api_key" class="p-3 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-brand disabled:opacity-30 transition-all active:scale-95" title="Copiar chave">
                             <span translate="no" class="notranslate material-symbols-outlined text-lg">content_copy</span>
                         </button>
