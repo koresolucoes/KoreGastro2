@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { TimeClockEntry } from '../../../src/models/db.models.js';
+import { validateApiKey } from '../../utils/api-key-auth.js';
+import { checkRateLimit } from '../../utils/redis.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -48,27 +50,25 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 }
 
 async function authenticateAndGetRestaurantId(req: VercelRequest): Promise<{ restaurantId: string; error?: { message: string }; status?: number }> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { restaurantId: '', error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
-    }
-    const providedApiKey = authHeader.split(' ')[1];
     const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
     if (!restaurantId) {
         return { restaurantId: '', error: { message: '`restaurantId` is required.' }, status: 400 };
     }
-    const { data: creds, error: credsError } = await supabase
-      .from('store_integration_credentials')
-      .select('external_api_key')
-      .eq('store_id', restaurantId)
-      .single();
-    if (credsError || !creds || !creds.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid `restaurantId` or API key not configured.' }, status: 403 };
-    }
-    if (providedApiKey !== creds.external_api_key) {
-        return { restaurantId, error: { message: 'Invalid API key.' }, status: 403 };
+    const auth = await validateApiKey(req);
+    if (!auth.isValid || auth.restaurantId !== restaurantId) {
+        return {
+            restaurantId,
+            error: { message: auth.error?.message || 'Invalid API key.' },
+            status: auth.status || 403
+        };
     }
     return { restaurantId };
+}
+
+function plainPinMatches(storedPin: string, providedPin: string): boolean {
+    const stored = Buffer.from(storedPin);
+    const provided = Buffer.from(providedPin);
+    return stored.length === provided.length && crypto.timingSafeEqual(stored, provided);
 }
 
 export default async function handler(req: any, res: any) {
@@ -91,8 +91,15 @@ export default async function handler(req: any, res: any) {
             return res.status(status!).json({ error });
         }
 
+        const clientIp = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+        const rateLimit = await checkRateLimit(`clock-pin:${restaurantId}:${clientIp}`, 12, 60);
+        if (!rateLimit.allowed) {
+            res.setHeader('Retry-After', String(Math.ceil(rateLimit.resetMs / 1000)));
+            return res.status(429).json({ error: { message: 'Muitas tentativas. Aguarde e tente novamente.' } });
+        }
+
         const { employeeId, pin, latitude, longitude } = req.body;
-        if (!employeeId || !pin) {
+        if (!employeeId || typeof pin !== 'string' || !/^\d{4,8}$/.test(pin)) {
             return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`employeeId` and `pin` are required.' });
         }
 
@@ -101,12 +108,18 @@ export default async function handler(req: any, res: any) {
             .select('id, name, pin, current_clock_in_id, cpf')
             .eq('id', employeeId)
             .eq('user_id', restaurantId)
+            .is('deleted_at', null)
             .single();
         
         if (empError || !employee) {
             return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Employee not found.' });
         }
-        if (employee.pin !== pin) {
+        const pinMatches = typeof employee.pin === 'string' && (
+            employee.pin.startsWith('$2')
+                ? await bcrypt.compare(pin, employee.pin)
+                : plainPinMatches(employee.pin, pin)
+        );
+        if (!pinMatches) {
             return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid PIN.' });
         }
         

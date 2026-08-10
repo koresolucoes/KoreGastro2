@@ -229,7 +229,9 @@ export interface RolePermission {
 export interface Employee {
   id: string;
   name: string;
-  pin: string;
+  // PIN is write-only in normal frontend flows. Employee list queries and API
+  // responses must never expose the plaintext value or its bcrypt hash.
+  pin?: string;
   role_id: string | null;
   is_active?: boolean;
   created_at: string;

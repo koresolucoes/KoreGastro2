@@ -331,9 +331,11 @@ export class MenuComponent implements OnInit {
             this.tableOrder.set(order as Order);
             this.setupRealtime();
             try {
-              fetch("/api/public-table-occupied?token=" + token).catch(
-                console.error,
-              );
+              fetch('/api/public-table-occupied', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+              }).catch(console.error);
             } catch (e) {}
             if (!id) {
               id = order.user_id;

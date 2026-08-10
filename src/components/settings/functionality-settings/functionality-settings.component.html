@@ -217,8 +217,8 @@
                   <div>
                     <label class="block text-[10px] font-black text-muted uppercase tracking-wider mb-2">Restaurant ID</label>
                     <div class="flex gap-2">
-                        <input type="text" readonly [value]="authService.currentUser()?.id || 'N/A'" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-title font-mono text-xs truncate">
-                        <button (click)="copyToClipboard(authService.currentUser()?.id)" [disabled]="!authService.currentUser()?.id" class="p-3 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-brand disabled:opacity-30 transition-all active:scale-95" title="Copiar ID">
+                        <input type="text" readonly [value]="restaurantId() || 'N/A'" class="w-full bg-surface border border-subtle rounded-xl px-4 py-3 text-title font-mono text-xs truncate">
+                        <button (click)="copyToClipboard(restaurantId())" [disabled]="!restaurantId()" class="p-3 bg-surface hover:bg-surface-elevated border border-strong rounded-xl text-brand disabled:opacity-30 transition-all active:scale-95" title="Copiar ID">
                           <span translate="no" class="notranslate material-symbols-outlined text-lg">content_copy</span>
                         </button>
                     </div>

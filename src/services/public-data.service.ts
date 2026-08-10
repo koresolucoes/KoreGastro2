@@ -77,7 +77,7 @@ export class PublicDataService {
         .from("menu_item_option_choices")
         .select("*")
         .eq("user_id", userId),
-      fetch(`/api/public-stock?userId=${userId}`)
+      fetch(`/api/public-stock?restaurantId=${userId}`)
         .then((res) => res.json())
         .catch(() => ({ outOfStockRecipeIds: [] })),
     ]);

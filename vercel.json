@@ -3,6 +3,38 @@
   "framework": "angular",
   "rewrites": [
     {
+      "source": "/api/v2/rh/:path*",
+      "destination": "/api/rh/:path*"
+    },
+    {
+      "source": "/api/v2/whatsapp/:path*",
+      "destination": "/api/whatsapp/:path*"
+    },
+    {
+      "source": "/api/v2/public-stock",
+      "destination": "/api/public-stock"
+    },
+    {
+      "source": "/api/v2/public-table-occupied",
+      "destination": "/api/public-table-occupied"
+    },
+    {
+      "source": "/api/v2/public-order",
+      "destination": "/api/public-order"
+    },
+    {
+      "source": "/api/v2/public-call-waiter",
+      "destination": "/api/public-call-waiter"
+    },
+    {
+      "source": "/api/v2/public-request-bill",
+      "destination": "/api/public-request-bill"
+    },
+    {
+      "source": "/api/v2/delivery-location",
+      "destination": "/api/delivery-location"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

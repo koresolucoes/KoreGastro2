@@ -34,9 +34,22 @@
               }
       
               @if (!isAppReady()) {
-                <div class="flex items-center justify-center h-full">
-                  <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-                </div>
+                @if (hasBootstrapError()) {
+                  <div class="flex items-center justify-center h-full p-6">
+                    <div class="w-full max-w-lg rounded-3xl border border-danger/30 bg-surface-elevated p-8 text-center shadow-xl">
+                      <span translate="no" class="notranslate material-symbols-outlined text-5xl text-danger">error</span>
+                      <h2 class="mt-4 text-xl font-black text-title">Falha ao carregar a unidade</h2>
+                      <p class="mt-2 text-sm text-muted">{{ bootstrapError()?.message }}</p>
+                      <button type="button" (click)="retryBootstrap()" class="mt-6 rounded-xl bg-brand px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:brightness-110">
+                        Tentar novamente
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="flex items-center justify-center h-full">
+                    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+                  </div>
+                }
               } @else {
                 @if (isSubscriptionActiveOrTutorials()) {
                   <router-outlet></router-outlet>
