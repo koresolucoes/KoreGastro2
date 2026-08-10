@@ -115,54 +115,7 @@ export class SupabaseStateService {
         const isDemo = this.demoService.isDemoMode();
         
         if (activeStoreId && !isDemo) {
-            const generation = ++this.bootstrapGeneration;
-
-            // IMMEDIATELY cleanup old unit realtime & clear state
-            this.unsubscribeFromChanges();
-            this.clearAllData();
-            this.bootstrapError.set(null);
-            this.bootstrapStatus.set('LOADING_CORE');
-            this.isDataLoaded.set(false);
-
-            try {
-                // 2. Load Core Data (Permissions, Settings, Roles) - Critical for Auth
-                await this.loadCoreDataForGeneration(activeStoreId, generation);
-                if (generation !== this.bootstrapGeneration) return;
-                
-                // Transition to LOADING_ESSENTIAL
-                this.bootstrapStatus.set('LOADING_ESSENTIAL');
-
-                // 3. Load Catalogs & Active State (Menu, Current Stock, Open Orders) - Critical for Operations
-                await this.loadEssentialDataForGeneration(activeStoreId, generation);
-                if (generation !== this.bootstrapGeneration) return;
-
-                // 4. Start Realtime
-                this.subscribeToChanges(activeStoreId, generation);
-
-                if (generation !== this.bootstrapGeneration) return;
-
-                // 5. Mark data loaded SUCCESS
-                this.bootstrapStatus.set('READY');
-                this.isDataLoaded.set(true);
-
-                // 6. If no employee is logged in, navigate to employee selection
-                untracked(() => {
-                    if (generation === this.bootstrapGeneration && !this.operationalAuthService.activeEmployee()) {
-                        this.router.navigate(['/employee-selection']);
-                    }
-                });
-            } catch (err: any) {
-                if (generation !== this.bootstrapGeneration) return;
-
-                console.error("Critical error loading unit data:", err);
-                const stage: BootstrapStage = this.bootstrapStatus() === 'LOADING_ESSENTIAL' ? 'ESSENTIAL' : 'CORE';
-                this.bootstrapError.set({
-                    stage,
-                    message: sanitizeBootstrapErrorMessage(err?.message || err)
-                });
-                this.bootstrapStatus.set('ERROR');
-                this.isDataLoaded.set(false);
-            }
+            await this.bootstrapStore(activeStoreId);
         }
     }, { allowSignalWrites: true });
 
@@ -170,6 +123,54 @@ export class SupabaseStateService {
       this.pricingService.promotions.set(this.recipeState.promotions());
       this.pricingService.promotionRecipes.set(this.recipeState.promotionRecipes());
     });
+  }
+
+  public async retryBootstrap(): Promise<void> {
+    const activeStoreId = this.unitContextService.activeStoreId();
+    if (!activeStoreId || this.demoService.isDemoMode()) return;
+    await this.bootstrapStore(activeStoreId);
+  }
+
+  private async bootstrapStore(activeStoreId: StoreId): Promise<void> {
+    const generation = ++this.bootstrapGeneration;
+
+    this.unsubscribeFromChanges();
+    this.clearAllData();
+    this.bootstrapError.set(null);
+    this.bootstrapStatus.set('LOADING_CORE');
+    this.isDataLoaded.set(false);
+
+    try {
+      await this.loadCoreDataForGeneration(activeStoreId, generation);
+      if (generation !== this.bootstrapGeneration) return;
+
+      this.bootstrapStatus.set('LOADING_ESSENTIAL');
+      await this.loadEssentialDataForGeneration(activeStoreId, generation);
+      if (generation !== this.bootstrapGeneration) return;
+
+      this.subscribeToChanges(activeStoreId, generation);
+      if (generation !== this.bootstrapGeneration) return;
+
+      this.bootstrapStatus.set('READY');
+      this.isDataLoaded.set(true);
+
+      untracked(() => {
+        if (generation === this.bootstrapGeneration && !this.operationalAuthService.activeEmployee()) {
+          this.router.navigate(['/employee-selection']);
+        }
+      });
+    } catch (err: any) {
+      if (generation !== this.bootstrapGeneration) return;
+
+      console.error('Critical error loading unit data:', err);
+      const stage: BootstrapStage = this.bootstrapStatus() === 'LOADING_ESSENTIAL' ? 'ESSENTIAL' : 'CORE';
+      this.bootstrapError.set({
+        stage,
+        message: sanitizeBootstrapErrorMessage(err?.message || err)
+      });
+      this.bootstrapStatus.set('ERROR');
+      this.isDataLoaded.set(false);
+    }
   }
 
   // --- 1. CORE DATA (Required for basic app structure) ---

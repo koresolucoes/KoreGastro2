@@ -1,4 +1,28 @@
 <div class="min-h-screen bg-app flex flex-col justify-center items-center p-4 relative overflow-hidden">
+
+  @if (bootstrapError(); as error) {
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-2xl rounded-2xl border border-danger/30 bg-surface-elevated p-5 shadow-2xl">
+      <div class="flex items-start gap-4">
+        <span translate="no" class="notranslate material-symbols-outlined text-danger">error</span>
+        <div class="flex-1 min-w-0">
+          <p class="font-black text-title">Não foi possível carregar os dados da unidade</p>
+          <p class="mt-1 text-sm text-muted">{{ error.message }}</p>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button type="button" (click)="retryBootstrap()" class="rounded-xl bg-brand px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:brightness-110">
+              Tentar novamente
+            </button>
+            <button type="button" (click)="logoutAdmin()" class="rounded-xl border border-strong bg-surface px-4 py-2 text-xs font-black uppercase tracking-wider text-muted hover:text-title">
+              Sair da conta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else if (isBootstrapLoading()) {
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 z-40 rounded-full border border-strong bg-surface-elevated px-4 py-2 text-xs font-bold text-muted shadow-lg">
+      Carregando dados da unidade…
+    </div>
+  }
   
   <!-- Theme Toggle Floating Button -->
   <div class="absolute top-4 right-4 z-30">

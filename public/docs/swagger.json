@@ -1508,7 +1508,6 @@
       "post": {
         "summary": "Registro de Telemetria e Diagnósticos",
         "description": "Envia métricas, erros e logs de performance do cliente para monitoramento.",
-        "security": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -1605,16 +1604,35 @@
     "/rh/ponto/bater-ponto": {
       "post": {
         "summary": "Bater Ponto via PIN",
-        "security": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "restaurantId",
+                  "employeeId",
+                  "pin"
+                ],
                 "properties": {
+                  "restaurantId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "employeeId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
                   "pin": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^[0-9]{4,8}$"
+                  },
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
                   }
                 }
               }
@@ -1703,16 +1721,31 @@
     "/rh/verificar-pin": {
       "post": {
         "summary": "Verificar PIN Operacional",
-        "security": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "restaurantId",
+                  "pin"
+                ],
                 "properties": {
-                  "pin": {
+                  "restaurantId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "employeeId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "roleName": {
                     "type": "string"
+                  },
+                  "pin": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4,8}$"
                   }
                 }
               }
@@ -1874,25 +1907,73 @@
             "description": "Status atual da mesa"
           }
         }
+      },
+      "post": {
+        "summary": "Marcar Mesa como Ocupada por Token de Sessão",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mesa marcada como ocupada"
+          }
+        }
       }
     },
     "/delivery-location": {
-      "get": {
-        "summary": "Geocodificação e Cálculo de Taxa de Entrega",
-        "security": [],
-        "parameters": [
-          {
-            "name": "cep",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
+      "post": {
+        "summary": "Atualizar Localização do Entregador",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "restaurantId",
+                  "driverId",
+                  "latitude",
+                  "longitude"
+                ],
+                "properties": {
+                  "restaurantId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "driverId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  }
+                }
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
-            "description": "Endereço e valor do frete"
+          "204": {
+            "description": "Localização atualizada"
           }
         }
       }

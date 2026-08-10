@@ -39,6 +39,7 @@ export class FunctionalitySettingsComponent {
   loyaltyRewards = this.settingsState.loyaltyRewards;
   webhooks = this.settingsState.webhooks;
   recipes = this.recipeState.recipes;
+  restaurantId = computed(() => this.unitContextService.activeStoreId());
 
   // For template display
   daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -172,7 +173,7 @@ export class FunctionalitySettingsComponent {
           if (!profile) return null;
           return { ...profile, external_api_key: data.external_api_key };
         });
-        this.notificationService.show('Chave de API regerada com sucesso!', 'success');
+        this.notificationService.show('Chave de API regenerada com sucesso!', 'success');
       }
     }
   }

@@ -9,7 +9,7 @@ const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TO
 export const isRedisConfigured = Boolean(url && token);
 
 let redisClient: Redis | null = null;
-let ratelimiter: Ratelimit | null = null;
+const rateLimiters = new Map<string, Ratelimit>();
 
 if (isRedisConfigured) {
   try {
@@ -18,17 +18,10 @@ if (isRedisConfigured) {
       token: token!,
     });
 
-    ratelimiter = new Ratelimit({
-      redis: redisClient,
-      limiter: Ratelimit.slidingWindow(120, '1 m'),
-      analytics: true,
-      prefix: 'chefos:ratelimit',
-    });
     Logger.info('Upstash Redis initialized successfully for caching and rate limiting');
   } catch (err) {
     Logger.error('Failed to initialize Upstash Redis client, falling back to memory', err);
     redisClient = null;
-    ratelimiter = null;
   }
 } else {
   Logger.info('Upstash Redis env variables missing - using in-memory fallback for caching and rate limiting');
@@ -68,9 +61,22 @@ export async function checkRateLimit(
   maxRequests: number = 120,
   windowSeconds: number = 60
 ): Promise<{ allowed: boolean; remaining: number; resetMs: number; isRedis: boolean }> {
-  // If Redis Ratelimiter is available
-  if (ratelimiter) {
+  // Respect the limit requested by each endpoint. Previously every Redis-backed
+  // caller silently used the hard-coded 120/minute limiter, even when a stricter
+  // value was supplied (for example PIN verification).
+  if (redisClient) {
     try {
+      const limiterKey = `${maxRequests}:${windowSeconds}`;
+      let ratelimiter = rateLimiters.get(limiterKey);
+      if (!ratelimiter) {
+        ratelimiter = new Ratelimit({
+          redis: redisClient,
+          limiter: Ratelimit.slidingWindow(maxRequests, `${windowSeconds} s` as any),
+          analytics: true,
+          prefix: `chefos:ratelimit:${maxRequests}:${windowSeconds}`,
+        });
+        rateLimiters.set(limiterKey, ratelimiter);
+      }
       const result = await ratelimiter.limit(identifier);
       return {
         allowed: result.success,

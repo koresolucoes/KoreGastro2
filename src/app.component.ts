@@ -37,6 +37,8 @@ export class AppComponent implements OnInit {
   
   hasActiveSubscription = this.subscriptionStateService.hasActiveSubscription;
   isDataLoaded = this.supabaseStateService.isDataLoaded;
+  bootstrapError = this.supabaseStateService.bootstrapError;
+  hasBootstrapError = this.supabaseStateService.hasBootstrapError;
   
   isTrialing = this.subscriptionStateService.isTrialing;
   subscription = this.subscriptionStateService.subscription;
@@ -70,6 +72,10 @@ export class AppComponent implements OnInit {
   isAppReady = computed(() => {
     return this.isDataLoaded();
   });
+
+  retryBootstrap() {
+    return this.supabaseStateService.retryBootstrap();
+  }
 
   ngOnInit(): void {
     // Handle root path redirection

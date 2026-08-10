@@ -353,8 +353,13 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       const managerNameInput = (this.data.managerName || '').trim() || 'Gerente Geral';
       const managerPinInput = (this.data.managerPin || '').trim() || '1234';
 
-      const { data: existingEmployees } = await supabase.from('employees').select('id, name').eq('user_id', activeUnitId);
-      let activeEmp = existingEmployees?.find((e: any) => e.role_id === gerenteRole?.id || e.name === managerNameInput) || existingEmployees?.[0];
+      const { data: existingEmployees } = await supabase
+        .from('employees')
+        .select('id, name, role_id')
+        .eq('user_id', activeUnitId)
+        .is('deleted_at', null);
+      const activeEmp = existingEmployees?.find((e: any) => e.role_id === gerenteRole?.id || e.name === managerNameInput) || existingEmployees?.[0];
+      let managerEmployeeId = activeEmp?.id;
 
       if (!activeEmp) {
         const empRes = await this.settingsData.addEmployee({
@@ -363,7 +368,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
           role_id: gerenteRole?.id || null
         });
         if (empRes.success && empRes.data) {
-          activeEmp = empRes.data;
+          managerEmployeeId = empRes.data.id;
         }
       } else {
         await this.settingsData.updateEmployee({
@@ -372,12 +377,6 @@ export class OnboardingComponent implements OnInit, OnDestroy {
           pin: managerPinInput,
           role_id: gerenteRole?.id || activeEmp.role_id
         });
-        activeEmp = {
-          ...activeEmp,
-          name: managerNameInput,
-          pin: managerPinInput,
-          role_id: gerenteRole?.id || activeEmp.role_id
-        };
       }
 
       // Reload main app data & permissions so state is 100% synchronized
@@ -386,7 +385,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       await this.subscriptionState.loadSubscriptionForUnit(activeUnitId);
 
       // Automatically login the manager operator
-      const freshManager = this.hrState.employees().find(e => e.id === activeEmp?.id) || activeEmp;
+      const freshManager = this.hrState.employees().find(e => e.id === managerEmployeeId);
       if (freshManager) {
         this.opAuth.login(freshManager);
       }

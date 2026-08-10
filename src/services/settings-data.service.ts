@@ -415,12 +415,61 @@ export class SettingsDataService {
   }
 
   
-  async updateCompanyProfile(profileData: Partial<CompanyProfile>): Promise<{ success: boolean; error: any }> {
+  async updateCompanyProfile(
+    profile: Partial<CompanyProfile>,
+    logoFile?: File | null,
+    coverFile?: File | null,
+    headerFile?: File | null,
+  ): Promise<{ success: boolean; error: any }> {
     const userId = this.getActiveUnitId();
     if (!userId)
       return { success: false, error: { message: "Active unit not found" } };
 
-    const { ifood_merchant_id, external_api_key, mp_access_token, mp_refresh_token, mp_public_key, focusnfe_token, focusnfe_cert_valid_until, has_mp_integration, has_focusnfe_integration, ...publicData } = profileData;
+    const profileData = { ...profile };
+
+    const uploads: Array<{ file?: File | null; directory: string; suffix: string; field: 'logo_url' | 'menu_cover_url' | 'menu_header_url' }> = [
+      { file: logoFile, directory: 'logos', suffix: 'logo', field: 'logo_url' },
+      { file: coverFile, directory: 'covers', suffix: 'cover', field: 'menu_cover_url' },
+      { file: headerFile, directory: 'headers', suffix: 'header', field: 'menu_header_url' }
+    ];
+
+    for (const upload of uploads) {
+      if (!upload.file) continue;
+      const fileExt = upload.file.name.split('.').pop();
+      const path = `public/${upload.directory}/${userId}-${upload.suffix}.${fileExt}`;
+      const { publicUrl, error: uploadError } = await this.uploadAsset(upload.file, path);
+      if (uploadError) return { success: false, error: uploadError };
+      profileData[upload.field] = publicUrl;
+    }
+
+    if (profileData.company_name) {
+      const { data: authSession } = await supabase.auth.getSession();
+      const ownerId = authSession.session?.user.id || userId;
+      const { error: storeError } = await supabase
+        .from('stores')
+        .upsert({ id: userId, name: profileData.company_name, owner_id: ownerId }, { onConflict: 'id' });
+
+      if (storeError) {
+        const { error: updateStoreError } = await supabase
+          .from('stores')
+          .update({ name: profileData.company_name })
+          .eq('id', userId);
+        if (updateStoreError) return { success: false, error: updateStoreError };
+      }
+    }
+
+    const {
+      ifood_merchant_id,
+      external_api_key: _externalApiKey,
+      mp_access_token,
+      mp_refresh_token,
+      focusnfe_token,
+      focusnfe_cert_valid_until,
+      has_ifood_integration: _hasIfoodIntegration,
+      has_mercadopago_integration: _hasMercadoPagoIntegration,
+      has_focusnfe_integration: _hasFocusNfeIntegration,
+      ...publicData
+    } = profileData;
 
     const { error } = await supabase
       .from("company_profile")
@@ -429,18 +478,22 @@ export class SettingsDataService {
     const credsUpdate: any = { store_id: userId };
     let hasCredsUpdate = false;
     if (ifood_merchant_id !== undefined) { credsUpdate.ifood_merchant_id = ifood_merchant_id; hasCredsUpdate = true; }
-    if (external_api_key && !external_api_key.includes('••••')) { credsUpdate.external_api_key = external_api_key; hasCredsUpdate = true; }
     if (mp_access_token && !mp_access_token.includes('••••')) { credsUpdate.mp_access_token = mp_access_token; hasCredsUpdate = true; }
     if (mp_refresh_token && !mp_refresh_token.includes('••••')) { credsUpdate.mp_refresh_token = mp_refresh_token; hasCredsUpdate = true; }
 
+    let credentialsError: any = null;
     if (hasCredsUpdate) {
-       await this.supabase.rpc('update_store_credentials', { p_store_id: userId, p_credentials: credsUpdate });
+      const { error: rpcError } = await supabase.rpc('update_store_credentials', {
+        p_store_id: userId,
+        p_credentials: credsUpdate
+      });
+      credentialsError = rpcError;
     }
 
     if (!error) {
        this.auditService.logAction('COMPANY_PROFILE_UPDATED', `Perfil da empresa atualizado`);
     }
-    return { success: !error, error };
+    return { success: !error && !credentialsError, error: error || credentialsError };
   }
 
 
@@ -472,7 +525,14 @@ export class SettingsDataService {
     error: any;
     data: { external_api_key: string } | null;
   }> {
-    const { data, error } = await supabase.rpc("regenerate_external_api_key");
+    const storeId = this.getActiveUnitId();
+    if (!storeId) {
+      return { success: false, error: { message: 'Active unit not found' }, data: null };
+    }
+
+    const { data, error } = await supabase.rpc("regenerate_external_api_key", {
+      p_store_id: storeId
+    });
     if (error) {
       return { success: false, error, data: null };
     }
@@ -486,9 +546,13 @@ export class SettingsDataService {
     const userId = this.getActiveUnitId();
     if (!userId)
       return { success: false, error: { message: "Active unit not found" } };
-    const { error } = await supabase
-      .from("store_integration_credentials")
-      .upsert({ store_id: userId, focusnfe_token: token, focusnfe_cert_valid_until: validUntil }, { onConflict: 'store_id' });
+    const { error } = await supabase.rpc('update_store_credentials', {
+      p_store_id: userId,
+      p_credentials: {
+        focusnfe_token: token,
+        focusnfe_cert_valid_until: validUntil
+      }
+    });
     return { success: !error, error };
   }
 

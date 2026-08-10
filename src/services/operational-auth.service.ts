@@ -400,52 +400,50 @@ export class OperationalAuthService {
     this.router.navigate(['/employee-selection']);
   }
 
-  
-  async verifyPin(employeeId: string, pin: string, storeId: string): Promise<{ success: boolean; employee?: Employee, message?: string, opToken?: string }> {
-      try {
-          const { data: creds } = await supabase.from('store_integration_credentials').select('external_api_key').eq('store_id', storeId).single();
-          if (!creds || !creds.external_api_key) return { success: false, message: 'Chave de API não configurada' };
-
-          const res = await fetch('/api/rh/verificar-pin', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${creds.external_api_key}`
-              },
-              body: JSON.stringify({ employeeId, pin, restaurantId: storeId })
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-              return { success: true, employee: data.employee, opToken: data.opToken };
-          }
-          return { success: false, message: data.message || 'PIN incorreto' };
-      } catch (e: any) {
-          return { success: false, message: e.message || 'Erro na comunicação' };
+  private async requestPinVerification(
+    payload: { employeeId?: string; roleName?: string; pin: string; restaurantId: string }
+  ): Promise<{ success: boolean; employee?: Employee; message?: string; opToken?: string }> {
+    try {
+      // A sessão autenticada prova a identidade da conta. O backend valida o
+      // acesso à unidade; a chave de integração nunca deve ir para o navegador.
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.access_token) {
+        return { success: false, message: 'Sessão expirada. Entre novamente.' };
       }
+
+      const response = await fetch('/api/rh/verificar-pin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success) {
+        return {
+          success: true,
+          employee: data.employee as Employee,
+          opToken: data.opToken
+        };
+      }
+
+      return {
+        success: false,
+        message: data.message || data.error?.message || data.detail || 'PIN incorreto'
+      };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Erro na comunicação' };
+    }
   }
 
-  
-  async verifyManagerPin(pin: string, storeId: string): Promise<{ success: boolean; employee?: Employee, message?: string, opToken?: string }> {
-      try {
-          const { data: creds } = await supabase.from('store_integration_credentials').select('external_api_key').eq('store_id', storeId).single();
-          if (!creds || !creds.external_api_key) return { success: false, message: 'Chave de API não configurada' };
+  async verifyPin(employeeId: string, pin: string, storeId: string): Promise<{ success: boolean; employee?: Employee; message?: string; opToken?: string }> {
+    return this.requestPinVerification({ employeeId, pin, restaurantId: storeId });
+  }
 
-          const res = await fetch('/api/rh/verificar-pin', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${creds.external_api_key}`
-              },
-              body: JSON.stringify({ roleName: 'Gerente', pin, restaurantId: storeId })
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-              return { success: true, employee: data.employee, opToken: data.opToken };
-          }
-          return { success: false, message: data.message || 'PIN incorreto' };
-      } catch (e: any) {
-          return { success: false, message: e.message || 'Erro na comunicação' };
-      }
+  async verifyManagerPin(pin: string, storeId: string): Promise<{ success: boolean; employee?: Employee; message?: string; opToken?: string }> {
+    return this.requestPinVerification({ roleName: 'Gerente', pin, restaurantId: storeId });
   }
 
 

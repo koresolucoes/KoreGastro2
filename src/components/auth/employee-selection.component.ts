@@ -42,11 +42,17 @@ export class EmployeeSelectionComponent implements OnDestroy {
     this.themeService.toggleTheme();
   }
 
+  async retryBootstrap() {
+    await this.stateService.retryBootstrap();
+  }
+
   async logoutAdmin() {
     await this.authService.signOut();
     this.router.navigate(['/login']);
   }
   isDataLoaded = this.stateService.isDataLoaded;
+  bootstrapError = this.stateService.bootstrapError;
+  isBootstrapLoading = this.stateService.isBootstrapLoading;
   isTrialing = this.subscriptionState.isTrialing;
   trialDaysRemaining = this.subscriptionState.trialDaysRemaining;
 
