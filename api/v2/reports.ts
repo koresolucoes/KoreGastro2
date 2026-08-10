@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { z } from 'zod';
 import { withAuth, supabase } from '../utils/api-handler.js';
 
 export const maxDuration = 300;
@@ -23,7 +22,6 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
     const start = new Date(Date.UTC(sYear, sMonth - 1, sDay, 0, 0, 0, 0));
     
-    let endStr = endDate;
     let end;
     if (endDate.length === 10) {
         const [eYear, eMonth, eDay] = endDate.split('-').map(Number);
@@ -37,32 +35,53 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
     }
 
     if (action === 'sales') {
-        const { data, error } = await supabase.rpc('get_financial_summary', {
-            p_user_id: restaurantId,
-            p_start_date: start.toISOString(),
-            p_end_date: end.toISOString()
-        });
+        const [transactionsRes, ordersRes] = await Promise.all([
+            supabase
+                .from('transactions')
+                .select('amount,type')
+                .eq('user_id', restaurantId)
+                .gte('date', start.toISOString())
+                .lte('date', end.toISOString())
+                .is('deleted_at', null),
+            supabase
+                .from('orders')
+                .select('id,order_items(quantity,price,unit_cost,status,deleted_at)')
+                .eq('user_id', restaurantId)
+                .eq('status', 'COMPLETED')
+                .gte('completed_at', start.toISOString())
+                .lte('completed_at', end.toISOString())
+                .is('deleted_at', null)
+        ]);
 
-        if (error) throw error;
-        
-        const result = (data && data.length > 0) ? data[0] : null;
+        if (transactionsRes.error) throw transactionsRes.error;
+        if (ordersRes.error) throw ordersRes.error;
 
-        if (!result) {
-            return res.status(200).json({
-                gross_revenue: 0,
-                cogs: 0,
-                gross_profit: 0,
-                total_orders: 0,
-                average_ticket: 0
-            });
-        }
+        const orders = ordersRes.data || [];
+        const reportableItems = (items: any[]) => items.filter(item => item.status !== 'CANCELADO' && !item.deleted_at);
+        const orderRevenue = orders.reduce((total, order) => total + reportableItems(order.order_items || []).reduce(
+            (subtotal: number, item: any) => subtotal + Number(item.price || 0) * Number(item.quantity || 0), 0
+        ), 0);
+        const cogs = orders.reduce((total, order) => total + reportableItems(order.order_items || []).reduce(
+            (subtotal: number, item: any) => subtotal + Number(item.unit_cost || 0) * Number(item.quantity || 0), 0
+        ), 0);
+        const transactionRevenue = (transactionsRes.data || [])
+            .filter(transaction => transaction.type === 'Receita')
+            .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+        const totalExpenses = (transactionsRes.data || [])
+            .filter(transaction => transaction.type === 'Despesa')
+            .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
+        const grossRevenue = transactionRevenue || orderRevenue;
+        const grossProfit = grossRevenue - cogs;
+        const totalOrders = orders.length;
 
         return res.status(200).json({
-            gross_revenue: result.total_revenue,
-            cogs: 0,
-            gross_profit: result.total_revenue,
-            total_orders: result.total_orders,
-            average_ticket: result.average_ticket
+            gross_revenue: grossRevenue,
+            cogs,
+            gross_profit: grossProfit,
+            total_expenses: totalExpenses,
+            net_profit: grossProfit - totalExpenses,
+            total_orders: totalOrders,
+            average_ticket: totalOrders > 0 ? grossRevenue / totalOrders : 0
         });
     }
 
@@ -97,6 +116,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, restaurantId: 
 
         for (const order of orders) {
             for (const item of (order.order_items || [])) {
+                if (item.status === 'CANCELADO' || item.deleted_at) continue;
                 if (!item.recipe_id) continue;
 
                 const recipeInfo = recipesMap.get(item.recipe_id);

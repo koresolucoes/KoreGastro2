@@ -44,10 +44,8 @@ export function setCorsHeaders(req: VercelRequest, res: VercelResponse) {
             const host = url.hostname;
             if (
                 host === 'app.chefos.online' ||
-                host.endsWith('.chefos.online') ||
                 host === 'localhost' ||
                 host === '127.0.0.1' ||
-                host.endsWith('.run.app') ||
                 allowedOrigins.includes(requestOrigin)
             ) {
                 originToSet = requestOrigin;

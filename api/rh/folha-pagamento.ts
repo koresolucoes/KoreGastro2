@@ -2,6 +2,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { TimeClockEntry } from '../../src/models/db.models.js';
+import { authenticateStoreRequest, setStoreApiCorsHeaders } from '../utils/store-auth.js';
 
 export const maxDuration = 300;
 
@@ -10,30 +11,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
 
 async function authenticateUser(req: VercelRequest, restaurantId: string): Promise<{ success: boolean; error?: any; status?: number }> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
-    }
-    const token = authHeader.split(' ')[1];
-
-    const { data: { user }, error: authError } = await (supabase.auth as any).getUser(token);
-    if (authError || !user) {
-        return { success: false, error: { message: 'Invalid or expired token.' }, status: 401 };
-    }
-
-    if (user.id !== restaurantId) {
-        const { data: perm } = await supabase
-            .from('unit_permissions')
-            .select('id')
-            .eq('manager_id', user.id)
-            .eq('store_id', restaurantId)
-            .single();
-        
-        if (!perm) {
-            return { success: false, error: { message: 'You do not have permission to access this store.' }, status: 403 };
-        }
-    }
-    return { success: true };
+    const auth = await authenticateStoreRequest(req, restaurantId);
+    return { success: auth.success, error: auth.error, status: auth.status };
 }
 
 function calculateDurationInMs(entry: TimeClockEntry): number {
@@ -51,9 +30,7 @@ function calculateDurationInMs(entry: TimeClockEntry): number {
 }
 
 export default async function handler(req: any, res: any) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    setStoreApiCorsHeaders(req, res, ['GET']);
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();

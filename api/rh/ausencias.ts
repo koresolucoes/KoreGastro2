@@ -3,44 +3,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { LeaveRequestType, LeaveRequestStatus } from '../../src/models/db.models.js';
 import { Buffer } from 'buffer';
+import { authenticateStoreRequest, setStoreApiCorsHeaders } from '../utils/store-auth.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
-
-// FIX RISCO A: Autenticação Segura via JWT
-async function authenticateUser(req: VercelRequest): Promise<{ userId?: string; error?: { message: string }; status?: number }> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { error: { message: 'Authorization header is missing or invalid.' }, status: 401 };
-    }
-    const token = authHeader.split(' ')[1];
-    
-    // Validar JWT com Supabase
-    // Using cast to any to fix type error 'Property getUser does not exist...'
-    const { data: { user }, error } = await (supabase.auth as any).getUser(token);
-    
-    if (error || !user) {
-        return { error: { message: 'Invalid or expired token.' }, status: 401 };
-    }
-    
-    return { userId: user.id };
-}
-
-// Verifica se o usuário tem acesso à loja solicitada
-async function checkStoreAccess(userId: string, restaurantId: string): Promise<boolean> {
-    if (userId === restaurantId) return true; // Dono
-
-    // Verificar se existe permissão delegada
-    const { data } = await supabase
-        .from('unit_permissions')
-        .select('id')
-        .eq('manager_id', userId)
-        .eq('store_id', restaurantId)
-        .single();
-    
-    return !!data;
-}
 
 /**
  * Sanitizes a filename to be URL-friendly for Supabase Storage.
@@ -61,31 +28,21 @@ function sanitizeFilename(filename: string): string {
 }
 
 export default async function handler(req: any, res: any) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    setStoreApiCorsHeaders(req, res, ['GET', 'POST', 'PATCH']);
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
     }
 
     try {
-        // 1. Autenticar Usuário via JWT
-        const { userId, error, status } = await authenticateUser(req);
-        if (error) {
-            return res.status(status!).json({ error });
-        }
-
-        // 2. Identificar Loja Alvo (Enviada no Body ou Query)
         const restaurantId = (req.query.restaurantId || req.body.restaurantId) as string;
         if (!restaurantId) {
              return res.status(400).json({ error: "An error occurred" });
         }
 
-        // 3. Verificar Permissão (Multi-Loja)
-        const hasAccess = await checkStoreAccess(userId!, restaurantId);
-        if (!hasAccess) {
-             return res.status(403).json({ error: "An error occurred" });
+        const storeAuth = await authenticateStoreRequest(req, restaurantId);
+        if (!storeAuth.success) {
+            return res.status(storeAuth.status || 401).json({ error: storeAuth.error });
         }
 
         switch (req.method) {

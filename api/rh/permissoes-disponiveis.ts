@@ -1,32 +1,10 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import { ALL_PERMISSION_KEYS } from '../../src/config/permissions.js';
-
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
-
-async function authenticateUser(req: VercelRequest): Promise<{ success: boolean; error?: any; status?: number }> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { success: false, error: { message: 'Missing or invalid Authorization header.' }, status: 401 };
-    }
-    const token = authHeader.split(' ')[1];
-    
-    // Simples verificação se o token é válido para qualquer usuário, pois a lista de permissões é estática e global.
-    const { data: { user }, error: authError } = await (supabase.auth as any).getUser(token);
-    if (authError || !user) {
-        return { success: false, error: { message: 'Invalid or expired token.' }, status: 401 };
-    }
-
-    return { success: true };
-}
+import { authenticateStoreRequest, setStoreApiCorsHeaders } from '../utils/store-auth.js';
 
 export default async function handler(req: any, res: any) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    setStoreApiCorsHeaders(req, res, ['GET']);
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
@@ -38,7 +16,7 @@ export default async function handler(req: any, res: any) {
     }
 
     try {
-        const auth = await authenticateUser(req);
+        const auth = await authenticateStoreRequest(req);
         if (!auth.success) {
             return res.status(auth.status!).json({ error: auth.error });
         }
