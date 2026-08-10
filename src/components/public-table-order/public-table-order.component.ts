@@ -665,14 +665,16 @@ export class PublicTableOrderComponent implements OnInit, OnDestroy {
         }
       }, 3000);
     } else {
-      const { error: rpcError } = await supabase.rpc("public_request_bill", {
-        p_session_token: this.sessionToken(),
+      const billResponse = await fetch('/api/public-request-bill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: this.sessionToken() })
       });
-      if (!rpcError) {
+      if (billResponse.ok) {
         this.showCheckoutModal.set(false);
         this.showToast("A conta foi solicitada e em breve iremos até a mesa!");
       } else {
-        this.showToast("Erro: " + rpcError.message, true);
+        this.showToast("N\u00e3o foi poss\u00edvel solicitar a conta.", true);
       }
     }
   }

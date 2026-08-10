@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { authenticateStoreRequest, setStoreApiCorsHeaders } from './utils/store-auth.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -13,9 +14,7 @@ const supabase = createClient(
 // Main handler function
 export default async function handler(req: any, res: any) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  setStoreApiCorsHeaders(req, res, ['POST']);
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
@@ -27,41 +26,30 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // 1. Authentication
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ type: "about:blank", title: "Unauthorized", status: 401, detail: 'Authorization header is missing or invalid.' });
-    }
-    const providedApiKey = authHeader.split(' ')[1];
-
     const restaurantId = req.body.restaurantId as string;
 
     if (!restaurantId) {
       return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`restaurantId` is required.' });
     }
 
-    const { data: creds, error: credsError } = await supabase
-      .from('store_integration_credentials')
-      .select('external_api_key')
-      .eq('store_id', restaurantId)
-      .single();
-
-    if (credsError || !creds || !creds.external_api_key) {
-      return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid `restaurantId` or API key not configured.' });
-    }
-
-    if (providedApiKey !== creds.external_api_key) {
-      return res.status(403).json({ type: "about:blank", title: "Forbidden", status: 403, detail: 'Invalid API key.' });
+    const auth = await authenticateStoreRequest(req, restaurantId);
+    if (!auth.success) {
+      return res.status(auth.status || 401).json({
+        type: 'about:blank', title: auth.status === 403 ? 'Forbidden' : 'Unauthorized',
+        status: auth.status || 401, detail: auth.error?.message || 'Authentication failed.'
+      });
     }
 
     // 2. Main Logic
     const { driverId, latitude, longitude } = req.body;
     
-    if (!driverId || typeof latitude !== 'number' || typeof longitude !== 'number') {
+    if (!driverId || typeof latitude !== 'number' || typeof longitude !== 'number'
+      || !Number.isFinite(latitude) || !Number.isFinite(longitude)
+      || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
         return res.status(400).json({ type: "about:blank", title: "Bad Request", status: 400, detail: '`driverId` (string), `latitude` (number), and `longitude` (number) are required.' });
     }
 
-    const { error: updateError } = await supabase
+    const { data: updatedDriver, error: updateError } = await supabase
       .from('delivery_drivers')
       .update({
         last_latitude: latitude,
@@ -69,7 +57,9 @@ export default async function handler(req: any, res: any) {
         last_updated_at: new Date().toISOString(),
       })
       .eq('id', driverId)
-      .eq('user_id', restaurantId);
+      .eq('user_id', restaurantId)
+      .select('id')
+      .maybeSingle();
 
     if (updateError) {
         // Log the error but don't expose too many details to the client
@@ -77,11 +67,15 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: 'Failed to update driver location.' });
     }
 
+    if (!updatedDriver) {
+      return res.status(404).json({ type: "about:blank", title: "Not Found", status: 404, detail: 'Driver not found.' });
+    }
+
     // Successfully updated, no body needed
     return res.status(204).end();
 
   } catch (error: any) {
     console.error('[API /delivery-location] Fatal error:', error);
-    return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: error.message || 'An internal server error occurred.' });
+    return res.status(500).json({ type: "about:blank", title: "Internal Server Error", status: 500, detail: 'An internal server error occurred.' });
   }
 }

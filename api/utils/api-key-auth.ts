@@ -107,10 +107,11 @@ export async function validateApiKey(req: VercelRequest): Promise<ApiKeyValidati
       apiKeyHash
     };
   } catch (err: any) {
+    console.error('[API key validation] Credential lookup failed:', err);
     return {
       isValid: false,
       restaurantId: null,
-      error: { message: `Erro ao validar chave de API: ${err.message}` },
+      error: { message: 'API key validation is temporarily unavailable.' },
       status: 500
     };
   }

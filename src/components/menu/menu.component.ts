@@ -662,9 +662,12 @@ export class MenuComponent implements OnInit {
 
     this.isLoading.set(true);
     try {
-      try {
-        await fetch(`/api/public-call-waiter?token=${this.sessionToken()}`);
-      } catch (e) {}
+      const waiterResponse = await fetch('/api/public-call-waiter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: this.sessionToken() })
+      });
+      if (!waiterResponse.ok) throw new Error('Failed to update the table status');
 
       const billNote = `[CHAMANDO GARÇOM]`;
       const notes = order.notes
@@ -923,17 +926,19 @@ export class MenuComponent implements OnInit {
         this.refreshTableOrder();
       }, 3000);
     } else {
-      const { error: rpcError } = await supabase.rpc("public_request_bill", {
-        p_session_token: this.sessionToken(),
+      const billResponse = await fetch('/api/public-request-bill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: this.sessionToken() })
       });
-      if (!rpcError) {
+      if (billResponse.ok) {
         this.view.set("menu");
         this.notificationService.show(
           "A conta foi solicitada e em breve iremos até a mesa!",
           "success",
         );
       } else {
-        this.notificationService.show("Erro: " + rpcError.message, "error");
+        this.notificationService.show("N\u00e3o foi poss\u00edvel solicitar a conta.", "error");
       }
     }
   }
