@@ -341,7 +341,7 @@ export class SupportClientComponent implements OnInit {
   faqs: FAQ[] = [
     {
       question: 'Como faço para configurar o iFood?',
-      answer: 'Para configurar o iFood, vá até "Cardápio iFood" no menu de navegação lateral. Lá você encontrará as opções para vincular sua loja inserindo o Client ID e Client Secret fornecidos pelo portal do parceiro iFood.',
+      answer: 'Para solicitar a integração, abra "Gestor de Loja iFood" no menu, informe o Merchant ID da unidade e envie o pedido. O responsável pela conta deve aprovar o acesso do ChefOS no Portal do Parceiro iFood; depois, a equipe ChefOS confirma o vínculo e ativa a integração.',
       category: 'Integrações'
     },
     {

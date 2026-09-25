@@ -4,8 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { IfoodMenuService, IfoodMerchantStatus, IfoodInterruption, IfoodOpeningHours } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
-import { SettingsStateService } from '../../services/settings-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
+import { supabase } from '../../services/supabase-client';
+import { environment } from '../../config/environment';
+
+interface IfoodIntegrationRequest {
+  id: string;
+  supportTicketId: string | null;
+  storeCnpj: string | null;
+  claimedMerchantId: string | null;
+  status: string;
+  createdAt: string;
+}
 
 interface ShiftForm {
   id: string; // A temporary ID for Angular's trackBy
@@ -31,13 +41,20 @@ export class IfoodStoreManagerComponent implements OnInit {
   private ifoodMenuService = inject(IfoodMenuService);
   private notificationService = inject(NotificationService);
 
-  private settingsState = inject(SettingsStateService);
   private settingsDataService = inject(SettingsDataService);
-  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.has_ifood_integration);
+  hasMerchantId = signal(false);
   isLoadingStatus = signal(true);
   isLoadingInterruptions = signal(true);
   isLoadingHours = signal(true);
   isSaving = signal(false);
+  integrationRequest = signal<IfoodIntegrationRequest | null>(null);
+  isLoadingIntegrationRequest = signal(false);
+  merchantIdInput = '';
+  cnpjInput = '';
+  canSubmitIntegrationRequest = computed(() => {
+    const status = this.integrationRequest()?.status;
+    return !status || ['REJECTED', 'CANCELLED', 'NEEDS_INFORMATION'].includes(status);
+  });
 
   status = signal<IfoodMerchantStatus[] | null>(null);
   interruptions = signal<IfoodInterruption[]>([]);
@@ -79,192 +96,139 @@ export class IfoodStoreManagerComponent implements OnInit {
   });
 
   ngOnInit() {
-    const savedUserCode = localStorage.getItem('ifood_user_code_data');
-    if (savedUserCode) {
-        try {
-            const parsed = JSON.parse(savedUserCode);
-            if (Date.now() - parsed.timestamp < 15 * 60 * 1000) {
-                this.userCodeData.set(parsed.data);
-            } else {
-                localStorage.removeItem('ifood_user_code_data');
-            }
-        } catch(e) {}
-    }
+    void this.loadIntegrationRequest();
+  }
 
-    if (!this.hasMerchantId()) {
-      this.isAuthorizing.set(true);
-      this.startAuthFlow();
-    } else {
-      this.loadAllData();
+  integrationStatusLabel(status: string) {
+    const labels: Record<string, string> = {
+      SUBMITTED: 'Solicitação recebida',
+      ACCESS_REQUESTED: 'Acesso solicitado ao iFood',
+      WAITING_MERCHANT_APPROVAL: 'Aguardando aprovação do responsável',
+      APPROVED_PENDING_VERIFICATION: 'Aprovação recebida, aguardando ativação',
+      CONNECTED: 'Conectada',
+      NEEDS_INFORMATION: 'Atualize os dados solicitados pelo suporte',
+      REJECTED: 'Solicitação encerrada',
+      CANCELLED: 'Solicitação cancelada',
+    };
+    return labels[status] || status;
+  }
+
+  integrationStatusMessage(status: string) {
+    const messages: Record<string, string> = {
+      SUBMITTED: 'O suporte ChefOS recebeu seu pedido e vai iniciar o processo de conexão.',
+      ACCESS_REQUESTED: 'A equipe solicitou o acesso. O responsável pela conta iFood precisa aprovar a integração no Portal do Parceiro.',
+      WAITING_MERCHANT_APPROVAL: 'Peça ao responsável pela conta iFood que aprove o ChefOS no Portal do Parceiro.',
+      APPROVED_PENDING_VERIFICATION: 'O responsável informou que aprovou o acesso. A equipe ChefOS está confirmando o Merchant ID e ativará a integração manualmente.',
+      CONNECTED: 'A conexão foi ativada pela equipe ChefOS. Atualize o painel para carregar os recursos do iFood.',
+      NEEDS_INFORMATION: 'A equipe ChefOS pediu dados adicionais. Corrija o Merchant ID ou o CNPJ abaixo e reenvie.',
+      REJECTED: 'A solicitação foi encerrada. Confira o chamado de suporte antes de enviar um novo pedido.',
+      CANCELLED: 'Esta solicitação foi cancelada.',
+    };
+    return messages[status] || 'A equipe ChefOS atualizará o andamento pelo chamado de suporte.';
+  }
+
+  private async sendIntegrationRequest(payload: Record<string, unknown>) {
+    const restaurantId = this.settingsDataService.getActiveUnitId();
+    if (!restaurantId) throw new Error('Selecione uma unidade ChefOS antes de solicitar a integração.');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Sua sessão expirou. Entre novamente para solicitar a integração.');
+    const response = await fetch(environment.apiBaseUrl.replace(/\/$/, '') + '/api/ifood-integration-requests', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, restaurantId }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result?.error?.message || 'Não foi possível enviar a solicitação iFood.');
+    return result;
+  }
+
+  async loadIntegrationRequest() {
+    this.isLoadingIntegrationRequest.set(true);
+    try {
+      const result = await this.sendIntegrationRequest({ action: 'status' });
+      const wasConnected = this.hasMerchantId();
+      this.integrationRequest.set(result.request || null);
+      const connected = result.connection?.connected === true && !!result.connection?.merchantId;
+      this.hasMerchantId.set(connected);
+      if (connected && !wasConnected) void this.loadAllData();
+      if (!connected && wasConnected) {
+        this.status.set(null);
+        this.interruptions.set([]);
+        this.weeklyHoursForm.set([]);
+      }
+      if (result.request?.status === 'NEEDS_INFORMATION') {
+        this.merchantIdInput = result.request.claimedMerchantId || '';
+        this.cnpjInput = result.request.storeCnpj || '';
+      }
+    } catch (error: any) {
+      this.notificationService.show(error?.message || 'Não foi possível carregar o status da integração iFood.', 'error');
+    } finally {
+      this.isLoadingIntegrationRequest.set(false);
     }
   }
 
-  isAuthorizing = signal(false);
-  authCode = signal('');
-  userCodeData = signal<any>(null);
+  async submitIntegrationRequest() {
+    const merchantId = this.merchantIdInput.trim();
+    const cnpj = this.cnpjInput.replace(/\D/g, '');
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(merchantId)) {
+      this.notificationService.show('Informe o Merchant ID UUID exibido no Portal do Parceiro iFood.', 'warning');
+      return;
+    }
+    if (cnpj && !/^\d{14}$/.test(cnpj)) {
+      this.notificationService.show('O CNPJ deve conter 14 números ou ficar em branco.', 'warning');
+      return;
+    }
+    const current = this.integrationRequest();
+    if (current && !['REJECTED', 'CANCELLED', 'NEEDS_INFORMATION'].includes(current.status)) {
+      this.notificationService.show('Sua solicitação já está em andamento. Atualize o status ou acompanhe o chamado.', 'info');
+      return;
+    }
+
+    this.isSaving.set(true);
+    try {
+      const action = current?.status === 'NEEDS_INFORMATION' ? 'clientUpdate' : 'create';
+      const payload: Record<string, unknown> = {
+        action, merchantId,
+        ...(cnpj ? { cnpj } : {}),
+        ...(action === 'clientUpdate' ? { requestId: current?.id } : {}),
+      };
+      const result = await this.sendIntegrationRequest(payload);
+      this.integrationRequest.set(result.request || null);
+      this.notificationService.show(
+        action === 'clientUpdate' ? 'Dados atualizados no chamado. A equipe ChefOS continuará a validação.' : 'Solicitação enviada. Acompanhe o andamento por este painel e pelo chamado de suporte.',
+        'success',
+      );
+    } catch (error: any) {
+      this.notificationService.show(error?.message || 'Não foi possível enviar os dados da integração iFood.', 'error');
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
 
   async loadAllData() {
     this.isLoadingStatus.set(true);
     this.isLoadingInterruptions.set(true);
     this.isLoadingHours.set(true);
-    this.isAuthorizing.set(false);
-    
     try {
       const [status, interruptions, hours] = await Promise.all([
         this.ifoodMenuService.getMerchantStatus(),
         this.ifoodMenuService.getInterruptions(),
         this.ifoodMenuService.getOpeningHours()
       ]);
-
       this.status.set(status);
       this.interruptions.set(interruptions);
       this.initializeHoursForm(hours);
-
     } catch (error: any) {
       if (error.message.includes('No valid token') || error.message.includes('401') || error.message.includes('authorize the app')) {
-         this.isAuthorizing.set(true);
-         this.notificationService.show('É necessário autorizar o aplicativo no portal do iFood.', 'warning');
-         this.startAuthFlow();
+        this.notificationService.show('A integração está ativada, mas a API do iFood ainda não liberou esta operação. Abra um chamado para o suporte ChefOS.', 'warning');
       } else {
-         this.notificationService.show(`Erro ao carregar dados da loja iFood: ${error.message}`, 'error');
+        this.notificationService.show(`Erro ao carregar dados da loja iFood: ${error.message}`, 'error');
       }
     } finally {
       this.isLoadingStatus.set(false);
       this.isLoadingInterruptions.set(false);
       this.isLoadingHours.set(false);
     }
-  }
-
-  async startAuthFlow() {
-      if (this.userCodeData()) {
-          return;
-      }
-      try {
-          const currentTenantId = this.settingsState.companyProfile()?.ifood_merchant_id;
-          const res = await fetch('/api/ifood-oauth', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'userCode' })
-          });
-          const data = await res.json();
-          if (!res.ok) {
-              if (data.message && data.message.includes('Grant type not authorized')) {
-                  // Fallback to client credentials (Centralized App)
-                  this.notificationService.show('Tentando autorização direta (Centralizada)...', 'info');
-                  const resCreds = await fetch('/api/ifood-oauth', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ action: 'clientCredentials', tenantId: currentTenantId })
-                  });
-                  const dataCreds = await resCreds.json();
-                  if (!resCreds.ok) throw new Error(dataCreds.message || 'Erro na autorização direta');
-                  
-                  const tenantId = dataCreds.tenantId;
-                  if (tenantId && tenantId !== 'default_tenant' && tenantId !== currentTenantId) {
-                      const currentProfile = this.settingsState.companyProfile();
-                      await this.settingsDataService.updateCompanyProfile({ ...(currentProfile || {}), ifood_merchant_id: tenantId });
-                      if (currentProfile) {
-                          this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: tenantId });
-                      }
-                  }
-                  
-                  this.notificationService.show('Integração autorizada com sucesso!', 'success');
-                  this.isAuthorizing.set(false);
-                  this.userCodeData.set(null);
-                  localStorage.removeItem('ifood_user_code_data');
-                  this.loadAllData();
-                  return;
-              }
-              throw new Error(data.message || 'Erro ao iniciar autorização');
-          }
-          
-          this.userCodeData.set(data);
-          localStorage.setItem('ifood_user_code_data', JSON.stringify({ data, timestamp: Date.now() }));
-      } catch (err: any) {
-          this.notificationService.show(`Falha ao iniciar autorização: ${err.message}`, 'error');
-      }
-  }
-
-  async submitAuthCode() {
-      const code = this.authCode();
-      const userCodeInfo = this.userCodeData();
-      const currentTenantId = this.settingsState.companyProfile()?.ifood_merchant_id;
-
-      if (!code || !userCodeInfo) return;
-
-      this.isSaving.set(true);
-      try {
-          const res = await fetch('/api/ifood-oauth', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  action: 'token',
-                  authorizationCode: code,
-                  authorizationCodeVerifier: userCodeInfo.authorizationCodeVerifier,
-                  tenantId: currentTenantId // It can be null, the API will extract it
-              })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.message || 'Erro ao obter token');
-
-          const tenantId = data.tenantId;
-
-          if (tenantId && tenantId !== currentTenantId) {
-              const currentProfile = this.settingsState.companyProfile();
-              await this.settingsDataService.updateCompanyProfile({ ...(currentProfile || {}), ifood_merchant_id: tenantId });
-              if (currentProfile) {
-                  this.settingsState.companyProfile.set({ ...currentProfile, ifood_merchant_id: tenantId });
-              }
-          }
-
-          this.notificationService.show('Integração autorizada com sucesso!', 'success');
-          this.isAuthorizing.set(false);
-          this.userCodeData.set(null);
-          localStorage.removeItem('ifood_user_code_data');
-          this.loadAllData();
-      } catch (err: any) {
-          this.notificationService.show(`Erro ao autorizar: ${err.message}`, 'error');
-      } finally {
-          this.isSaving.set(false);
-      }
-  }
-
-  cancelAuthorization() {
-      this.userCodeData.set(null);
-      localStorage.removeItem('ifood_user_code_data');
-      this.isAuthorizing.set(false);
-  }
-
-  async disconnectIfood() {
-      if (!confirm('Tem certeza que deseja desconectar sua loja do iFood? Você precisará autorizar novamente para receber pedidos e gerenciar a loja.')) {
-          return;
-      }
-      
-      this.isSaving.set(true);
-      try {
-          const currentProfile = this.settingsState.companyProfile() || {};
-          const updateRes = await this.settingsDataService.updateCompanyProfile({ ...currentProfile, ifood_merchant_id: null });
-          if (!updateRes.success) {
-              throw updateRes.error;
-          }
-          if (currentProfile) {
-              this.settingsState.companyProfile.set({ ...(currentProfile as any), ifood_merchant_id: null as any }); // Hack to accept null if needed
-          }
-          
-          this.userCodeData.set(null);
-          localStorage.removeItem('ifood_user_code_data');
-          this.status.set(null);
-          this.interruptions.set([]);
-          this.isAuthorizing.set(true);
-          
-          this.notificationService.show('Integração com iFood desconectada com sucesso.', 'success');
-          
-          this.startAuthFlow();
-      } catch (err: any) {
-          this.notificationService.show(`Erro ao desconectar: ${err.message}`, 'error');
-      } finally {
-          this.isSaving.set(false);
-      }
   }
 
   initializeHoursForm(apiHours: IfoodOpeningHours[]) {

@@ -5,49 +5,61 @@
       <h1 class="text-3xl font-black text-title tracking-tight">Gestor de Loja <span class="text-brand">iFood</span></h1>
       <p class="text-[11px] font-bold uppercase tracking-widest text-muted mt-1">Gerencie a disponibilidade e o horário de funcionamento.</p>
     </div>
-    @if (hasMerchantId() && !isAuthorizing()) {
-      <button (click)="disconnectIfood()" [disabled]="isSaving()" class="flex items-center gap-2 bg-surface hover:bg-danger/10 border border-subtle hover:border-danger/30 text-danger font-black text-[11px] uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50">
-        <span translate="no" class="notranslate material-symbols-outlined text-[16px]">link_off</span>
-        Desconectar iFood
-      </button>
-    }
   </div>
 
-  @if (!hasMerchantId() || isAuthorizing()) {
-    <div class="flex flex-col items-center justify-center min-h-[400px] bg-surface-elevated border border-warning/20 rounded-2xl shadow-sm p-8 text-center">
-      <span translate="no" class="notranslate material-symbols-outlined text-warning text-6xl mb-4">key</span>
-      <h2 class="text-xl font-black text-title mb-2">Autorização Necessária</h2>
-      <p class="text-muted text-sm max-w-md mb-6">Você precisa autorizar o ChefOS no portal do iFood para acessar sua loja.</p>
+  @if (!hasMerchantId()) {
+    <div class="mx-auto flex max-w-3xl flex-col gap-5 rounded-2xl border border-subtle bg-surface-elevated p-6 shadow-sm md:p-8">
+      <div class="flex items-start gap-4">
+        <span translate="no" class="notranslate material-symbols-outlined text-brand text-4xl">link</span>
+        <div>
+          <h2 class="text-xl font-black text-title">Solicitar conexão com iFood</h2>
+          <p class="mt-2 max-w-2xl text-sm text-muted">Informe o Merchant ID desta loja, encontrado no Portal do Parceiro iFood. O responsável pela conta precisa aprovar o acesso do ChefOS no portal; depois, nossa equipe confirma os dados e ativa a integração manualmente.</p>
+        </div>
+      </div>
 
-      @if (userCodeData()) {
-          <div class="w-full max-w-md bg-surface border border-subtle rounded-xl p-6 text-left space-y-4">
-              <p class="text-sm text-title">1. Acesse o <a [href]="userCodeData().verificationUrl" target="_blank" class="text-brand underline font-bold">Portal do Parceiro iFood</a></p>
-              <p class="text-sm text-title">2. Insira o seguinte código de vinculação:</p>
-              <div class="bg-surface-elevated border border-strong rounded-lg p-3 text-center">
-                  <span class="text-2xl font-mono font-black tracking-[0.2em]">{{ userCodeData().userCode }}</span>
-              </div>
-              <p class="text-sm text-title">3. Após autorizar, insira abaixo o código de autorização gerado:</p>
-              <div class="flex flex-col gap-3">
-                  <div class="flex gap-2">
-                      <input type="text" [(ngModel)]="authCode" placeholder="Código de Autorização" class="flex-1 bg-surface border border-strong rounded-xl px-4 py-3 text-sm font-medium text-title focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
-                      <button (click)="submitAuthCode()" [disabled]="!authCode() || isSaving()" class="bg-brand hover:bg-brand-hover text-white font-black text-[11px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50">
-                          @if(isSaving()) {
-                              <span translate="no" class="notranslate material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                          } @else {
-                              Autorizar
-                          }
-                      </button>
-                  </div>
-                  <button (click)="cancelAuthorization()" [disabled]="isSaving()" class="w-full bg-surface border border-strong hover:bg-surface-elevated text-title font-black text-[11px] uppercase tracking-widest px-4 py-3 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50 mt-2">
-                      Cancelar Vinculação
-                  </button>
-              </div>
+      @if (isLoadingIntegrationRequest()) {
+        <div class="rounded-xl border border-subtle bg-surface p-4 text-sm text-muted">Consultando o andamento da solicitação...</div>
+      } @else if (integrationRequest()) {
+        <div class="rounded-xl border border-brand/20 bg-surface p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-muted">Status da solicitação</p>
+              <p class="mt-1 font-black text-title">{{ integrationStatusLabel(integrationRequest()!.status) }}</p>
+            </div>
+            <button type="button" (click)="loadIntegrationRequest()" [disabled]="isLoadingIntegrationRequest()" class="rounded-lg border border-strong px-4 py-2 text-xs font-bold text-title hover:bg-surface-elevated disabled:opacity-50">Atualizar status</button>
           </div>
-      } @else {
-          <div class="flex flex-col items-center">
-              <span translate="no" class="notranslate material-symbols-outlined text-muted animate-spin text-4xl mb-4">progress_activity</span>
-              <p class="text-[11px] font-black uppercase tracking-widest text-muted">Gerando código de vinculação...</p>
+          <p class="mt-3 text-sm text-muted">{{ integrationStatusMessage(integrationRequest()!.status) }}</p>
+          <div class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted">
+            <span>Merchant ID: <strong class="font-mono text-title">{{ integrationRequest()!.claimedMerchantId || 'Aguardando informação' }}</strong></span>
+            <span>CNPJ: <strong class="text-title">{{ integrationRequest()!.storeCnpj || 'Não informado' }}</strong></span>
+            @if (integrationRequest()!.supportTicketId) {
+              <span>Chamado de suporte: <strong class="font-mono text-title">#{{ integrationRequest()!.supportTicketId!.slice(0, 8) }}</strong></span>
+            }
           </div>
+        </div>
+      }
+
+      @if (canSubmitIntegrationRequest() && !isLoadingIntegrationRequest()) {
+        <form (ngSubmit)="submitIntegrationRequest()" class="grid gap-4 rounded-xl border border-subtle bg-surface p-5">
+          <label class="grid gap-2 text-sm font-bold text-title">
+            Merchant ID da loja iFood
+            <input name="merchantId" [(ngModel)]="merchantIdInput" required autocomplete="off" placeholder="Ex.: 9fab849a-701b-4223-933d-d05679847554" class="rounded-lg border border-strong bg-surface-elevated px-3 py-3 font-mono text-sm text-title outline-none focus:border-brand">
+            <span class="text-xs font-normal text-muted">Use o ID da unidade iFood, não o CNPJ nem o código de autorização.</span>
+          </label>
+          <label class="grid gap-2 text-sm font-bold text-title">
+            CNPJ da loja (opcional)
+            <input name="cnpj" [(ngModel)]="cnpjInput" inputmode="numeric" autocomplete="off" maxlength="18" placeholder="00.000.000/0000-00" class="rounded-lg border border-strong bg-surface-elevated px-3 py-3 text-sm text-title outline-none focus:border-brand">
+            <span class="text-xs font-normal text-muted">O Merchant ID é o identificador principal. O CNPJ serve apenas como referência.</span>
+          </label>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="submit" [disabled]="isSaving() || !merchantIdInput.trim()" class="rounded-lg bg-brand px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-brand-hover disabled:opacity-50">
+              @if (isSaving()) { Enviando... } @else if (integrationRequest()?.status === 'NEEDS_INFORMATION') { Atualizar dados } @else { Solicitar integração }
+            </button>
+            @if (!integrationRequest() || ['REJECTED', 'CANCELLED'].includes(integrationRequest()!.status)) {
+              <span class="text-xs text-muted">A ativação só acontece após a aprovação do responsável no iFood e a confirmação manual do suporte ChefOS.</span>
+            }
+          </div>
+        </form>
       }
     </div>
   } @else if (isLoading()) {
