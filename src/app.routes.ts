@@ -4,6 +4,7 @@ import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 import { loginGuard } from './guards/login.guard';
 import { portalGuard } from './guards/portal.guard';
+import { systemAdminGuard } from './guards/system-admin.guard';
 
 export const APP_ROUTES: Routes = [
   { 
@@ -239,6 +240,11 @@ export const APP_ROUTES: Routes = [
     path: 'support',
     loadComponent: () => import('./components/support-client/support-client.component').then(m => m.SupportClientComponent),
     canActivate: [roleGuard]
+  },
+  {
+    path: 'admin/ifood-requests',
+    loadComponent: () => import('./components/admin/admin-ifood-requests.component').then(m => m.AdminIfoodRequestsComponent),
+    canActivate: [authGuard, systemAdminGuard]
   },
   { 
     path: 'subscription', 
