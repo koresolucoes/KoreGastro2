@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { IfoodMenuService, IfoodMerchantStatus, IfoodInterruption, IfoodOpeningHours } from '../../services/ifood-menu.service';
 import { NotificationService } from '../../services/notification.service';
-import { SettingsStateService } from '../../services/settings-state.service';
 import { SettingsDataService } from '../../services/settings-data.service';
 import { supabase } from '../../services/supabase-client';
 import { environment } from '../../config/environment';
@@ -42,9 +41,8 @@ export class IfoodStoreManagerComponent implements OnInit {
   private ifoodMenuService = inject(IfoodMenuService);
   private notificationService = inject(NotificationService);
 
-  private settingsState = inject(SettingsStateService);
   private settingsDataService = inject(SettingsDataService);
-  hasMerchantId = computed(() => !!this.settingsState.companyProfile()?.has_ifood_integration);
+  hasMerchantId = signal(false);
   isLoadingStatus = signal(true);
   isLoadingInterruptions = signal(true);
   isLoadingHours = signal(true);
@@ -98,8 +96,7 @@ export class IfoodStoreManagerComponent implements OnInit {
   });
 
   ngOnInit() {
-    if (this.hasMerchantId()) void this.loadAllData();
-    else void this.loadIntegrationRequest();
+    void this.loadIntegrationRequest();
   }
 
   integrationStatusLabel(status: string) {
@@ -149,7 +146,16 @@ export class IfoodStoreManagerComponent implements OnInit {
     this.isLoadingIntegrationRequest.set(true);
     try {
       const result = await this.sendIntegrationRequest({ action: 'status' });
+      const wasConnected = this.hasMerchantId();
       this.integrationRequest.set(result.request || null);
+      const connected = result.connection?.connected === true && !!result.connection?.merchantId;
+      this.hasMerchantId.set(connected);
+      if (connected && !wasConnected) void this.loadAllData();
+      if (!connected && wasConnected) {
+        this.status.set(null);
+        this.interruptions.set([]);
+        this.weeklyHoursForm.set([]);
+      }
       if (result.request?.status === 'NEEDS_INFORMATION') {
         this.merchantIdInput = result.request.claimedMerchantId || '';
         this.cnpjInput = result.request.storeCnpj || '';
