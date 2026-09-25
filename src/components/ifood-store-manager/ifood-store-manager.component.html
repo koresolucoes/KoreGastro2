@@ -39,7 +39,7 @@
         </div>
       }
 
-      @if (canSubmitIntegrationRequest()) {
+      @if (canSubmitIntegrationRequest() && !isLoadingIntegrationRequest()) {
         <form (ngSubmit)="submitIntegrationRequest()" class="grid gap-4 rounded-xl border border-subtle bg-surface p-5">
           <label class="grid gap-2 text-sm font-bold text-title">
             Merchant ID da loja iFood
